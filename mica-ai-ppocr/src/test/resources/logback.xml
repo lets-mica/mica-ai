@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 默认 INFO 级别；可通过 -vmica.debug=true 系统属性切到 DEBUG -->
+    <property name="ROOT_LEVEL" value="${mica.root.level:-INFO}"/>
+
+    <!-- Mica OCR 业务日志 -->
+    <logger name="com.mica.ppocr" level="${mica.ppocr.level:-${ROOT_LEVEL}}"/>
+    <logger name="ai.onnxruntime" level="WARN"/>
+    <logger name="org.opencv" level="WARN"/>
+    <logger name="nu.pattern" level="WARN"/>
+
+    <root level="${ROOT_LEVEL}">
+        <appender-ref ref="STDERR"/>
+    </root>
+</configuration>
