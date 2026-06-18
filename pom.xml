@@ -55,10 +55,9 @@
     </properties>
 
     <modules>
-        <module>mica-ai-ppocr</module>
-        <module>mica-ai-voice</module>
-        <module>mica-ai-tts</module>
-        <module>mica-ai-speaker</module>
+        <module>mica-ai-common</module>
+        <module>mica-ai-core</module>
+        <module>mica-ai-starters</module>
     </modules>
 
     <dependencies>

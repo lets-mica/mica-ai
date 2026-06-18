@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>mica-ai-tts-spring-boot-starter</artifactId>
+    <name>${project.artifactId}</name>
+    <url>https://www.dreamlu.net</url>
+    <description>mica-ai TTS Spring Boot Starter，一行配置即可接入 Kokoro TTS</description>
+
+    <parent>
+        <groupId>net.dreamlu</groupId>
+        <artifactId>mica-ai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <!-- TTS 核心引擎 -->
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-tts</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- Spring Boot AutoConfiguration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>
