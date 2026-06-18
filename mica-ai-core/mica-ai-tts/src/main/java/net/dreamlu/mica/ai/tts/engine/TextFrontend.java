@@ -1,6 +1,6 @@
 package net.dreamlu.mica.ai.tts.engine;
 
-import net.dreamlu.mica.ai.tts.KokoroTtsConfig;
+import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 
 import java.util.*;
 import java.util.regex.*;

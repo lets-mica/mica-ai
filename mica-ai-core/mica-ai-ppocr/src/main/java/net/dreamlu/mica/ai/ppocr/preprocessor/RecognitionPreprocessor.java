@@ -1,7 +1,7 @@
 package net.dreamlu.mica.ai.ppocr.preprocessor;
 
 import lombok.ToString;
-import net.dreamlu.mica.ai.ppocr.util.NdArrayUtils;
+import net.dreamlu.mica.ai.ppocr.utils.NdArrayUtils;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;

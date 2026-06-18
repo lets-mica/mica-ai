@@ -1,6 +1,8 @@
 package net.dreamlu.mica.ai.ppocr.autoconfigure;
 
-import net.dreamlu.mica.ai.ppocr.PPOCRv6Onnx;
+import net.dreamlu.mica.ai.ppocr.autoconfigure.PPOCRProperties;
+import net.dreamlu.mica.ai.ppocr.config.PPOcrV6Config;
+import net.dreamlu.mica.ai.ppocr.engine.PPOcrV6Engine;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -12,15 +14,18 @@ import org.springframework.context.annotation.Bean;
  * PP-OCR 自动配置。
  */
 @AutoConfiguration
-@ConditionalOnClass(PPOCRv6Onnx.class)
+@ConditionalOnClass(PPOcrV6Engine.class)
 @EnableConfigurationProperties(PPOCRProperties.class)
 @ConditionalOnProperty(prefix = "mica.ai.ppocr", name = "det-model-path")
 public class PPOCRAutoConfiguration {
 
 	@Bean(destroyMethod = "close")
 	@ConditionalOnMissingBean
-	public PPOCRv6Onnx ppocrV6Onnx(PPOCRProperties properties) {
-		PPOCRv6Onnx.Config config = PPOCRv6Onnx.Config.defaults()
+	public PPOcrV6Engine ppocrV6Engine(PPOCRProperties properties) {
+		PPOcrV6Config config = PPOcrV6Config.builder()
+			.detModelPath(properties.getDetModelPath())
+			.recModelPath(properties.getRecModelPath())
+			.recCharDictPath(properties.getRecCharDictPath())
 			.detLimitSideLen(properties.getDetLimitSideLen())
 			.detLimitType(properties.getDetLimitType())
 			.detMaxSideLimit(properties.getDetMaxSideLimit())
@@ -31,13 +36,9 @@ public class PPOCRAutoConfiguration {
 			.recBatchSize(properties.getRecBatchSize())
 			.preferAccelerator(properties.isPreferAccelerator())
 			.intraOpNumThreads(properties.getIntraOpNumThreads())
-			.interOpNumThreads(properties.getInterOpNumThreads());
+			.interOpNumThreads(properties.getInterOpNumThreads())
+			.build();
 
-		return new PPOCRv6Onnx(
-			properties.getDetModelPath(),
-			properties.getRecModelPath(),
-			properties.getRecCharDictPath(),
-			config
-		);
+		return new PPOcrV6Engine(config);
 	}
 }

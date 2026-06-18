@@ -1,7 +1,7 @@
 package net.dreamlu.mica.ai.voice.autoconfigure;
 
-import net.dreamlu.mica.ai.voice.SenseVoice;
-import net.dreamlu.mica.ai.voice.SenseVoiceConfig;
+import net.dreamlu.mica.ai.voice.engine.SenseVoice;
+import net.dreamlu.mica.ai.voice.config.SenseVoiceConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

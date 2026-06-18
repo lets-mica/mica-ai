@@ -1,7 +1,7 @@
 package net.dreamlu.mica.ai.ppocr.postprocessor;
 
 import lombok.ToString;
-import net.dreamlu.mica.ai.ppocr.util.NdArrayUtils;
+import net.dreamlu.mica.ai.ppocr.utils.NdArrayUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

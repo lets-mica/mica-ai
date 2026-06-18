@@ -1,6 +1,6 @@
 package net.dreamlu.mica.ai.speaker.autoconfigure;
 
-import net.dreamlu.mica.ai.speaker.SpeakerVerifier;
+import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

@@ -1,6 +1,6 @@
 package net.dreamlu.mica.ai.voice;
 
-import net.dreamlu.mica.ai.voice.internal.ChineseItn;
+import net.dreamlu.mica.ai.voice.engine.ChineseItn;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,3 +45,4 @@ class ChineseItnTest {
 		assertEquals("你好世界", ChineseItn.convert("你好世界"));
 	}
 }
+

@@ -24,6 +24,7 @@
 | [mica-ai-tts](mica-ai-core/mica-ai-tts/README.md) | Kokoro TTS 语音合成 | 中英双语，103 个音色，可插拔 G2P 架构 |
 | [mica-ai-voice](mica-ai-core/mica-ai-voice/README.md) | SenseVoice 语音识别 | 多语种识别，Trie 树热词雷达，长音频分段 |
 | [mica-ai-speaker](mica-ai-core/mica-ai-speaker/README.md) | ERes2Net 声纹识别 | 声纹验证 / 说话人识别，256 维 Embedding |
+| [mica-ai-intent](mica-ai-core/mica-ai-intent/README.md) | BERT 中文意图识别 | 按字分词 + Softmax 分类，兼容 HuggingFace 词表 |
 
 ### Spring Boot Starter（一行配置接入）
 
@@ -33,6 +34,7 @@
 | [mica-ai-tts-spring-boot-starter](mica-ai-starters/mica-ai-tts-spring-boot-starter/README.md) | `mica.ai.tts` |
 | [mica-ai-voice-spring-boot-starter](mica-ai-starters/mica-ai-voice-spring-boot-starter/README.md) | `mica.ai.voice` |
 | [mica-ai-speaker-spring-boot-starter](mica-ai-starters/mica-ai-speaker-spring-boot-starter/README.md) | `mica.ai.speaker` |
+| [mica-ai-intent-spring-boot-starter](mica-ai-starters/mica-ai-intent-spring-boot-starter/README.md) | `mica.ai.intent` |
 
 ---
 
@@ -45,12 +47,14 @@ mica-ai/
 │   ├── mica-ai-ppocr/        #   OCR 文字识别
 │   ├── mica-ai-tts/          #   TTS 语音合成
 │   ├── mica-ai-voice/        #   语音识别
-│   └── mica-ai-speaker/      #   声纹识别
+│   ├── mica-ai-speaker/      #   声纹识别
+│   └── mica-ai-intent/       #   意图识别
 └── mica-ai-starters/         # Spring Boot Starter（聚合）
     ├── mica-ai-ppocr-spring-boot-starter/
     ├── mica-ai-tts-spring-boot-starter/
     ├── mica-ai-voice-spring-boot-starter/
-    └── mica-ai-speaker-spring-boot-starter/
+    ├── mica-ai-speaker-spring-boot-starter/
+    └── mica-ai-intent-spring-boot-starter/
 ```
 
 ---

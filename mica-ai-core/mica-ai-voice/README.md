@@ -90,7 +90,8 @@ Java 端构造 `SenseVoiceConfig` 时指定对应路径即可，引擎自动适�
 ### 3.2 基本用法
 
 ```java
-import net.dreamlu.mica.ai.voice.*;
+
+import net.dreamlu.mica.ai.voice.engine.SenseVoice;
 
 import java.util.List;
 

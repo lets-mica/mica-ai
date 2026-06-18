@@ -3,11 +3,11 @@
  */
 package net.dreamlu.mica.ai.speaker;
 
+import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -34,14 +34,14 @@
 mica:
   ai:
     speaker:
-      model-path: models/eres2net.onnx
-      onnx-provider: cpu
+      model-path: model/eres2net.onnx
+      default-threshold: 0.58
 ```
 
 ### 2.3 注入使用
 
 ```java
-import net.dreamlu.mica.ai.speaker.SpeakerVerifier;
+import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,16 +49,12 @@ public class SpeakerService {
 
     private final SpeakerVerifier verifier;
 
-    public SpeakerService(SpeakerVerifier verifier) {
+    public SpeakerService(net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier verifier) {
         this.verifier = verifier;
     }
 
-    public double verify(String enrollPath, String testPath) {
-        return verifier.verify(enrollPath, testPath);
-    }
-
-    public float[] extractEmbedding(String audioPath) {
-        return verifier.extractEmbedding(audioPath);
+    public boolean verify(String audioPath1, String audioPath2) {
+        return verifier.verify(audioPath1, audioPath2);
     }
 }
 ```
@@ -69,8 +65,10 @@ public class SpeakerService {
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `mica.ai.speaker.model-path` | String | — | ONNX 模型路径（必填） |
-| `mica.ai.speaker.onnx-provider` | String | `cpu` | ONNX 执行提供者 |
+| `mica.ai.speaker.model-path` | String | — | 声纹模型路径（必填） |
+| `mica.ai.speaker.default-threshold` | float | `0.58` | 默认验证阈值 |
+| `mica.ai.speaker.intra-op-num-threads` | int | `1` | ONNX 内部线程数 |
+| `mica.ai.speaker.inter-op-num-threads` | int | `1` | ONNX 交互线程数 |
 
 ### AutoConfiguration 条件
 

@@ -45,7 +45,7 @@ mica:
 ### 2.3 注入使用
 
 ```java
-import net.dreamlu.mica.ai.tts.KokoroTts;
+import net.dreamlu.mica.ai.tts.engine.KokoroTts;
 import net.dreamlu.mica.ai.tts.TtsResult;
 import org.springframework.stereotype.Service;
 

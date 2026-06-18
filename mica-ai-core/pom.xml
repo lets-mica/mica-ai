@@ -20,5 +20,6 @@
         <module>mica-ai-voice</module>
         <module>mica-ai-tts</module>
         <module>mica-ai-speaker</module>
+        <module>mica-ai-intent</module>
     </modules>
 </project>

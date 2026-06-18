@@ -2,9 +2,9 @@ package net.dreamlu.mica.ai.ppocr.postprocessor;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.ppocr.util.BoxUtil;
-import net.dreamlu.mica.ai.ppocr.util.NdArrayUtils;
-import net.dreamlu.mica.ai.ppocr.util.Offset;
+import net.dreamlu.mica.ai.ppocr.utils.BoxUtil;
+import net.dreamlu.mica.ai.ppocr.utils.NdArrayUtils;
+import net.dreamlu.mica.ai.ppocr.utils.Offset;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 

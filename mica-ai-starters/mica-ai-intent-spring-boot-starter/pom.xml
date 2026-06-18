@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>mica-ai-intent-spring-boot-starter</artifactId>
+    <name>${project.artifactId}</name>
+    <url>https://www.dreamlu.net</url>
+    <description>mica-ai Intent Spring Boot Starter，一行配置即可接入中文意图识别</description>
+
+    <parent>
+        <groupId>net.dreamlu</groupId>
+        <artifactId>mica-ai</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <!-- 意图识别核心引擎 -->
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-intent</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- Spring Boot AutoConfiguration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

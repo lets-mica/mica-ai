@@ -47,7 +47,7 @@ models/
 ### 3.2 基本用法
 
 ```java
-import net.dreamlu.mica.ai.speaker.SpeakerVerifier;
+import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 
 public class Demo {
     public static void main(String[] args) throws Exception {

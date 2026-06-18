@@ -4,7 +4,8 @@
 package net.dreamlu.mica.ai.speaker;
 
 import net.dreamlu.mica.ai.common.utils.AudioUtils;
-import net.dreamlu.mica.ai.speaker.internal.FBankExtractor;
+import net.dreamlu.mica.ai.speaker.engine.FBankExtractor;
+import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

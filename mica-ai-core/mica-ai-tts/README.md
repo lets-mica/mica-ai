@@ -75,7 +75,7 @@ model/
 ### 3.2 基本用法
 
 ```java
-import net.dreamlu.mica.ai.tts.KokoroTts;
+import net.dreamlu.mica.ai.tts.engine.KokoroTts;
 import net.dreamlu.mica.ai.tts.KokoroTtsConfig;
 import net.dreamlu.mica.ai.tts.TtsResult;
 
@@ -83,20 +83,20 @@ public class Demo {
     public static void main(String[] args) throws Exception {
         // 1. 配置引擎
         KokoroTtsConfig config = KokoroTtsConfig.builder()
-            .modelPath("model/model_dynamic.onnx")
-            .voicesDir("model/voices")
-            .configPath("model/config.json")
-            .defaultVoice("zf_001")    // 中文女声
-            .defaultSpeed(1.0f)        // 语速 0.5 ~ 2.0
-            .onnxProvider("cpu")       // 可选: "cpu", "cuda"
-            .build();
+                .modelPath("model/model_dynamic.onnx")
+                .voicesDir("model/voices")
+                .configPath("model/config.json")
+                .defaultVoice("zf_001")    // 中文女声
+                .defaultSpeed(1.0f)        // 语速 0.5 ~ 2.0
+                .onnxProvider("cpu")       // 可选: "cpu", "cuda"
+                .build();
 
         // 2. 创建引擎并合成
         try (KokoroTts tts = new KokoroTts(config)) {
             // 方式 1：直接输入文本（使用默认 G2P）
             TtsResult result = tts.synthesize("你好世界，欢迎使用 Kokoro TTS。");
             System.out.printf("生成音频: %.2fs, %d 采样点%n",
-                result.duration(), result.audio().length);
+                    result.duration(), result.audio().length);
 
             // 3. 保存为 WAV 文件（24kHz, 16-bit PCM）
             tts.saveWav(result, "output.wav");

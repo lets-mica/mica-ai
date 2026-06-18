@@ -2,7 +2,7 @@
 
 > mica-ai 核心能力聚合模块，零 Spring 依赖，纯 Java 实现。
 
-本模块为聚合 POM（packaging=pom），包含以下 4 个子模块：
+本模块为聚合 POM（packaging=pom），包含以下 5 个子模块：
 
 ---
 
@@ -14,6 +14,7 @@
 | [mica-ai-tts](mica-ai-tts/README.md) | Kokoro TTS 语音合成 | ONNX Runtime + houbb/pinyin (可选) |
 | [mica-ai-voice](mica-ai-voice/README.md) | SenseVoice 语音识别 | ONNX Runtime + 纯 Java Mel/FFT |
 | [mica-ai-speaker](mica-ai-speaker/README.md) | ERes2Net 声纹识别 | ONNX Runtime + JTransforms FFT |
+| [mica-ai-intent](mica-ai-intent/README.md) | BERT 中文意图识别 | ONNX Runtime + 手写 BERT 分词 |
 
 所有子模块均依赖 [mica-ai-common](../mica-ai-common/README.md)，共享 `MicaAiException` 统一异常、`OrtProviders` Provider 管理和 `AudioUtils` 音频工具。
 

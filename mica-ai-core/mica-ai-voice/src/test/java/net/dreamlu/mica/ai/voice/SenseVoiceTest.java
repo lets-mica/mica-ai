@@ -1,5 +1,10 @@
 package net.dreamlu.mica.ai.voice;
 
+import net.dreamlu.mica.ai.voice.config.RecognitionResult;
+import net.dreamlu.mica.ai.voice.config.SenseVoiceConfig;
+import net.dreamlu.mica.ai.voice.config.Timings;
+import net.dreamlu.mica.ai.voice.config.TranscriptionResult;
+import net.dreamlu.mica.ai.voice.engine.SenseVoice;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;

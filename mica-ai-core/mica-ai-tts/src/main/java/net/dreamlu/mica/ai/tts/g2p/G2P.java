@@ -1,6 +1,6 @@
 package net.dreamlu.mica.ai.tts.g2p;
 
-import net.dreamlu.mica.ai.tts.KokoroTtsConfig;
+import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 
 /**
  * G2P（Grapheme-to-Phoneme）转换器接口。

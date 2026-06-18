@@ -1,5 +1,6 @@
 package net.dreamlu.mica.ai.tts;
 
+import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

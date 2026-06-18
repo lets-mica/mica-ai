@@ -1,7 +1,7 @@
 package net.dreamlu.mica.ai.tts.autoconfigure;
 
-import net.dreamlu.mica.ai.tts.KokoroTts;
-import net.dreamlu.mica.ai.tts.KokoroTtsConfig;
+import net.dreamlu.mica.ai.tts.engine.KokoroTts;
+import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

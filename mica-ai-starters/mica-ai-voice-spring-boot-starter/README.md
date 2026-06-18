@@ -48,7 +48,7 @@ mica:
 ### 2.3 注入使用
 
 ```java
-import net.dreamlu.mica.ai.voice.SenseVoice;
+import net.dreamlu.mica.ai.voice.engine.SenseVoice;
 import net.dreamlu.mica.ai.voice.TranscriptionResult;
 import org.springframework.stereotype.Service;
 
