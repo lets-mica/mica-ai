@@ -1,0 +1,2 @@
+# 这个文件保证 data/ 目录在 git 中存在。
+# train.tsv / val.tsv / labels.json 实际是会被 git 跟踪的样例数据。

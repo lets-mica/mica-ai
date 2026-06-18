@@ -1,0 +1,7 @@
+# speaker 工具链私有依赖
+torch>=2.0.0
+onnx>=1.14.0
+onnxsim>=0.4.0
+onnxruntime>=1.16.0
+modelscope>=1.18.0
+torchaudio>=2.0.0

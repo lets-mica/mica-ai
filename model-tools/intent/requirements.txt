@@ -1,0 +1,9 @@
+# intent 工具链私有依赖（训练 + 导出）
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.0.0
+scikit-learn>=1.0.0
+onnx>=1.14.0
+onnxruntime>=1.16.0
+accelerate>=0.20.0
+pyyaml>=6.0

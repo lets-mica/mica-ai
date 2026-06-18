@@ -4,6 +4,37 @@
 
 ---
 
+## 0. 推荐：使用 `model-tools/intent/` 一键完成
+
+本仓库已经提供了完整的 Python 端到端工具链，位于 [`model-tools/intent/`](../model-tools/intent/README.md)。**强烈建议优先使用工具链**，本指南剩余章节可作为概念/流程参考。
+
+```bash
+# 安装依赖
+pip install -r model-tools/requirements.txt
+pip install -r model-tools/intent/requirements.txt
+
+# 端到端：下载 → 微调 → 导出 ONNX
+cd model-tools/intent
+python download.py                              # 从 ModelScope 下载 chinese-bert-wwm-ext
+python train.py --config configs/base.yaml     # 微调（数据见 data/）
+python convert.py \
+  --model_dir model/intent-model \
+  --output_dir model/out                        # 导出 ONNX + 一致性校验
+```
+
+工具链提供的能力：
+
+| 能力 | 工具链 | 本文档 |
+|------|--------|--------|
+| 数据格式 | `data/{train,val}.tsv` + `labels.json`（已附样例） | 第 4 节 |
+| 微调脚本 | [`intent/train.py`](../model-tools/intent/train.py)（支持 YAML/CLI 双模式） | 第 5 节 |
+| ONNX 导出 | [`intent/convert.py`](../model-tools/intent/convert.py)（带 PyTorch vs ONNX 校验，可选 INT8 量化） | 第 6 节 |
+| 集成到 mica-ai | 见 [`intent/README.md`](../model-tools/intent/README.md) | 第 7 节 |
+
+> 本文档后文**保留详细技术原理**，便于需要自定义脚本或排查问题的同学。
+
+---
+
 ## 1. 为什么需要微调
 
 `chinese-bert-wwm-ext` 是预训练的 Masked Language Model（MLM），**没有分类头**。直接导出 ONNX 时，分类头会被随机初始化，推理结果无语义意义。
@@ -715,33 +746,59 @@ mica-ai-intent 使用自定义的 `BertTokenizer`（按字切分），与 Huggin
 
 ## 10. 完整目录结构
 
-微调 + 导出相关文件的推荐目录结构：
+本仓库推荐使用 `model-tools/intent/` 工具链，目录结构如下：
 
 ```
-ai_test/
-└── Intent-ONNX/                    # 工作目录
-    ├── chinese-bert-wwm-ext/        # 预训练模型（下载）
-    │   ├── config.json
-    │   ├── pytorch_model.bin
-    │   └── vocab.txt
-    │
-    ├── intent_data/                 # 训练数据
-    │   ├── train.csv
-    │   ├── val.csv
-    │   └── labels.json
-    │
-    ├── finetune_intent.py           # 微调脚本
-    ├── export_onnx.py               # ONNX 导出脚本
-    │
-    ├── intent-model/                # 微调后模型（训练产物）
-    │   ├── config.json
-    │   ├── pytorch_model.bin
-    │   └── labels.json
-    │
-    └── model/                       # ONNX 模型（最终产物）
-        ├── bert_intent.onnx
-        ├── vocab.txt
-        └── labels.json
+mica-ai/
+└── model-tools/
+    └── intent/
+        ├── configs/base.yaml           # 训练超参
+        ├── data/                       # 训练数据
+        │   ├── train.tsv
+        │   ├── val.tsv
+        │   └── labels.json
+        ├── download.py                 # 脚本：下载预训练模型
+        ├── train.py                    # 脚本：微调
+        ├── convert.py                  # 脚本：导出 ONNX
+        └── model/                      # 产物（被 .gitignore 忽略）
+            ├── chinese-bert-wwm-ext/   # 预训练权重
+            ├── intent-model/           # 微调后权重
+            └── out/                    # 最终 ONNX 产物
+                ├── bert_intent.onnx
+                ├── vocab.txt
+                └── labels.json
 ```
 
-最终只需要 `model/` 目录下的三个文件即可集成到 mica-ai-intent。
+最终只需要 `model/out/` 目录下的三个文件即可集成到 mica-ai-intent。
+
+> 历史上本文档使用过 `ai_test/Intent-ONNX/` 工作目录结构，已被上述结构取代。
+
+---
+
+## 11. 常见问题补充
+
+### Q6：训练时报 `KeyError: 'eval_macro_f1'`
+
+新版本 transformers（≥4.46）会改字段名。`train.py` 已经统一通过 `compute_metrics` 返回字段名，升级 transformers 即可。
+
+### Q7：如何切换到 `chinese-roberta-wwm-ext` / `ernie-3.0` 等其它中文预训练模型？
+
+只需要把 [`model-tools/intent/download.py`](../model-tools/intent/download.py) 顶部的 `MODEL_SCOPE_ID` 改成对应仓库，例如：
+
+```python
+MODEL_SCOPE_ID = "iic/nlp_corom_sentence-embedding_chinese-base-ecom"
+```
+
+并相应修改 `MODEL` 类为 `RobertaForSequenceClassification` / `ErnieForSequenceClassification`。
+其余脚本无需改动。
+
+### Q8：如何接入 LLM 标注的弱监督数据？
+
+把 `data/train.tsv` 替换为 LLM 批量标注结果即可，格式保持两列：
+
+```tsv
+播放轻音乐	music
+今天气温多少度	weather
+```
+
+`labels.json` 里的标签必须覆盖所有出现的标签，否则 `label2id` 转换会 KeyError。

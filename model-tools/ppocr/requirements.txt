@@ -1,0 +1,2 @@
+# ppocr 工具链私有依赖
+requests>=2.31

@@ -1,0 +1,23 @@
+# intent 微调默认配置
+# 用法：python train.py --config configs/base.yaml
+
+train:
+  # 预训练模型目录（python download.py 下载得到）
+  model_dir: model/chinese-bert-wwm-ext
+
+  # 训练 / 验证数据
+  train_data: data/train.tsv
+  val_data:   data/val.tsv
+  labels_file: data/labels.json
+
+  # 微调输出
+  output_dir: model/intent-model
+
+  # 训练超参
+  epochs: 5
+  batch_size: 16
+  lr: 2.0e-5
+  max_length: 128
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  seed: 42
