@@ -56,6 +56,7 @@
 
     <modules>
         <module>mica-ai-ppocr</module>
+        <module>mica-ai-voice</module>
     </modules>
 
     <dependencies>

@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>mica-ai-ppocr</artifactId>
+    <artifactId>mica-ai-voice</artifactId>
     <name>${project.artifactId}</name>
     <url>https://www.dreamlu.net</url>
-    <description>PP-OCRv6 纯 ONNXRuntime 推理（Java 17 移植版）</description>
+    <description>SenseVoice 纯 ONNXRuntime 语音识别推理（Java 17 移植版）</description>
 
     <parent>
         <groupId>net.dreamlu</groupId>
@@ -20,16 +20,6 @@
         <dependency>
             <groupId>com.microsoft.onnxruntime</groupId>
             <artifactId>onnxruntime</artifactId>
-        </dependency>
-        <!-- OpenCV Java bindings（openpnp 打包版本，自带 Windows/Linux/macOS 原生库） -->
-        <dependency>
-            <groupId>org.openpnp</groupId>
-            <artifactId>opencv</artifactId>
-        </dependency>
-        <!-- JTS：用于多边形偏移（pyclipper 等价物） -->
-        <dependency>
-            <groupId>org.locationtech.jts</groupId>
-            <artifactId>jts-core</artifactId>
         </dependency>
         <!-- Logging -->
         <dependency>
