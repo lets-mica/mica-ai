@@ -58,6 +58,7 @@
         <module>mica-ai-ppocr</module>
         <module>mica-ai-voice</module>
         <module>mica-ai-tts</module>
+        <module>mica-ai-speaker</module>
     </modules>
 
     <dependencies>
@@ -104,6 +105,12 @@
                 <groupId>com.microsoft.onnxruntime</groupId>
                 <artifactId>onnxruntime</artifactId>
                 <version>${onnxruntime.version}</version>
+            </dependency>
+            <!-- JTransforms FFT -->
+            <dependency>
+                <groupId>com.github.wendykierp</groupId>
+                <artifactId>JTransforms</artifactId>
+                <version>3.1</version>
             </dependency>
             <!-- OpenCV Java bindings（openpnp 打包版本，自带 Windows/Linux/macOS 原生库） -->
             <dependency>
