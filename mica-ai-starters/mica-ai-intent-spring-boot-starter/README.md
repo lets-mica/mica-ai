@@ -47,14 +47,14 @@ mica:
 ### 2.3 注入使用
 
 ```java
-import net.dreamlu.mica.ai.intent.engine.BertIntent;
-import net.dreamlu.mica.ai.intent.IntentResult;
+import net.dreamlu.mica.ai.intent.BertIntent;
+import net.dreamlu.mica.ai.intent.config.IntentResult;
 import org.springframework.stereotype.Service;
 
 @Service
 public class IntentService {
 
-    private final net.dreamlu.mica.ai.intent.engine.BertIntent intent;
+    private final BertIntent intent;
 
     public IntentService(BertIntent intent) {
         this.intent = intent;

@@ -46,8 +46,9 @@ tar xf PP-OCRv6_tiny_rec_0515_onnx.tar
 ## 3. 快速使用
 
 ```java
-import net.dreamlu.mica.ai.ppocr.OCRResult;
-import net.dreamlu.mica.ai.ppocr.PPOCRv6Onnx;
+import net.dreamlu.mica.ai.ppocr.config.PPOcrV6Config;
+import net.dreamlu.mica.ai.ppocr.config.PPOcrV6Result;
+import net.dreamlu.mica.ai.ppocr.engine.PPOcrV6Engine;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import nu.pattern.OpenCV;
@@ -56,11 +57,16 @@ public class Demo {
   public static void main(String[] args) {
     OpenCV.loadShared();
     Mat img = Imgcodecs.imread("test.png");
-    try (PPOCRv6Onnx ocr = new PPOCRv6Onnx(
-            "models/PP-OCRv6_tiny_det_onnx/inference.onnx",
-            "models/PP-OCRv6_tiny_rec_0515_onnx/inference.onnx",
-            "models/rec_char_dict.txt")) {
-      for (OCRResult r : ocr.run(img)) {
+    
+    PPOcrV6Config config = PPOcrV6Config.builder()
+        .detModelPath("models/PP-OCRv6_tiny_det_onnx/inference.onnx")
+        .recModelPath("models/PP-OCRv6_tiny_rec_0515_onnx/inference.onnx")
+        .recCharDictPath("models/rec_char_dict.txt")
+        .build();
+    
+    try (PPOcrV6Engine ocr = new PPOcrV6Engine(config)) {
+      List<PPOcrV6Result> results = ocr.run(img);
+      for (PPOcrV6Result r : results) {
         System.out.printf("%s  (%.3f)%n", r.text(), r.score());
       }
     }

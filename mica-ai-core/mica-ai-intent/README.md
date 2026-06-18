@@ -61,7 +61,9 @@ python export_bert_intent.py \
 
 ```java
 
-import net.dreamlu.mica.ai.intent.engine.BertIntent;
+import net.dreamlu.mica.ai.intent.BertIntent;
+import net.dreamlu.mica.ai.intent.config.BertIntentConfig;
+import net.dreamlu.mica.ai.intent.config.IntentResult;
 
 import java.util.List;
 
@@ -106,8 +108,9 @@ public class Demo {
 ```
 net.dreamlu.mica.ai.intent
 ├── BertIntent.java              # 公开入口：组合分词 + 推理
-├── BertIntentConfig.java        # Builder 风格配置
-├── IntentResult.java            # 推理结果（record）
+├── config/                      # 配置和结果类
+│   ├── BertIntentConfig.java    #   Builder 风格配置
+│   └── IntentResult.java        #   推理结果（record）
 ├── engine/                      # 推理引擎层
 │   └── BertIntentEngine.java    #   ONNX Runtime 推理 + Softmax
 └── tokenizer/                   # 分词器层
@@ -115,7 +118,7 @@ net.dreamlu.mica.ai.intent
     └── VocabLoader.java         #   HuggingFace vocab.txt 加载
 ```
 
-根包为公开 API，`engine/` 和 `tokenizer/` 为内部实现层。
+根包为公开 API，`config/`、`engine/` 和 `tokenizer/` 为内部实现层。
 
 ---
 

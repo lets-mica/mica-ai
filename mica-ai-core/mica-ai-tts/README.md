@@ -75,9 +75,9 @@ model/
 ### 3.2 基本用法
 
 ```java
-import net.dreamlu.mica.ai.tts.engine.KokoroTts;
-import net.dreamlu.mica.ai.tts.KokoroTtsConfig;
-import net.dreamlu.mica.ai.tts.TtsResult;
+import net.dreamlu.mica.ai.tts.KokoroTts;
+import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
+import net.dreamlu.mica.ai.tts.config.TtsResult;
 
 public class Demo {
     public static void main(String[] args) throws Exception {

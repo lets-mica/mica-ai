@@ -91,6 +91,9 @@ Java 端构造 `SenseVoiceConfig` 时指定对应路径即可，引擎自动适�
 
 ```java
 
+import net.dreamlu.mica.ai.voice.config.SenseVoiceConfig;
+import net.dreamlu.mica.ai.voice.config.TranscriptionResult;
+import net.dreamlu.mica.ai.voice.config.RecognitionResult;
 import net.dreamlu.mica.ai.voice.engine.SenseVoice;
 
 import java.util.List;

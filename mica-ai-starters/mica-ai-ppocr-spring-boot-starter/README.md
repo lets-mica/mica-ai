@@ -43,8 +43,8 @@ mica:
 ### 2.3 注入使用
 
 ```java
-import net.dreamlu.mica.ai.ppocr.core.PPOcrV6Engine;
-import net.dreamlu.mica.ai.ppocr.core.PPOcrV6Result;
+import net.dreamlu.mica.ai.ppocr.config.PPOcrV6Result;
+import net.dreamlu.mica.ai.ppocr.engine.PPOcrV6Engine;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.stereotype.Service;
