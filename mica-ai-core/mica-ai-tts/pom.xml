@@ -7,7 +7,7 @@
     <artifactId>mica-ai-tts</artifactId>
     <name>${project.artifactId}</name>
     <url>https://www.dreamlu.net</url>
-    <description>Kokoro TTS 纯 ONNXRuntime 语音合成推理（Java 17 移植版）</description>
+    <description>mica-ai-tts: 基于 Kokoro-82M 的纯 ONNX Runtime 语音合成引擎，支持中英双语</description>
 
     <parent>
         <groupId>net.dreamlu</groupId>

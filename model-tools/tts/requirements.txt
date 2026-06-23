@@ -1,2 +1,4 @@
 # tts 工具链私有依赖
-# Kokoro 上游已经提供 ONNX，本目录只做"下载 + 目录整理"，无需额外依赖
+
+# 可选：convert.py --quantize 启用 ONNX 动态量化
+# onnxruntime>=1.17.0

@@ -1,21 +1,48 @@
 package net.dreamlu.mica.ai.tts.g2p;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * 简化版中文 G2P 转换器（fallback 实现）。
- * <p>使用内置汉字-拼音字典 + 拼音→注音符号映射表实现。
- * <p>覆盖约 80 个常用汉字，陌生字符会按原样保留（vocab 会过滤）。
+ * 简体中文 G2P 转换器（零依赖 fallback 实现）。
  *
- * <p>生产环境推荐使用 {@code net.dreamlu.mica.ai.tts.g2p.HoubbPinyinG2P}
- * （基于 houbb/pinyin，支持多音字、中文分词、繁简体）。
+ * <p>基于内置汉字-拼音字典 + 常用词组表实现，输出注音符号（Bopomofo）。</p>
+ *
+ * <p>字典来源：</p>
+ * <ul>
+ *   <li>单字字典：{@code classpath:tts/chinese-char-pinyin.txt}（~3500 常用汉字）</li>
+ *   <li>词组字典：{@code classpath:tts/chinese-word-pinyin.txt}（~5000 常用词组，处理多音字消歧）</li>
+ * </ul>
+ *
+ * <p>字典文件格式（每行一项，UTF-8）：</p>
+ * <pre>
+ * 字=pinyin           # 单字，可选多音字用 / 分隔
+ * 词语=pinyin1 pinyin2  # 词组（2-4 字），拼音之间用空格分隔
+ * </pre>
+ *
+ * <p><b>生产环境推荐使用 {@link HoubbPinyinG2P}</b>（基于 houbb/pinyin，7 万+ 字符 + 多音字智能消歧）。
+ * 本类主要作为零依赖降级方案 + 离线测试使用。</p>
  *
  * @author L.cm
  */
 public final class ChineseG2P implements G2P {
 
-	// 声母 → 注音符号映射
-	private static final Map<String, String> INITIALS = new LinkedHashMap<>();
+	// ----------------------------------------------------------------
+	// 声母 → 注音符号映射（按 key 长度倒序匹配，zh/ch/sh 双字母优先）
+	// ----------------------------------------------------------------
+	private static final String[] INITIAL_KEYS = {
+		"zh", "ch", "sh",
+		"b", "p", "m", "f",
+		"d", "t", "n", "l",
+		"g", "k", "h",
+		"j", "q", "x",
+		"r", "z", "c", "s",
+		"y", "w"
+	};
+	private static final Map<String, String> INITIALS = new HashMap<>();
 	static {
 		INITIALS.put("zh", "ㄓ"); INITIALS.put("ch", "ㄔ"); INITIALS.put("sh", "ㄕ");
 		INITIALS.put("b", "ㄅ"); INITIALS.put("p", "ㄆ"); INITIALS.put("m", "ㄇ"); INITIALS.put("f", "ㄈ");
@@ -26,24 +53,33 @@ public final class ChineseG2P implements G2P {
 		INITIALS.put("y", ""); INITIALS.put("w", "");
 	}
 
-	// 韵母 → 注音符号映射
-	private static final Map<String, String> FINALS = new LinkedHashMap<>();
+	// 韵母 → 注音符号映射（按 key 长度倒序匹配）
+	private static final String[] FINAL_KEYS = {
+		"iang", "iong", "uang", "ueng",
+		"uai", "uan", "ian", "iao", "iang",
+		"ang", "eng", "ing", "ong",
+		"ai", "ei", "ui", "ao", "ou", "iu",
+		"ie", "ve", "er",
+		"an", "en", "in", "un", "vn", "van",
+		"ia", "ua", "uo",
+		"a", "o", "e", "i", "u", "v"
+	};
+	private static final Map<String, String> FINALS = new HashMap<>();
 	static {
 		FINALS.put("iang", "ㄧㄤ"); FINALS.put("iong", "ㄩㄥ");
-		FINALS.put("uang", "ㄨㄤ");
+		FINALS.put("uang", "ㄨㄤ"); FINALS.put("ueng", "ㄨㄥ");
 		FINALS.put("uai", "ㄨㄞ"); FINALS.put("uan", "ㄨㄢ");
-		FINALS.put("ang", "ㄤ"); FINALS.put("eng", "ㄥ"); FINALS.put("ing", "ㄧㄥ");
-		FINALS.put("ong", "ㄨㄥ"); FINALS.put("ian", "ㄧㄢ"); FINALS.put("iao", "ㄧㄠ");
-		FINALS.put("an", "ㄢ"); FINALS.put("en", "ㄣ"); FINALS.put("in", "ㄧㄣ");
-		FINALS.put("un", "ㄨㄣ"); FINALS.put("ai", "ㄞ"); FINALS.put("ei", "ㄟ");
-		FINALS.put("ao", "ㄠ"); FINALS.put("ou", "ㄡ");
-		FINALS.put("ia", "ㄧㄚ"); FINALS.put("ie", "ㄧㄝ");
-		FINALS.put("iu", "ㄧㄡ"); FINALS.put("ua", "ㄨㄚ");
-		FINALS.put("uo", "ㄨㄛ"); FINALS.put("ui", "ㄨㄟ");
-		FINALS.put("ve", "ㄩㄝ"); FINALS.put("van", "ㄩㄢ"); FINALS.put("vn", "ㄩㄣ");
+		FINALS.put("ian", "ㄧㄢ"); FINALS.put("iao", "ㄧㄠ");
+		FINALS.put("ang", "ㄤ"); FINALS.put("eng", "ㄥ");
+		FINALS.put("ing", "ㄧㄥ"); FINALS.put("ong", "ㄨㄥ");
+		FINALS.put("ai", "ㄞ"); FINALS.put("ei", "ㄟ"); FINALS.put("ui", "ㄨㄟ");
+		FINALS.put("ao", "ㄠ"); FINALS.put("ou", "ㄡ"); FINALS.put("iu", "ㄧㄡ");
+		FINALS.put("ie", "ㄧㄝ"); FINALS.put("ve", "ㄩㄝ"); FINALS.put("er", "ㄦ");
+		FINALS.put("an", "ㄢ"); FINALS.put("en", "ㄣ"); FINALS.put("in", "ㄧㄣ"); FINALS.put("un", "ㄨㄣ");
+		FINALS.put("vn", "ㄩㄣ"); FINALS.put("van", "ㄩㄢ");
+		FINALS.put("ia", "ㄧㄚ"); FINALS.put("ua", "ㄨㄚ"); FINALS.put("uo", "ㄨㄛ");
 		FINALS.put("a", "ㄚ"); FINALS.put("o", "ㄛ"); FINALS.put("e", "ㄜ");
 		FINALS.put("i", "ㄧ"); FINALS.put("u", "ㄨ"); FINALS.put("v", "ㄩ");
-		FINALS.put("er", "ㄦ");
 	}
 
 	// 数字 → 拼音
@@ -56,56 +92,17 @@ public final class ChineseG2P implements G2P {
 		NUMBER_MAP.put('8', "ba1"); NUMBER_MAP.put('9', "jiu3");
 	}
 
-	// 常见汉字 → 拼音（仅作为最简 fallback）
-	private static final Map<Character, String> CHAR_FALLBACK = new HashMap<>();
-	static {
-		CHAR_FALLBACK.put('你', "ni3"); CHAR_FALLBACK.put('好', "hao3");
-		CHAR_FALLBACK.put('我', "wo3"); CHAR_FALLBACK.put('是', "shi4");
-		CHAR_FALLBACK.put('的', "de5"); CHAR_FALLBACK.put('了', "le5");
-		CHAR_FALLBACK.put('在', "zai4"); CHAR_FALLBACK.put('有', "you3");
-		CHAR_FALLBACK.put('人', "ren2"); CHAR_FALLBACK.put('这', "zhe4");
-		CHAR_FALLBACK.put('中', "zhong1"); CHAR_FALLBACK.put('大', "da4");
-		CHAR_FALLBACK.put('来', "lai2"); CHAR_FALLBACK.put('上', "shang4");
-		CHAR_FALLBACK.put('国', "guo2"); CHAR_FALLBACK.put('个', "ge4");
-		CHAR_FALLBACK.put('到', "dao4"); CHAR_FALLBACK.put('说', "shuo1");
-		CHAR_FALLBACK.put('们', "men5"); CHAR_FALLBACK.put('为', "wei2");
-		CHAR_FALLBACK.put('子', "zi3"); CHAR_FALLBACK.put('和', "he2");
-		CHAR_FALLBACK.put('不', "bu4"); CHAR_FALLBACK.put('地', "di4");
-		CHAR_FALLBACK.put('出', "chu1"); CHAR_FALLBACK.put('时', "shi2");
-		CHAR_FALLBACK.put('年', "nian2"); CHAR_FALLBACK.put('得', "de2");
-		CHAR_FALLBACK.put('就', "jiu4"); CHAR_FALLBACK.put('那', "na4");
-		CHAR_FALLBACK.put('要', "yao4"); CHAR_FALLBACK.put('下', "xia4");
-		CHAR_FALLBACK.put('以', "yi3"); CHAR_FALLBACK.put('生', "sheng1");
-		CHAR_FALLBACK.put('会', "hui4"); CHAR_FALLBACK.put('自', "zi4");
-		CHAR_FALLBACK.put('着', "zhe5"); CHAR_FALLBACK.put('去', "qu4");
-		CHAR_FALLBACK.put('之', "zhi1"); CHAR_FALLBACK.put('过', "guo4");
-		CHAR_FALLBACK.put('家', "jia1"); CHAR_FALLBACK.put('学', "xue2");
-		CHAR_FALLBACK.put('对', "dui4"); CHAR_FALLBACK.put('可', "ke3");
-		CHAR_FALLBACK.put('她', "ta1"); CHAR_FALLBACK.put('他', "ta1");
-		CHAR_FALLBACK.put('里', "li3"); CHAR_FALLBACK.put('后', "hou4");
-		CHAR_FALLBACK.put('小', "xiao3"); CHAR_FALLBACK.put('么', "me5");
-		CHAR_FALLBACK.put('心', "xin1"); CHAR_FALLBACK.put('多', "duo1");
-		CHAR_FALLBACK.put('天', "tian1"); CHAR_FALLBACK.put('而', "er2");
-		CHAR_FALLBACK.put('能', "neng2");
-		CHAR_FALLBACK.put('看', "kan4"); CHAR_FALLBACK.put('当', "dang1");
-		CHAR_FALLBACK.put('没', "mei2"); CHAR_FALLBACK.put('日', "ri4");
-		CHAR_FALLBACK.put('于', "yu2"); CHAR_FALLBACK.put('起', "qi3");
-		CHAR_FALLBACK.put('还', "hai2"); CHAR_FALLBACK.put('发', "fa1");
-		CHAR_FALLBACK.put('成', "cheng2"); CHAR_FALLBACK.put('事', "shi4");
-		CHAR_FALLBACK.put('只', "zhi3"); CHAR_FALLBACK.put('作', "zuo4");
-		CHAR_FALLBACK.put('用', "yong4"); CHAR_FALLBACK.put('想', "xiang3");
-		CHAR_FALLBACK.put('把', "ba3");
-		CHAR_FALLBACK.put('十', "shi2"); CHAR_FALLBACK.put('月', "yue4");
-		CHAR_FALLBACK.put('千', "qian1");
-		CHAR_FALLBACK.put('行', "xing2");
-		CHAR_FALLBACK.put('始', "shi3");
-		CHAR_FALLBACK.put('足', "zu2");
-	}
+	// 字典路径
+	private static final String CHAR_DICT_PATH = "/tts/chinese-char-pinyin.txt";
+	private static final String WORD_DICT_PATH = "/tts/chinese-word-pinyin.txt";
+
+	private static volatile Map<String, String> CHAR_DICT;
+	private static volatile Map<String, String> WORD_DICT;
 
 	private static volatile ChineseG2P INSTANCE;
 
 	/**
-	 * 获取默认实例（单例）。
+	 * 获取默认实例（单例，延迟初始化）。
 	 */
 	public static ChineseG2P getDefault() {
 		ChineseG2P g = INSTANCE;
@@ -122,73 +119,128 @@ public final class ChineseG2P implements G2P {
 	}
 
 	/**
-	 * 将拼音（如 "ni3", "hao3"）转换为注音符号。
-	 * <p>该方法公开，方便其它 G2P 实现复用。
+	 * 将拼音（如 "ni3", "zhong1"）转换为注音符号。
+	 * <p>该方法公开，方便其它 G2P 实现复用。</p>
 	 *
-	 * @param pinyin 拼音（带数字声调）
-	 * @return 注音符号字符串
+	 * @param pinyin 拼音（带数字声调，1-5，5=轻声）
+	 * @return 注音符号字符串（如 "ni3" → "ㄋㄧ"）
 	 */
 	public static String pinyinToBopomofo(String pinyin) {
 		if (pinyin == null || pinyin.isEmpty()) return "";
-
-		// 去除声调数字
 		String base = pinyin.replaceAll("[1-5]", "");
 		if (base.isEmpty()) return "";
 
-		// 提取声母
+		// 提取声母（长 key 优先）
 		String initial = "";
-		String finals = base;
-		for (String ini : INITIALS.keySet()) {
+		String rest = base;
+		for (String ini : INITIAL_KEYS) {
 			if (base.startsWith(ini)) {
 				initial = INITIALS.get(ini);
-				finals = base.substring(ini.length());
+				rest = base.substring(ini.length());
 				break;
 			}
 		}
-
-		// 特殊处理：y/w 开头的音节
-		if (base.startsWith("y") || base.startsWith("w")) {
-			initial = "";
-			finals = base.substring(1);
+		// y/w 开头的特殊处理：y → i (yi/ya/yan/you)，yu → v (yuan/yue)，w → u (wa/wu)
+		if (initial.isEmpty() && base.length() > 1) {
+			char head = base.charAt(0);
+			if (head == 'y') {
+				if (base.length() > 2 && base.charAt(1) == 'u') {
+					rest = "v" + base.substring(2);
+				} else {
+					rest = base.substring(1);
+				}
+			} else if (head == 'w') {
+				rest = base.substring(1);
+			}
 		}
 
-		// 查找韵母
-		String finalBpmf = FINALS.getOrDefault(finals, "");
-
+		// 查韵母（长 key 优先）
+		String finalBpmf = "";
+		for (String f : FINAL_KEYS) {
+			if (rest.startsWith(f)) {
+				finalBpmf = FINALS.get(f);
+				break;
+			}
+		}
 		return initial + finalBpmf;
 	}
 
 	@Override
 	public String convert(String text) {
 		if (text == null || text.isEmpty()) return "";
+		Map<String, String> charDict = charDict();
+		Map<String, String> wordDict = wordDict();
+
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < text.length(); i++) {
+		int i = 0;
+		int n = text.length();
+		while (i < n) {
 			char c = text.charAt(i);
+			// 1. 优先匹配词组（最长 4 字）
+			boolean matchedWord = false;
+			for (int len = 4; len >= 2; len--) {
+				if (i + len <= n) {
+					String word = text.substring(i, i + len);
+					String pinyinSeq = wordDict.get(word);
+					if (pinyinSeq != null) {
+						appendPinyinSequence(sb, pinyinSeq);
+						i += len;
+						matchedWord = true;
+						break;
+					}
+				}
+			}
+			if (matchedWord) continue;
+
+			// 2. 单字处理
 			if (isChinese(c)) {
-				String pinyin = CHAR_FALLBACK.get(c);
-				if (pinyin != null) {
+				String pinyin = lookupCharPinyin(c, charDict);
+				if (pinyin != null && !pinyin.isEmpty()) {
 					String bpmf = pinyinToBopomofo(pinyin);
 					appendWithSpace(sb, bpmf);
 				}
-				// 未知汉字丢弃（vocab 过滤），避免污染音素序列
+				i++;
 			} else if (Character.isDigit(c)) {
 				String pinyin = NUMBER_MAP.get(c);
 				if (pinyin != null) {
 					String bpmf = pinyinToBopomofo(pinyin);
 					appendWithSpace(sb, bpmf);
 				}
+				i++;
 			} else if (isEnglishLetter(c)) {
 				sb.append(c);
+				i++;
 			} else if (isPunctuation(c)) {
 				sb.append(c);
+				i++;
 			} else if (Character.isWhitespace(c)) {
-				// 直接追加空格，不经过 appendWithSpace（空串会被跳过）
 				if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
 					sb.append(' ');
 				}
+				i++;
+			} else {
+				i++;
 			}
 		}
 		return sb.toString().trim();
+	}
+
+	private static void appendPinyinSequence(StringBuilder sb, String pinyinSeq) {
+		String[] syllables = pinyinSeq.split("\\s+");
+		for (String s : syllables) {
+			if (!s.isEmpty()) {
+				String bpmf = pinyinToBopomofo(s);
+				appendWithSpace(sb, bpmf);
+			}
+		}
+	}
+
+	private static String lookupCharPinyin(char c, Map<String, String> dict) {
+		String pinyinSeq = dict.get(String.valueOf(c));
+		if (pinyinSeq == null) return null;
+		// 多音字取第一个
+		int slash = pinyinSeq.indexOf('/');
+		return slash < 0 ? pinyinSeq : pinyinSeq.substring(0, slash);
 	}
 
 	private static void appendWithSpace(StringBuilder sb, String s) {
@@ -208,6 +260,63 @@ public final class ChineseG2P implements G2P {
 	}
 
 	private static boolean isPunctuation(char c) {
-		return ",.!?;:，。！？；：、（）()\"\"—…".indexOf(c) >= 0;
+		return ",.!?;:，。！？；：、（）()\"'\"'—…《》<>【】".indexOf(c) >= 0;
+	}
+
+	// ========================================================================
+	// 字典加载（首次访问时按需懒加载，线程安全）
+	// ========================================================================
+
+	private static Map<String, String> charDict() {
+		Map<String, String> d = CHAR_DICT;
+		if (d != null) return d;
+		synchronized (ChineseG2P.class) {
+			d = CHAR_DICT;
+			if (d == null) {
+				d = loadDict(CHAR_DICT_PATH);
+				CHAR_DICT = d;
+			}
+		}
+		return d;
+	}
+
+	private static Map<String, String> wordDict() {
+		Map<String, String> d = WORD_DICT;
+		if (d != null) return d;
+		synchronized (ChineseG2P.class) {
+			d = WORD_DICT;
+			if (d == null) {
+				d = loadDict(WORD_DICT_PATH);
+				WORD_DICT = d;
+			}
+		}
+		return d;
+	}
+
+	private static Map<String, String> loadDict(String classpathPath) {
+		Map<String, String> m = new HashMap<>(4096);
+		InputStream in = ChineseG2P.class.getResourceAsStream(classpathPath);
+		if (in == null) {
+			// 字典文件缺失，返回空字典（G2P 对未知汉字降级为丢弃）
+			return m;
+		}
+		try (BufferedReader reader = new BufferedReader(
+			new InputStreamReader(in, StandardCharsets.UTF_8))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				line = line.trim();
+				if (line.isEmpty() || line.startsWith("#")) continue;
+				int eq = line.indexOf('=');
+				if (eq <= 0) continue;
+				String key = line.substring(0, eq).trim();
+				String value = line.substring(eq + 1).trim();
+				if (!key.isEmpty() && !value.isEmpty()) {
+					m.put(key, value);
+				}
+			}
+		} catch (Exception e) {
+			// 静默降级
+		}
+		return m;
 	}
 }

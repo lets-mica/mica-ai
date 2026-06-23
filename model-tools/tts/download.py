@@ -1,6 +1,18 @@
-"""下载 Kokoro-82M（v1.1 dynamic/static ONNX）。
+"""下载 mica-ai-tts 的 Kokoro-82M 模型。
 
-ModelScope 镜像，国内速度极快。
+Kokoro-82M 是 mica-ai-tts 当前唯一支持的 TTS 引擎：
+  - 82M 参数，纯 ONNX Runtime 推理
+  - 中英双语（默认音色 zf_001/zm_001 中文效果最佳）
+  - 完全离线
+
+下载源：
+  - ModelScope（默认，国内 CDN，速度 5-10MB/s，免登录）
+  - HuggingFace（备选）
+
+用法：
+    python download.py                     # 等价 --source modelscope
+    python download.py --source modelscope
+    python download.py --source huggingface
 """
 
 from __future__ import annotations
@@ -14,45 +26,50 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import (
     DownloadSource,
     DownloadSpec,
-    cap_models_dir,
     download_model,
-    ok,
     step,
 )
 from common.progress import info
 
-MODEL_SCOPE_ID = "KeanuX/Kokoro-82M-v1.1-dynamic-static-ONNX"
-HUGGINGFACE_ID = "KeanuX/Kokoro-82M-v1.1-dynamic-static-ONNX"
+KOKORO_MODEL_SCOPE_ID = "KeanuX/Kokoro-82M-v1.1-dynamic-static-ONNX"
+KOKORO_HUGGINGFACE_ID = "KeanuX/Kokoro-82M-v1.1-dynamic-static-ONNX"
 
-REQUIRED_FILES = (
+KOKORO_REQUIRED = (
     "model_dynamic.onnx",
     "config.json",
-    "voices/af.bin",  # 抽样校验 voices 目录
+    "voices/af.bin",
 )
 
 
-def build_spec() -> DownloadSpec:
-    return DownloadSpec(
+def _download_kokoro(source: DownloadSource):
+    spec = DownloadSpec(
         target_subdir="kokoro-82m-v1.1-onnx",
-        modelscope_id=MODEL_SCOPE_ID,
-        huggingface_id=HUGGINGFACE_ID,
-        required_files=REQUIRED_FILES,
+        modelscope_id=KOKORO_MODEL_SCOPE_ID,
+        huggingface_id=KOKORO_HUGGINGFACE_ID,
+        required_files=KOKORO_REQUIRED,
     )
+    return download_model("tts", spec, source=source)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="下载 mica-ai-tts 的 Kokoro-82M 模型")
+    parser.add_argument(
+        "--source",
+        choices=("huggingface", "modelscope"),
+        default="modelscope",
+        help="下载源（默认 modelscope，国内 CDN）",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="下载 Kokoro-82M（v1.1）")
-    parser.add_argument(
-        "--source",
-        default=DownloadSource.MODELSCOPE.value,
-        choices=[s.value for s in DownloadSource],
-    )
-    args = parser.parse_args()
+    args = parse_args()
+    step("准备下载 Kokoro-82M TTS 模型")
 
-    step(f"开始下载 Kokoro-82M / source={args.source}")
-    info(f"目标目录: {cap_models_dir('tts') / 'kokoro-82m-v1.1-onnx'}")
-    download_model("tts", build_spec(), source=DownloadSource(args.source))
-    ok("Kokoro 下载完成。下一步：python convert.py 整理 voices 目录。")
+    source = DownloadSource(args.source)
+    info(f"下载源: {source.value}")
+    _download_kokoro(source)
+    info("下载完成。下一步：python convert.py")
 
 
 if __name__ == "__main__":
