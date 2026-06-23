@@ -34,13 +34,14 @@ class SenseVoiceTest {
 
 	@Test
 	void testConfigBuilder() {
-		SenseVoiceConfig config = new SenseVoiceConfig()
+		SenseVoiceConfig config = SenseVoiceConfig.builder()
 			.encoderPath("encoder.onnx")
 			.decoderPath("decoder.onnx")
 			.tokenizerPath("tokenizer.model")
 			.hotwords(List.of("mica", "梦想卢"))
 			.topK(10)
-			.itn(true);
+			.itn(true)
+			.build();
 
 		assertEquals("encoder.onnx", config.getEncoderPath());
 		assertEquals("decoder.onnx", config.getDecoderPath());
@@ -52,7 +53,7 @@ class SenseVoiceTest {
 
 	@Test
 	void testConfigDefaults() {
-		SenseVoiceConfig config = new SenseVoiceConfig();
+		SenseVoiceConfig config = SenseVoiceConfig.defaults();
 		assertEquals("cpu", config.getOnnxProvider());
 		assertEquals(10, config.getTopK());
 		assertTrue(config.isItn());
@@ -80,13 +81,14 @@ class SenseVoiceTest {
 		System.out.println("[Hotwords] 当前热词列表: " + hotwords.size() + " 个");
 
 		// 2. 初始化引擎
-		SenseVoiceConfig config = new SenseVoiceConfig()
+		SenseVoiceConfig config = SenseVoiceConfig.builder()
 			.encoderPath(ENCODER_PATH)
 			.decoderPath(DECODER_PATH)
 			.tokenizerPath(TOKENIZER_PATH)
 			.onnxProvider("cpu")
 			.topK(5)
-			.hotwords(hotwords);
+			.hotwords(hotwords)
+			.build();
 
 		try (SenseVoice voice = new SenseVoice(config)) {
 			// 3. 加载音频

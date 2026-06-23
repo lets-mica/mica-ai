@@ -101,14 +101,15 @@ import java.util.List;
 public class Demo {
     public static void main(String[] args) {
         // 1. 配置引擎
-        SenseVoiceConfig config = new SenseVoiceConfig()
+        SenseVoiceConfig config = SenseVoiceConfig.builder()
             .encoderPath("model/SenseVoice-Encoder.fp32.onnx")
             .decoderPath("model/SenseVoice-CTC.fp32.onnx")
             .tokenizerPath("model/Tokenizer.bpe.model")
             .onnxProvider("cpu")       // 可选: "cpu", "cuda", "dml"
             .topK(5)                   // 热词搜索深度
             .itn(true)                 // 中文数字规范化
-            .hotwords(List.of("Fun-ASR-Nano", "热词", "SenseVoice"));
+            .hotwords(List.of("Fun-ASR-Nano", "热词", "SenseVoice"))
+            .build();
 
         // 2. 创建引擎并识别
         try (SenseVoice voice = new SenseVoice(config)) {

@@ -21,15 +21,15 @@ public class SenseVoiceAutoConfiguration {
 	@Bean(destroyMethod = "close")
 	@ConditionalOnMissingBean
 	public SenseVoice senseVoice(SenseVoiceProperties properties) {
-		SenseVoiceConfig config = new SenseVoiceConfig()
+		SenseVoiceConfig config = SenseVoiceConfig.builder()
 			.encoderPath(properties.getEncoderPath())
 			.decoderPath(properties.getDecoderPath())
 			.tokenizerPath(properties.getTokenizerPath())
 			.itn(properties.isItn())
 			.topK(properties.getTopK())
 			.hotwords(properties.getHotwords())
-			.onnxProvider(properties.getOnnxProvider());
-
+			.onnxProvider(properties.getOnnxProvider())
+			.build();
 		return new SenseVoice(config);
 	}
 }
