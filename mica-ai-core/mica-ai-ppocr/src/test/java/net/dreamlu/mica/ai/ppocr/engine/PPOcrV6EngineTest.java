@@ -23,6 +23,14 @@ import java.util.stream.Stream;
 
 /**
  * PPOcrV6Engine 命令行入口。
+ *
+ * <p>使用前请先运行 model-tools/ppocr/download.py 下载模型：
+ * <pre>
+ *   cd model-tools/ppocr
+ *   python download.py            # 默认下载 medium 规格
+ *   python download.py --spec tiny # 或指定 tiny/small/medium
+ *   python convert.py             # 整理目录结构
+ * </pre>
  */
 public final class PPOcrV6EngineTest {
 
@@ -50,7 +58,11 @@ public final class PPOcrV6EngineTest {
             missing.add("  - dict: " + parsed.dict);
         }
         if (!missing.isEmpty()) {
-            System.err.println("Error: 模型文件缺失，请先下载模型：");
+            System.err.println("Error: 模型文件缺失，请先运行 model-tools/ppocr/download.py 下载模型：");
+            System.err.println("  cd model-tools/ppocr");
+            System.err.println("  python download.py [--spec tiny|small|medium]");
+            System.err.println("  python convert.py");
+            System.err.println("\n缺失的文件：");
             missing.forEach(System.err::println);
             System.exit(1);
         }
@@ -158,11 +170,17 @@ public final class PPOcrV6EngineTest {
     }
 
     static final class Args {
-        String image = "test_images/general_ocr_002.png";
-        String detModel = "models/PP-OCRv6_tiny_det_onnx/inference.onnx";
-        String recModel = "models/PP-OCRv6_tiny_rec_0515_onnx/inference.onnx";
-        String dict = "models/rec_char_dict.txt";
-        String saveVis = "test_images/output_vis.png";
+        String image = "model-tools/test_images/general_ocr_002.png";
+        String detModel = "model-tools/ppocr/model/out/det/inference.onnx";
+        String recModel = "model-tools/ppocr/model/out/rec/inference.onnx";
+        // 默认使用 tiny 路径（与参考项目 ppocrv6_onnx 一致：
+        // model PP-OCRv6_tiny_rec_0515_onnx, vocab=7180）。
+        // 历史遗留的 rec_char_dict.txt 就是 tiny 字典（md5 与参考项目一致），
+        // 早期默认 medium 模型 + tiny 字典会导致严重乱码，已修复。
+        // 若想跑 medium/server，请用对应的 PaddleOCR 多语种字典，
+        // 务必确保 vocab 行数 + 1 (blank) 与模型输出维度一致。
+        String dict = "model-tools/ppocr/model/out/rec_char_dict.txt";
+        String saveVis = "model-tools/test_images/output_vis.png";
         boolean verbose;
 
         static Args parse(String[] argv) {
@@ -208,13 +226,13 @@ public final class PPOcrV6EngineTest {
         static void printHelp() {
             System.out.println("""
                     mica-ppocr — PP-OCRv6 纯 ONNX Runtime 推理（Java 17）
-    
+
                     用法:
                       java -jar mica-ppocr-0.1.0-all.jar [image] [选项]
-    
+
                     位置参数:
                       image                       输入图片路径（缺省时自动从 assets/ 或 test_images/ 选一个）
-    
+
                     选项:
                       --det-model PATH            检测 ONNX 模型路径
                       --rec-model PATH            识别 ONNX 模型路径

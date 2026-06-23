@@ -3,9 +3,11 @@
 PP-OCRv6 的官方分发在 Baidu BCE（PaddleX），国内下载速度良好。
 对其它 PaddleOCR 系列模型（v3 / v4）也兼容，按需修改 SPEC 即可。
 
+模型尺寸：tiny（默认）、small、medium
+
 用法：
     python download.py            # 下载默认 PP-OCRv6 server
-    python download.py --spec mobile_tiny
+    python download.py --spec tiny
 """
 
 from __future__ import annotations
@@ -22,15 +24,15 @@ from common.progress import info
 
 # PaddlePaddle 官方 ONNX 推理包（不同规格）
 PADDLE_OCR_URLS: dict[str, dict[str, str]] = {
-    "server": {
-        "det": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_server_det_onnx.tar",
-        "rec": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_server_rec_onnx.tar",
+    "medium": {
+        "det": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_medium_det_onnx.tar",
+        "rec": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_medium_rec_0515_onnx.tar",
     },
-    "mobile": {
-        "det": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_mobile_det_onnx.tar",
-        "rec": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv6_mobile_rec_onnx.tar",
+    "small": {
+        "det": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_small_det_onnx.tar",
+        "rec": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_small_rec_0515_onnx.tar",
     },
-    "mobile_tiny": {
+    "tiny": {
         "det": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_tiny_det_onnx.tar",
         "rec": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/tmp/PP-OCRv6_tiny_rec_0515_onnx.tar",
     },
@@ -62,9 +64,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="下载 PP-OCRv6 模型（det + rec）")
     parser.add_argument(
         "--spec",
-        default="server",
+        default="tiny",
         choices=list(PADDLE_OCR_URLS.keys()),
-        help="模型规格（默认 server）",
+        help="模型规格（默认 tiny，与参考项目 ppocrv6_onnx 一致）。"
+             "medium / server 需配套不同字典，参见 README。",
     )
     parser.add_argument(
         "--source",

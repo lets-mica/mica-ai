@@ -66,6 +66,7 @@ public final class PPOcrV6Engine implements Closeable, AutoCloseable {
 			throw new IllegalArgumentException("recImageShape must be [C, H, W]");
 		}
 		String[] providers = OrtProviders.resolve(!config.isPreferAccelerator());
+		log.info("ONNX Runtime provider: {}", String.join(",", providers));
 		this.env = OrtEnvironment.getEnvironment();
 
 		OrtSession.SessionOptions opts = new OrtSession.SessionOptions();

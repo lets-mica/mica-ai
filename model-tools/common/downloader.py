@@ -90,6 +90,22 @@ def _huggingface_snapshot(repo_id: str, local_dir: Path) -> Path:
     return Path(path)
 
 
+def _flatten_single_child_dir(target_dir: Path) -> None:
+    """如果解压后恰好只有一层子目录，把它里面的内容提升到 target_dir。
+
+    例如 tar 包内容是 ``foo/file.onnx``，解压到 target_dir 后变成
+    ``target_dir/foo/file.onnx``，本函数将其变为 ``target_dir/file.onnx``。
+    这样可以避免 ``required_files`` 路径不匹配的问题。
+    """
+    children = [c for c in target_dir.iterdir() if c.name != ".mica-manifest.json"]
+    if len(children) == 1 and children[0].is_dir():
+        sole_child = children[0]
+        info(f"展平单层目录: {sole_child.name}/ -> {target_dir}/")
+        for item in sole_child.iterdir():
+            shutil.move(str(item), str(target_dir / item.name))
+        sole_child.rmdir()
+
+
 def _direct_download(
     url: str,
     target_dir: Path,
@@ -136,11 +152,13 @@ def _direct_download(
         with tarfile.open(archive_path) as tf:
             tf.extractall(target_dir)
         archive_path.unlink()
+        _flatten_single_child_dir(target_dir)
     elif fmt == "zip":
         info(f"解压 zip: {archive_path.name}")
         with zipfile.ZipFile(archive_path) as zf:
             zf.extractall(target_dir)
         archive_path.unlink()
+        _flatten_single_child_dir(target_dir)
     elif fmt == "none":
         info(f"无需解压，保留原始文件: {archive_path.name}")
     else:
@@ -253,7 +271,7 @@ def download_model(
                 if attempt < retries:
                     time.sleep(2 ** attempt)
         if last_err is not None:
-            fail(f"下载 {s.modelscope_id} 失败: {last_err}")
+            fail(f"下载 {s.url or s.modelscope_id or s.target_subdir} 失败: {last_err}")
             raise last_err
 
         ok(f"下载完成: {target_dir}")
