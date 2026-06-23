@@ -110,6 +110,10 @@
 高=gao1
 月=yue4
 十=shi2
+世=shi4
+界=jie4
+页=ye4
+面=mian4
 儿=er2
 长=zhang3/chang2
 明=ming2
