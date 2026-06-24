@@ -21,5 +21,6 @@
         <module>mica-ai-tts</module>
         <module>mica-ai-speaker</module>
         <module>mica-ai-intent</module>
+        <module>mica-ai-face</module>
     </modules>
 </project>

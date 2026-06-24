@@ -14,7 +14,7 @@
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
-[快速开始](#-快速开始) · [能力一览](#-五大能力一览) · [Spring Boot 一键接入](#-spring-boot-starter) · [应用场景](#-应用场景) · [WebSocket 实时识别](docs/websocket实时识别.md) · [更新日志](CHANGELOG.md)
+[快速开始](#-快速开始) · [能力一览](#-六大能力一览) · [Spring Boot 一键接入](#-spring-boot-starter) · [应用场景](#-应用场景) · [WebSocket 实时识别](docs/websocket实时识别.md) · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -36,7 +36,7 @@
 
 ---
 
-## 🎯 五大能力一览
+## 🎯 六大能力一览
 
 ### 📦 一图看懂核心模块
 
@@ -56,10 +56,18 @@
               │                        │                        │
               ▼                        ▼                        ▼
    ┌──────────────────┐   ┌──────────────────────┐   ┌──────────────────┐
-   │ mica-ai-speaker  │   │   mica-ai-intent     │   │  mica-ai-common  │
-   │ 声纹识别 👤      │   │   中文意图识别 🧠    │   │  ONNX Provider   │
-   │ ERes2Net 256 维  │   │   BERT 中文分类      │   │  统一异常 / 音频  │
+   │ mica-ai-speaker  │   │   mica-ai-intent     │   │   mica-ai-face   │
+   │ 声纹识别 👤      │   │   中文意图识别 🧠    │   │  人脸识别 🎭     │
+   │ ERes2Net 256 维  │   │   BERT 中文分类      │   │  InsightFace     │
+   │                  │   │                      │   │  检测 + 512d 向量 │
    └──────────────────┘   └──────────────────────┘   └──────────────────┘
+                                       │
+                                       ▼
+                          ┌──────────────────────┐
+                          │     mica-ai-common   │
+                          │  ONNX Provider       │
+                          │  统一异常 / 音频      │
+                          └──────────────────────┘
 ```
 
 ### 🔥 各能力速览
@@ -71,6 +79,7 @@
 | 📷 [**mica-ai-ppocr**](mica-ai-core/mica-ai-ppocr/README.md) | PP-OCRv6 文字识别 | 检测+识别全链路 · tiny/small/medium 三档可选 · CPU bit-exact | ✅ Stable |
 | 👤 [**mica-ai-speaker**](mica-ai-core/mica-ai-speaker/README.md) | ERes2Net 声纹识别 | 256 维 Embedding · 验证 / 识别双模式 · 80 维 FBank 特征 | ✅ Stable |
 | 🧠 [**mica-ai-intent**](mica-ai-core/mica-ai-intent/README.md) | BERT 中文意图识别 | 按字分词 · Softmax 分类 · 兼容 HuggingFace 词表 | ✅ Stable |
+| 🎭 [**mica-ai-face**](mica-ai-core/mica-ai-face/README.md) | InsightFace 人脸识别 | 检测 + 5 关键点对齐 + 512d 向量 · buffalo_l 精度优先 · **检索由向量库负责** | ✅ Stable |
 
 ---
 
@@ -94,7 +103,7 @@
 </dependency>
 ```
 
-> 💡 把 `mica-ai-tts` 换成 `mica-ai-voice` / `mica-ai-ppocr` / `mica-ai-speaker` / `mica-ai-intent` 即可。
+> 💡 把 `mica-ai-tts` 换成 `mica-ai-voice` / `mica-ai-ppocr` / `mica-ai-speaker` / `mica-ai-intent` / `mica-ai-face` 即可。
 
 ### 2️⃣ 30 秒跑通一个 TTS
 
@@ -203,6 +212,26 @@ try (BertIntent intent = new BertIntent(config)) {
 
 > 完整 import 与 Starter 用法见 [mica-ai-intent/README.md](mica-ai-core/mica-ai-intent/README.md) 与 [mica-ai-intent-spring-boot-starter/README.md](mica-ai-starters/mica-ai-intent-spring-boot-starter/README.md)。
 
+### 🎭 人脸识别（检测 + 512d 向量）
+
+```java
+try (FaceEngine face = FaceEngine.builder()
+    .detModelPath(Path.of("models/det_10g.onnx"))
+    .recModelPath(Path.of("models/w600k_r50.onnx"))
+    .build()) {
+
+    // 图片 → 所有人脸的 512d Embedding（已 L2 归一化）
+    List<FaceEmbedding> faces = face.extract(Path.of("group.jpg"));
+
+    // 入库 / 检索交给你自己的向量库（Milvus / pgvector）
+    for (FaceEmbedding fe : faces) {
+        milvusClient.insert("face_gallery", userId, fe.getVector());
+    }
+}
+```
+
+> mica-ai-face **只做检测 + 推理**，不做人脸库 / 1:N 检索。详见 [mica-ai-face/README.md](mica-ai-core/mica-ai-face/README.md)。
+
 > 🌐 **WebSocket 实时识别**完整方案（含 VAD / 环形缓冲 / 流式推送）请看 [docs/websocket实时识别.md](docs/websocket实时识别.md)
 
 ---
@@ -218,6 +247,7 @@ try (BertIntent intent = new BertIntent(config)) {
 | [mica-ai-voice-spring-boot-starter](mica-ai-starters/mica-ai-voice-spring-boot-starter/README.md) | `mica.ai.voice` | ASR 语音识别 |
 | [mica-ai-speaker-spring-boot-starter](mica-ai-starters/mica-ai-speaker-spring-boot-starter/README.md) | `mica.ai.speaker` | 声纹识别 |
 | [mica-ai-intent-spring-boot-starter](mica-ai-starters/mica-ai-intent-spring-boot-starter/README.md) | `mica.ai.intent` | 中文意图识别 |
+| [mica-ai-face-spring-boot-starter](mica-ai-starters/mica-ai-face-spring-boot-starter/README.md) | `mica.ai.face` | 人脸识别（512d 向量） |
 
 只需在 `application.yml` 配好模型路径，对应 `Bean` 即可 `@Autowired` 直接用。
 
@@ -233,13 +263,15 @@ mica-ai/
 │   ├── mica-ai-tts/                      #   🎤 Kokoro TTS
 │   ├── mica-ai-voice/                    #   🎧 SenseVoice
 │   ├── mica-ai-speaker/                  #   👤 ERes2Net 声纹
-│   └── mica-ai-intent/                   #   🧠 BERT 意图
+│   ├── mica-ai-intent/                   #   🧠 BERT 意图
+│   └── mica-ai-face/                     #   🎭 InsightFace 人脸
 ├── mica-ai-starters/                     # Spring Boot Starter
 │   ├── mica-ai-ppocr-spring-boot-starter/
 │   ├── mica-ai-tts-spring-boot-starter/
 │   ├── mica-ai-voice-spring-boot-starter/
 │   ├── mica-ai-speaker-spring-boot-starter/
-│   └── mica-ai-intent-spring-boot-starter/
+│   ├── mica-ai-intent-spring-boot-starter/
+│   └── mica-ai-face-spring-boot-starter/
 ├── model-tools/                          # Python 模型工具链（下载 / 转换 / 训练）
 └── docs/                                 # 方案文档（WebSocket 实时识别、意图微调…）
 ```
@@ -279,6 +311,7 @@ mica-ai/
 | 📝 **会议记录 / 字幕生成** | mica-ai-voice + WebSocket 实时方案 |
 | 🔍 **票据 / 证件识别** | mica-ai-ppocr（tiny / small / medium） |
 | 🔐 **声纹登录 / 反作弊** | mica-ai-speaker + 自建 Embedding 库 |
+| 🎭 **人脸识别 / 门禁 / 考勤** | mica-ai-face + Milvus / pgvector（向量库做 1:N 检索） |
 | 🤖 **IoT 语音交互** | mica-ai-voice（VAD）+ mica-ai-tts + mica-ai-intent |
 
 > 📚 更多落地参考见 [docs/websocket实时识别.md](docs/websocket实时识别.md)（含完整 WebSocket + VAD 流式方案）

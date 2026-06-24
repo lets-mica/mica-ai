@@ -1,0 +1,5 @@
+# mica-ai-face 模型工具的 Python 依赖
+# 公用依赖在 ../requirements.txt
+
+# requests 用于 DIRECT 模式下载 zip
+requests>=2.31

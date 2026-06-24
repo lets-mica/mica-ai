@@ -21,5 +21,6 @@
         <module>mica-ai-voice-spring-boot-starter</module>
         <module>mica-ai-speaker-spring-boot-starter</module>
         <module>mica-ai-intent-spring-boot-starter</module>
+        <module>mica-ai-face-spring-boot-starter</module>
     </modules>
 </project>

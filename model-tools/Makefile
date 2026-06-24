@@ -9,6 +9,7 @@
 # 单独操作某个能力：
 #   make -C model-tools download-ppocr
 #   make -C model-tools convert-voice
+#   make -C model-tools download-speaker
 #   make -C model-tools train-intent
 
 PYTHON ?= python
@@ -37,7 +38,7 @@ help: ## 显示帮助
 	@echo "  PYTHON=python3.10   指定 Python 解释器"
 	@echo "  MICA_MODELS_DIR=... 指定模型根目录（默认 model-tools/<cap>/model）"
 
-CAPS := ppocr tts voice speaker intent
+CAPS := ppocr tts voice speaker intent face
 
 .PHONY: download
 download: $(addprefix download-,$(CAPS)) ## 下载所有能力的模型

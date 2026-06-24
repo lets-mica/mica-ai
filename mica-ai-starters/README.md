@@ -2,7 +2,7 @@
 
 > mica-ai Spring Boot Starter 聚合模块，一行配置即可将 AI 能力接入 Spring Boot 应用。
 
-本模块为聚合 POM（packaging=pom），包含以下 4 个 starter：
+本模块为聚合 POM（packaging=pom），包含以下 6 个 starter：
 
 ---
 
@@ -15,6 +15,7 @@
 | [mica-ai-voice-spring-boot-starter](mica-ai-voice-spring-boot-starter/README.md) | SenseVoice 语音识别 | `mica.ai.voice` |
 | [mica-ai-speaker-spring-boot-starter](mica-ai-speaker-spring-boot-starter/README.md) | ERes2Net 声纹识别 | `mica.ai.speaker` |
 | [mica-ai-intent-spring-boot-starter](mica-ai-intent-spring-boot-starter/README.md) | BERT 中文意图识别 | `mica.ai.intent` |
+| [mica-ai-face-spring-boot-starter](mica-ai-face-spring-boot-starter/README.md) | InsightFace 人脸识别（检测+512d 向量） | `mica.ai.face` |
 
 ---
 
