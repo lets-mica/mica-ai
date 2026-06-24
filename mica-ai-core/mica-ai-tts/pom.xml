@@ -13,7 +13,6 @@
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
         <version>${revision}</version>
-        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <dependencies>

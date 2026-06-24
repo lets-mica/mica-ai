@@ -13,7 +13,6 @@
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
         <version>${revision}</version>
-        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <dependencies>
@@ -21,14 +20,12 @@
         <dependency>
             <groupId>net.dreamlu</groupId>
             <artifactId>mica-ai-ppocr</artifactId>
-            <version>${revision}</version>
         </dependency>
         <!-- Spring Boot AutoConfiguration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
-
     </dependencies>
 
 </project>

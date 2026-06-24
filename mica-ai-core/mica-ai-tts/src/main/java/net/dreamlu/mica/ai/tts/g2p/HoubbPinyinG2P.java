@@ -35,7 +35,7 @@ public class HoubbPinyinG2P implements G2P {
 
 	private final Method toPinyinMethod;
 	private final boolean initialized;
-	private String separator = " ";
+	private final String separator = " ";
 
 	/**
 	 * 创建默认实例（反射加载 houbb/pinyin）。
