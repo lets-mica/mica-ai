@@ -107,18 +107,18 @@ public class Demo {
 
 ```
 net.dreamlu.mica.ai.intent
-├── BertIntent.java              # 公开入口：组合分词 + 推理
-├── config/                      # 配置和结果类
+├── engine/                      # 公开入口层
+│   ├── BertIntent.java          #   公开入口：组合分词 + 推理
+│   └── BertIntentEngine.java    #   ONNX Runtime 推理 + Softmax
+├── config/                      # 配置和结果类（公开）
 │   ├── BertIntentConfig.java    #   Builder 风格配置
 │   └── IntentResult.java        #   推理结果（record）
-├── engine/                      # 推理引擎层
-│   └── BertIntentEngine.java    #   ONNX Runtime 推理 + Softmax
-└── tokenizer/                   # 分词器层
+└── tokenizer/                   # 分词器层（公开）
     ├── BertTokenizer.java       #   BERT 中文按字切分
     └── VocabLoader.java         #   HuggingFace vocab.txt 加载
 ```
 
-根包为公开 API，`config/`、`engine/` 和 `tokenizer/` 为内部实现层。
+`engine/`、`config/` 和 `tokenizer/` 三个包下的类都是公开 API，调用方按需引入即可。
 
 ---
 

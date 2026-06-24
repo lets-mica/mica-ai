@@ -1,4 +1,4 @@
-# mica-ppocr
+# mica-ai-ppocr
 
 > PP-OCRv6 纯 ONNXRuntime 推理的 **Java 17** 实现，移植自 [`AIwork4me/ppocrv6_onnx`](https://github.com/AIwork4me/ppocrv6_onnx) 的 `ppocrv6_onnx.py` 单文件实现。
 

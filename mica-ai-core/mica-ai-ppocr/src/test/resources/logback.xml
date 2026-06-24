@@ -11,7 +11,7 @@
     <property name="ROOT_LEVEL" value="${mica.root.level:-INFO}"/>
 
     <!-- Mica OCR 业务日志 -->
-    <logger name="com.mica.ppocr" level="${mica.ppocr.level:-${ROOT_LEVEL}}"/>
+    <logger name="net.dreamlu.mica.ai.ppocr" level="${mica.ppocr.level:-${ROOT_LEVEL}}"/>
     <logger name="ai.onnxruntime" level="WARN"/>
     <logger name="org.opencv" level="WARN"/>
     <logger name="nu.pattern" level="WARN"/>

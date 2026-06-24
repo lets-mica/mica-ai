@@ -1,6 +1,5 @@
 package net.dreamlu.mica.ai.ppocr.autoconfigure;
 
-import net.dreamlu.mica.ai.ppocr.autoconfigure.PPOCRProperties;
 import net.dreamlu.mica.ai.ppocr.config.PPOcrV6Config;
 import net.dreamlu.mica.ai.ppocr.engine.PPOcrV6Engine;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

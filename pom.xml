@@ -45,7 +45,6 @@
         <mcia.auto.version>4.0.1</mcia.auto.version>
         <!-- spring boot 全家桶 -->
         <spring.boot.version>4.1.0</spring.boot.version>
-        <spring.cloud.version>2025.1.2</spring.cloud.version>
         <onnxruntime.version>1.26.0</onnxruntime.version>
         <opencv.version>4.9.0-0</opencv.version>
         <jts.version>1.20.0</jts.version>
@@ -89,13 +88,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring.cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -179,6 +171,16 @@
 
     <build>
         <plugins>
+            <!-- Surefire：规避 JDK 21 / Windows 跨盘符 fork 时的 'other has different root' 报错 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -14,6 +14,7 @@
 | [mica-ai-tts-spring-boot-starter](mica-ai-tts-spring-boot-starter/README.md) | Kokoro TTS 语音合成 | `mica.ai.tts` |
 | [mica-ai-voice-spring-boot-starter](mica-ai-voice-spring-boot-starter/README.md) | SenseVoice 语音识别 | `mica.ai.voice` |
 | [mica-ai-speaker-spring-boot-starter](mica-ai-speaker-spring-boot-starter/README.md) | ERes2Net 声纹识别 | `mica.ai.speaker` |
+| [mica-ai-intent-spring-boot-starter](mica-ai-intent-spring-boot-starter/README.md) | BERT 中文意图识别 | `mica.ai.intent` |
 
 ---
 

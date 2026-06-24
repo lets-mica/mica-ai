@@ -38,7 +38,7 @@ mica:
       decoder-path: model/SenseVoice-CTC.fp32.onnx
       tokenizer-path: model/Tokenizer.bpe.model
       onnx-provider: cpu
-      top-k: 5
+      top-k: 10
       itn: true
       hotwords:
         - 热词1
@@ -78,7 +78,7 @@ public class VoiceService {
 | `mica.ai.voice.decoder-path` | String | — | CTC 解码器 ONNX 路径（必填） |
 | `mica.ai.voice.tokenizer-path` | String | — | SentencePiece 分词模型路径（必填） |
 | `mica.ai.voice.onnx-provider` | String | `cpu` | ONNX 执行提供者 |
-| `mica.ai.voice.top-k` | int | `5` | 热词搜索深度 |
+| `mica.ai.voice.top-k` | int | `10` | 热词搜索深度 |
 | `mica.ai.voice.itn` | boolean | `true` | 中文数字逆文本规范化 |
 | `mica.ai.voice.hotwords` | List\<String\> | — | 热词列表 |
 

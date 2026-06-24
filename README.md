@@ -14,7 +14,7 @@
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
-[快速开始](#-快速开始) · [能力一览](#-五大能力一览) · [Spring Boot 一键接入](#-spring-boot-starter) · [应用场景](#-应用场景) · [WebSocket 实时识别](docs/websocket实时识别.md)
+[快速开始](#-快速开始) · [能力一览](#-五大能力一览) · [Spring Boot 一键接入](#-spring-boot-starter) · [应用场景](#-应用场景) · [WebSocket 实时识别](docs/websocket实时识别.md) · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -200,6 +200,8 @@ try (BertIntent intent = new BertIntent(config)) {
     System.out.println("意图: " + r.intent() + ", 置信度: " + r.confidence());
 }
 ```
+
+> 完整 import 与 Starter 用法见 [mica-ai-intent/README.md](mica-ai-core/mica-ai-intent/README.md) 与 [mica-ai-intent-spring-boot-starter/README.md](mica-ai-starters/mica-ai-intent-spring-boot-starter/README.md)。
 
 > 🌐 **WebSocket 实时识别**完整方案（含 VAD / 环形缓冲 / 流式推送）请看 [docs/websocket实时识别.md](docs/websocket实时识别.md)
 
