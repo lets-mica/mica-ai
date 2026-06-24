@@ -143,6 +143,11 @@
             <!-- mica-ai 相关组件 -->
             <dependency>
                 <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-common</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-intent</artifactId>
                 <version>${revision}</version>
             </dependency>

@@ -11,7 +11,7 @@
 
     <parent>
         <groupId>net.dreamlu</groupId>
-        <artifactId>mica-ai</artifactId>
+        <artifactId>mica-ai-starters</artifactId>
         <version>${revision}</version>
     </parent>
 
@@ -26,7 +26,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
-
     </dependencies>
 
 </project>

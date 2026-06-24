@@ -11,7 +11,7 @@
 
     <parent>
         <groupId>net.dreamlu</groupId>
-        <artifactId>mica-ai</artifactId>
+        <artifactId>mica-ai-core</artifactId>
         <version>${revision}</version>
     </parent>
 
