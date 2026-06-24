@@ -345,7 +345,7 @@ Mica AI 与 BladeX 物联网平台无缝集成，让 AI 能力直接落到边缘
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
 - [PP-OCRv6](https://github.com/PaddlePaddle/PaddleOCR) · [Kokoro TTS](https://github.com/hexgrad/kokoro) · [SenseVoice](https://github.com/FunASR/SenseVoice)
-- [ERes2Net](https://github.com/speechbrain/ERes2Net) · [Chinese-BERT-WWM-Ext](https://huggingface.co/hfl/chinese-bert-wwm-ext)
+- [ERes2Net](https://github.com/speechbrain/ERes2Net) · [Chinese-BERT-WWM-Ext](https://huggingface.co/hfl/chinese-bert-wwm-ext) · [InsightFace](https://github.com/deepinsight/insightface)
 - [ONNX Runtime](https://onnxruntime.ai/) · [houbb/pinyin](https://github.com/houbb/pinyin) · [OpenCV](https://opencv.org/)
 
 ---
