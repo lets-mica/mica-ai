@@ -1,10 +1,16 @@
 # mica-ai-face
 
-> InsightFace 人脸识别推理（纯 ONNX Runtime），基于 buffalo_l 模型集。
+> OpenCV Zoo（YuNet + SFace）人脸识别推理，纯 ONNX Runtime，**Apache-2.0 可商用**。
 >
 > **只做一件事：把图片转成 512 维 L2 归一化的 Embedding 向量。人脸库与 1:N 检索不在本模块范围内。**
 
-零 OpenCV / 零 Python / 零 PyTorch 依赖。完整复现 **RetinaFace 检测 → 5 关键点对齐 → ArcFace 推理 → L2 归一化** 全链路，输出可直接写入向量数据库（Milvus / pgvector / Qdrant 等）做入库与检索。
+零 OpenCV Java 绑定 / 零 Python / 零 PyTorch 依赖。完整复现 **YuNet 检测 → 5 关键点对齐 → SFace 推理 → L2 归一化** 全链路，输出可直接写入向量数据库（Milvus / pgvector / Qdrant 等）做入库与检索。
+
+---
+
+## ✅ License 一句话总结
+
+整套链路（Java 代码 + ONNX Runtime + YuNet 模型 + SFace 模型）**全部 Apache-2.0**，可以闭源分发、商用 SaaS、卖盒子，无须邮件申请。
 
 ---
 
@@ -20,15 +26,21 @@
 
 ## 2. 模型准备
 
-使用 buffalo_l 模型集（精度优先），目录结构：
+使用 [OpenCV Zoo](https://github.com/opencv/opencv_zoo) 的人脸模型（Apache-2.0），目录结构：
 
 ```
 models/
-├── det_10g.onnx       # RetinaFace 检测（输入 640x640，输出框 + 5 关键点）
-└── w600k_r50.onnx     # ArcFace 识别（输入 112x112，输出 512d Embedding）
+├── face_detection_yunet_2023mar.onnx        # YuNet 检测（320x320 RGB，~340 KB）
+└── face_recognition_sface_2021dec.onnx      # SFace 识别（112x112 RGB，~89 MB）
 ```
 
-下载 / 转换方式见 [`model-tools/face/`](../../model-tools/face/README.md)。
+下载 / 转换方式见 [`model-tools/face/`](../../model-tools/face/README.md)：
+
+```bash
+cd model-tools/face
+python download.py        # 从 OpenCV Zoo GitHub raw 下载 YuNet + SFace
+python convert.py         # 拷贝/链接到 model/out/
+```
 
 ---
 
@@ -48,8 +60,8 @@ models/
 
 ```java
 try (FaceEngine engine = FaceEngine.builder()
-    .detModelPath(Path.of("models/det_10g.onnx"))
-    .recModelPath(Path.of("models/w600k_r50.onnx"))
+    .detModelPath(Path.of("models/face_detection_yunet_2023mar.onnx"))
+    .recModelPath(Path.of("models/face_recognition_sface_2021dec.onnx"))
     .build()) {
 
     // 文件路径
@@ -78,7 +90,30 @@ for (FaceBox box : boxes) {
 
 ---
 
-## 4. 人脸库 / 1:N 检索怎么办？
+## 4. 接入自定义模型（可插拔架构）
+
+`FaceDetector` 与 `FaceRecognizer` 都是**接口**，默认实现 YuNet + SFace。要换其他模型集（如自家训练的识别模型）：
+
+```java
+FaceDetector   myDetector   = new MyCustomDetector(config);   // 实现 FaceDetector
+FaceRecognizer myRecognizer = new MyCustomRecognizer(config); // 实现 FaceRecognizer
+
+try (FaceEngine engine = FaceEngine.builder()
+    .config(config)
+    .detector(myDetector)
+    .recognizer(myRecognizer)
+    .build()) {
+    // ...
+}
+```
+
+> 未来 mica-ai-face 增加新的内置实现，只需在
+> [FaceEngine.createDefault* 工厂](src/main/java/net/dreamlu/mica/ai/face/FaceEngine.java) 加 `case`，
+> 业务代码零改动。
+
+---
+
+## 5. 人脸库 / 1:N 检索怎么办？
 
 **本模块不提供**，因为人脸库是业务领域（用户体系、权限、生命周期），不是 AI 模块该管的。
 
@@ -96,8 +131,8 @@ for (FaceBox box : boxes) {
 
 ```java
 try (FaceEngine engine = FaceEngine.builder()
-    .detModelPath(Path.of("models/det_10g.onnx"))
-    .recModelPath(Path.of("models/w600k_r50.onnx"))
+    .detModelPath(Path.of("models/face_detection_yunet_2023mar.onnx"))
+    .recModelPath(Path.of("models/face_recognition_sface_2021dec.onnx"))
     .build()) {
 
     // 入库
@@ -120,42 +155,56 @@ try (FaceEngine engine = FaceEngine.builder()
 
 ### 1:1 比对（两向量算相似度）
 
-如果你确实只有两个 embedding 想比较（无库），用 `ArcFaceRecognizer.cosineSimilarity()`：
+如果你确实只有两个 embedding 想比较（无库），用 `FaceRecognizer.cosineSimilarity()`：
 
 ```java
-float score = ArcFaceRecognizer.cosineSimilarity(embA.getVector(), embB.getVector());
-boolean samePerson = score > 0.45f;  // buffalo_l 经验阈值
+float score = FaceRecognizer.cosineSimilarity(embA.getVector(), embB.getVector());
+boolean samePerson = score > 0.5f;  // SFace 经验阈值（OpenCV Zoo 推荐 0.363 / 1:1）
 ```
 
 > 注意：1:1 比对不需要"库"，是单纯的数学运算，因此**不属于人脸库职责**，本模块保留这个工具方法。
 
 ---
 
-## 5. 核心组件
+## 6. 核心组件
 
-| 组件 | 类 | 说明 |
+| 组件 | 类型 | 说明 |
 |------|-----|------|
 | **门面** | `FaceEngine` | 主入口，编排 检测 → 对齐 → 识别 |
-| **检测** | `RetinaFaceDetector` | RetinaFace（det_10g.onnx）ONNX 推理，含 NMS |
-| **识别** | `ArcFaceRecognizer` | ArcFace（w600k_r50.onnx）ONNX 推理 + 5 关键点仿射对齐 + L2 归一化 |
-| **图像工具** | `ImageUtils` | 读取 / Letterbox / BGR→Float32，零 OpenCV |
+| **检测接口** | `FaceDetector` | `detect(BufferedImage) -> List<FaceBox>` |
+| **识别接口** | `FaceRecognizer` | `extract(BufferedImage) -> FaceEmbedding` + 静态 l2Normalize / cosineSimilarity |
+| **默认检测** | `YuNetDetector` | YuNet（face_detection_yunet_2023mar.onnx）ONNX 推理 |
+| **默认识别** | `SFaceRecognizer` | SFace（face_recognition_sface_2021dec.onnx）ONNX 推理 + L2 归一化 |
+| **图像工具** | `ImageUtils` | 读取 / Letterbox / RGB→Float32 / 5 关键点仿射对齐，零 OpenCV |
 
 ### 处理流程
 
 ```
-图片 → Letterbox → BGR Float32 [1,3,640,640]
-     → RetinaFace ONNX → 人脸框 + 5 关键点
+图片 → Letterbox → RGB Float32 [1,3,320,320]
+     → YuNet ONNX → 人脸框 + 5 关键点（已 NMS）
      → 按关键点仿射对齐 → 112x112 BGR
-     → ArcFace ONNX → 512d Float32
+     → SFace ONNX → 512d Float32
      → L2 归一化 → 输出 FaceEmbedding.vector
 ```
 
 ---
 
-## 6. 注意事项
+## 7. 注意事项
 
 - **图像格式**：支持 JPEG / PNG / GIF / BMP（通过 JDK 自带 `ImageIO`）。
-- **Letterbox**：检测输入会自动按长宽比缩放并灰边填充（与 InsightFace Python 版完全一致）。
+- **Letterbox**：检测输入会自动按长宽比缩放并灰边填充。
 - **Embedding 维度**：固定 512，已 L2 归一化（点积 = 余弦相似度）。
 - **GPU 加速**：替换 `onnxruntime` 依赖为 `onnxruntime_gpu` 并启用 CUDA provider 即可。
 - **批量输入**：本模块按"一次一图"调用，向量库侧的批量写入由调用方控制。
+
+---
+
+## 8. 模型替换备忘
+
+要替换为其他 ONNX 人脸检测 / 识别模型（如 MobileFaceNet、ArcFace R50 自训版），参考：
+
+1. **检测端**：实现 `FaceDetector` 接口（推荐继承 `ImageUtils.letterbox` + 自行 ONNX 推理）
+2. **识别端**：实现 `FaceRecognizer` 接口（约定输入为已对齐的 112x112 BGR 图，返回 512d L2-normalized 向量）
+3. **注册**：`FaceEngine.builder().detector(...).recognizer(...).build()` 注入
+
+或更彻底地：fork 后改 `FaceEngine.createDefault*` 的 switch。

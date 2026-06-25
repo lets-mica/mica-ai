@@ -5,7 +5,7 @@ package net.dreamlu.mica.ai.face;
 
 import net.dreamlu.mica.ai.face.config.FaceBox;
 import net.dreamlu.mica.ai.face.config.FaceEmbedding;
-import net.dreamlu.mica.ai.face.engine.ArcFaceRecognizer;
+import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
 
 import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
@@ -32,9 +32,9 @@ import java.util.Random;
  * <p>分两部分：
  * <ol>
  *   <li><b>纯算法 demo</b>（不需要 ONNX 模型）：合成 512d Embedding，演示
- *       {@link ArcFaceRecognizer#l2Normalize(float[])} 与
- *       {@link ArcFaceRecognizer#cosineSimilarity(float[], float[])}</li>
- *   <li><b>完整链路 demo</b>（需要 buffalo_l 两个 ONNX）：生成合成测试图，调用
+ *       {@link FaceRecognizer#l2Normalize(float[])} 与
+ *       {@link FaceRecognizer#cosineSimilarity(float[], float[])}</li>
+ *   <li><b>完整链路 demo</b>（需要 OpenCV Zoo YuNet + SFace 两个 ONNX）：生成合成测试图，调用
  *       {@link FaceEngine#extract(BufferedImage)} 输出真实 Embedding</li>
  * </ol>
  *
@@ -42,13 +42,13 @@ import java.util.Random;
  */
 public class FaceEngineSmokeTest {
 
-	/** buffalo_l 默认模型文件名 */
-	private static final String DET_MODEL = "det_10g.onnx";
-	private static final String REC_MODEL = "w600k_r50.onnx";
+	/** OpenCV Zoo 默认模型文件名 */
+	private static final String DET_MODEL = "face_detection_yunet_2023mar.onnx";
+	private static final String REC_MODEL = "face_recognition_sface_2021dec.onnx";
 	private static final Path DEFAULT_MODELS_DIR = Path.of("model-tools", "face", "model", "out");
 
 	public static void main(String[] args) throws Exception {
-		banner("mica-ai-face 冒烟测试");
+		banner("mica-ai-face 冒烟测试 (OpenCV Zoo YuNet + SFace)");
 		System.out.println("JDK: " + System.getProperty("java.version"));
 		System.out.println("工作目录: " + Path.of("").toAbsolutePath());
 
@@ -74,14 +74,14 @@ public class FaceEngineSmokeTest {
 
 		// 演示 L2 normalize：让随机向量变成长度为 1 的单位向量
 		float[] raw = {3f, 4f};
-		float[] norm = ArcFaceRecognizer.l2Normalize(raw);
+		float[] norm = FaceRecognizer.l2Normalize(raw);
 		System.out.printf("  L2 normalize: [3, 4] -> [%.3f, %.3f]  (length=%.3f)%n",
 			norm[0], norm[1], Math.sqrt(norm[0] * norm[0] + norm[1] * norm[1]));
 
-		// 演示 cosine similarity
-		float simAA = ArcFaceRecognizer.cosineSimilarity(alice, alice2);
-		float simAB = ArcFaceRecognizer.cosineSimilarity(alice, bob);
-		float threshold = 0.45f;
+		// 演示 cosine similarity（SFace 推荐阈值 ~0.363 / 1:1 验证）
+		float simAA = FaceRecognizer.cosineSimilarity(alice, alice2);
+		float simAB = FaceRecognizer.cosineSimilarity(alice, bob);
+		float threshold = 0.5f;
 		System.out.printf("  alice  vs alice2 -> %.4f  %s%n", simAA, judge(simAA, threshold));
 		System.out.printf("  alice  vs bob    -> %.4f  %s%n", simAB, judge(simAB, threshold));
 	}
@@ -90,7 +90,7 @@ public class FaceEngineSmokeTest {
 	// 2) 完整链路 demo
 	// ------------------------------------------------------------------
 	private static void fullPipelineDemo(String[] args) throws Exception {
-		banner("Part 2 / 完整链路 demo（需要 ONNX 模型）");
+		banner("Part 2 / 完整链路 demo（需要 OpenCV Zoo ONNX 模型）");
 
 		Path detPath = resolveArgOrDefault(args, 0, DEFAULT_MODELS_DIR.resolve(DET_MODEL));
 		Path recPath = resolveArgOrDefault(args, 1, DEFAULT_MODELS_DIR.resolve(REC_MODEL));
@@ -103,11 +103,11 @@ public class FaceEngineSmokeTest {
 			System.out.println();
 			System.out.println("  修复方式：");
 			System.out.println("    cd model-tools/face");
-			System.out.println("    python download.py        # 下载 buffalo_l.zip (~340MB)");
-			System.out.println("    python convert.py         # 解压到 model/out/");
+			System.out.println("    python download.py        # 下载 OpenCV Zoo YuNet + SFace (~90MB)");
+			System.out.println("    python convert.py         # 拷贝到 model/out/");
 			System.out.println();
-			System.out.println("  或自行下载 InsightFace buffalo_l 后重试，传入模型路径：");
-			System.out.println("    java ... FaceEngineSmokeTest /path/to/det.onnx /path/to/rec.onnx");
+			System.out.println("  或自行下载 OpenCV Zoo 模型后重试，传入模型路径：");
+			System.out.println("    java ... FaceEngineSmokeTest /path/to/yunet.onnx /path/to/sface.onnx");
 			return;
 		}
 
@@ -144,7 +144,7 @@ public class FaceEngineSmokeTest {
 			List<FaceEmbedding> emb1 = engine.extract(image1);
 			List<FaceEmbedding> emb2 = engine.extract(image2);
 			if (emb1.isEmpty() || emb2.isEmpty()) {
-				System.out.println("  ⚠  合成图未检测到人脸（这是正常的，RetinaFace 在合成图上常无检出）。");
+				System.out.println("  ⚠  合成图未检测到人脸（这是正常的，YuNet 在合成图上常无检出）。");
 				System.out.println("    替换为真实人脸照片后重试即可。");
 				return;
 			}
@@ -156,9 +156,9 @@ public class FaceEngineSmokeTest {
 			System.out.printf("  extract(image2)[0] -> dim=%d  L2=%.6f%n",
 				bob.dimension(), norm(bob.getVector()));
 
-			// 2.3 1:1 比对（FaceEngine 仅做检测 + 推理，比对走 ArcFaceRecognizer 静态方法）
-			float score = ArcFaceRecognizer.cosineSimilarity(alice.getVector(), bob.getVector());
-			System.out.printf("%n  similarity(alice, bob) = %.4f  %s%n", score, judge(score, 0.45f));
+			// 2.3 1:1 比对（FaceEngine 仅做检测 + 推理，比对走 FaceRecognizer 静态方法）
+			float score = FaceRecognizer.cosineSimilarity(alice.getVector(), bob.getVector());
+			System.out.printf("%n  similarity(alice, bob) = %.4f  %s%n", score, judge(score, 0.5f));
 		}
 	}
 
@@ -182,7 +182,7 @@ public class FaceEngineSmokeTest {
 		for (int i = 0; i < dim; i++) {
 			v[i] = (float) (rnd.nextGaussian());
 		}
-		return ArcFaceRecognizer.l2Normalize(v);
+		return FaceRecognizer.l2Normalize(v);
 	}
 
 	/** 在 unit vector 上叠加高斯噪声，扰动幅度 coef 越大相似度越低。 */
@@ -191,7 +191,7 @@ public class FaceEngineSmokeTest {
 		for (int i = 0; i < v.length; i++) {
 			v[i] += (float) (coef * rnd.nextGaussian());
 		}
-		return ArcFaceRecognizer.l2Normalize(v);
+		return FaceRecognizer.l2Normalize(v);
 	}
 
 	private static float norm(float[] v) {

@@ -58,7 +58,7 @@
    ┌──────────────────┐   ┌──────────────────────┐   ┌──────────────────┐
    │ mica-ai-speaker  │   │   mica-ai-intent     │   │   mica-ai-face   │
    │ 声纹识别 👤      │   │   中文意图识别 🧠    │   │  人脸识别 🎭     │
-   │ ERes2Net 256 维  │   │   BERT 中文分类      │   │  InsightFace     │
+   │ ERes2Net 256 维  │   │   BERT 中文分类      │   │  OpenCV Zoo      │
    │                  │   │                      │   │  检测 + 512d 向量 │
    └──────────────────┘   └──────────────────────┘   └──────────────────┘
                                        │
@@ -79,7 +79,7 @@
 | 📷 [**mica-ai-ppocr**](mica-ai-core/mica-ai-ppocr/README.md) | PP-OCRv6 文字识别 | 检测+识别全链路 · tiny/small/medium 三档可选 · CPU bit-exact | ✅ Stable |
 | 👤 [**mica-ai-speaker**](mica-ai-core/mica-ai-speaker/README.md) | ERes2Net 声纹识别 | 256 维 Embedding · 验证 / 识别双模式 · 80 维 FBank 特征 | ✅ Stable |
 | 🧠 [**mica-ai-intent**](mica-ai-core/mica-ai-intent/README.md) | BERT 中文意图识别 | 按字分词 · Softmax 分类 · 兼容 HuggingFace 词表 | ✅ Stable |
-| 🎭 [**mica-ai-face**](mica-ai-core/mica-ai-face/README.md) | InsightFace 人脸识别 | 检测 + 5 关键点对齐 + 512d 向量 · buffalo_l 精度优先 · **检索由向量库负责** | ✅ Stable |
+| 🎭 [**mica-ai-face**](mica-ai-core/mica-ai-face/README.md) | OpenCV Zoo 人脸识别 | 检测 + 5 关键点对齐 + 512d 向量 · YuNet + SFace (Apache-2.0) · **检索由向量库负责** | ✅ Stable |
 
 ---
 
@@ -216,8 +216,8 @@ try (BertIntent intent = new BertIntent(config)) {
 
 ```java
 try (FaceEngine face = FaceEngine.builder()
-    .detModelPath(Path.of("models/det_10g.onnx"))
-    .recModelPath(Path.of("models/w600k_r50.onnx"))
+    .detModelPath(Path.of("models/face_detection_yunet_2023mar.onnx"))
+    .recModelPath(Path.of("models/face_recognition_sface_2021dec.onnx"))
     .build()) {
 
     // 图片 → 所有人脸的 512d Embedding（已 L2 归一化）
@@ -345,10 +345,8 @@ Mica AI 与 BladeX 物联网平台无缝集成，让 AI 能力直接落到边缘
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
 - [PP-OCRv6](https://github.com/PaddlePaddle/PaddleOCR) · [Kokoro TTS](https://github.com/hexgrad/kokoro) · [SenseVoice](https://github.com/FunASR/SenseVoice)
-- [ERes2Net](https://github.com/speechbrain/ERes2Net) · [Chinese-BERT-WWM-Ext](https://huggingface.co/hfl/chinese-bert-wwm-ext) · [InsightFace](https://github.com/deepinsight/insightface)
-- [ONNX Runtime](https://onnxruntime.ai/) · [houbb/pinyin](https://github.com/houbb/pinyin) · [OpenCV](https://opencv.org/)
-
----
+- [ERes2Net](https://github.com/speechbrain/ERes2Net) · [Chinese-BERT-WWM-Ext](https://huggingface.co/hfl/chinese-bert-wwm-ext) · [OpenCV Zoo](https://github.com/opencv/opencv_zoo)
+- [ONNX Runtime](https://onnxruntime.ai/) · [houbb/pinyin](https://github.com/houbb/pinyin)
 
 <div align="center">
 

@@ -7,7 +7,7 @@
     <artifactId>mica-ai-face-spring-boot-starter</artifactId>
     <name>${project.artifactId}</name>
     <url>https://www.dreamlu.net</url>
-    <description>InsightFace 人脸检测 + 识别 Spring Boot Starter，buffalo_l 模型集，一行配置接入</description>
+    <description>OpenCV Zoo (YuNet + SFace) 人脸检测 + 识别 Spring Boot Starter，Apache-2.0 一行配置接入</description>
 
     <parent>
         <groupId>net.dreamlu</groupId>

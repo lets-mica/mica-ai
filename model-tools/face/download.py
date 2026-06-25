@@ -1,17 +1,16 @@
-"""下载 InsightFace buffalo_l 人脸识别模型包。
+"""下载 OpenCV Zoo YuNet + SFace 人脸识别模型（Apache-2.0，可商用）。
 
-InsightFace 官方已经预打包好了 buffalo_l.zip（包含 det_10g.onnx +
-w600k_r50.onnx + 2d106det.onnx + genderage.onnx），直接从 GitHub release
-下载解压即可，不需要 PyTorch 转换。
+OpenCV Zoo 把模型以裸 .onnx 文件直接托管在 GitHub，无需转换。
+- YuNet:  ~340 KB，人脸检测
+- SFace:  ~89 MB，512d Embedding
 
-默认 source = direct（GitHub release）
-可选 source = modelscope（如果 ModelScope 上有该镜像）
+默认 source = direct（GitHub raw 直链）
+可选 source = modelscope / huggingface（如果未来有镜像）
 """
 
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 from pathlib import Path
 
@@ -22,82 +21,69 @@ from common import (
     DownloadSpec,
     cap_models_dir,
     download_model,
-    fail,
     info,
     ok,
     step,
 )
-from common.progress import warn
 
 
-# buffalo_l.zip 官方直链（含完整 4 个 ONNX）
-BUFFALO_L_ZIP_URL = "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
+# OpenCV Zoo GitHub raw 直链（裸 .onnx，无需解压）
+YUNET_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
+SFACE_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
 
 
-def build_spec(source: str) -> DownloadSpec:
+def build_specs(source: str) -> list[DownloadSpec]:
     if source == DownloadSource.MODELSCOPE.value:
-        # ModelScope 上的 insightface buffalo_l 镜像 ID（如果存在）。
-        # 注意：ModelScope 上的 ID 可能会变，如果不存在请改用 --source direct。
-        return DownloadSpec(
-            target_subdir="buffalo_l_raw",
-            modelscope_id="damo/cv_resnet_face-recognition_arcface",  # 仅识别部分
-            required_files=(),  # 识别模型的 ONNX 文件名未知，由后续 convert.py 自行查找
+        # OpenCV Zoo 暂无官方 ModelScope 镜像；如未来上架可填 ID
+        raise NotImplementedError(
+            "OpenCV Zoo 当前在 ModelScope 上暂无镜像，请使用 --source direct 或 huggingface"
         )
-    # 默认 direct
-    return DownloadSpec(
-        target_subdir="buffalo_l_raw",
-        url=BUFFALO_L_ZIP_URL,
-        url_archive="zip",
-        required_files=("det_10g.onnx", "w600k_r50.onnx"),
-    )
+    if source == DownloadSource.HUGGINGFACE.value:
+        # OpenCV Zoo 暂无官方 HuggingFace 仓库；如未来上架可填 ID
+        raise NotImplementedError(
+            "OpenCV Zoo 当前在 HuggingFace 上暂无镜像，请使用 --source direct"
+        )
+    # default: DIRECT，从 GitHub raw 下载
+    return [
+        DownloadSpec(
+            target_subdir="yunet_raw",
+            url=YUNET_URL,
+            url_archive="none",  # 裸文件，无需解压
+            required_files=("face_detection_yunet_2023mar.onnx",),
+        ),
+        DownloadSpec(
+            target_subdir="sface_raw",
+            url=SFACE_URL,
+            url_archive="none",
+            required_files=("face_recognition_sface_2021dec.onnx",),
+        ),
+    ]
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="下载 InsightFace buffalo_l 模型包")
+    parser = argparse.ArgumentParser(description="下载 OpenCV Zoo 人脸识别模型 (Apache-2.0)")
     parser.add_argument(
         "--source",
         default=DownloadSource.DIRECT.value,
         choices=[s.value for s in DownloadSource],
-        help="下载来源（默认 direct，从 GitHub release 下载 buffalo_l.zip）",
-    )
-    parser.add_argument(
-        "--keep-zip",
-        action="store_true",
-        help="保留下载的 zip 包（默认解压后删除）",
+        help="下载来源（默认 direct，从 OpenCV Zoo GitHub 下载）",
     )
     args = parser.parse_args()
 
-    step(f"开始下载 InsightFace buffalo_l / source={args.source}")
-    info(f"目标目录: {cap_models_dir('face') / 'buffalo_l_raw'}")
+    step(f"开始下载 OpenCV Zoo YuNet + SFace / source={args.source}")
+    info(f"目标根目录: {cap_models_dir('face')}")
 
-    if args.source == DownloadSource.DIRECT.value:
-        # DIRECT 模式：先下载 zip，extractall 后 downloader 会自动展平单层目录
-        results = download_model(
-            "face",
-            build_spec(args.source),
-            source=DownloadSource.DIRECT,
-            skip_if_exists=True,
-        )
-        target_dir = results[0]
-        # downloader 已经解压并删除了 zip，但如果 --keep-zip 由用户手动控制则不在脚本管
-        if not args.keep_zip:
-            zip_in_target = target_dir / "buffalo_l.zip"
-            if zip_in_target.exists():
-                zip_in_target.unlink()
-                info(f"已清理 zip 包: {zip_in_target}")
-    else:
-        # ModelScope 模式
-        warn("ModelScope 模式只下载识别部分（det + rec 不在同一仓库）")
-        warn("建议改用 --source direct 一键下载完整 buffalo_l 包")
-        results = download_model(
-            "face",
-            build_spec(args.source),
-            source=DownloadSource(args.source),
-            skip_if_exists=True,
-        )
-        target_dir = results[0]
+    specs = build_specs(args.source)
+    targets = download_model(
+        "face",
+        specs,
+        source=DownloadSource(args.source),
+        skip_if_exists=True,
+    )
+    for t in targets:
+        info(f"  ✓ {t}")
 
-    ok("buffalo_l 下载完成。下一步：python convert.py 拷贝到 model/out/。")
+    ok("YuNet + SFace 下载完成。下一步：python convert.py 拷贝到 model/out/。")
 
 
 if __name__ == "__main__":
