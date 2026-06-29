@@ -35,7 +35,7 @@ modelscope download --model iic/SenseVoiceSmall
 
 ### 2.2 导出 ONNX
 
-克隆 [SenseVoice-ONNX](https://github.com) 项目，依次运行导出脚本：
+克隆 [SenseVoice-ONNX](https://github.com/HaujetZhao/SenseVoice-ONNX) 项目，依次运行导出脚本：
 
 ```bash
 # 安装依赖
@@ -210,3 +210,4 @@ record Timings(
 ## 6. 致谢
 
 - [SenseVoiceSmall](https://github.com/FunASR/SenseVoice) — 阿里达摩院开源的多语种语音识别模型
+- [SenseVoice-ONNX](https://github.com/HaujetZhao/SenseVoice-ONNX) — SenseVoice 的 ONNX 导出与推理实现

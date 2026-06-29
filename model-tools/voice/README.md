@@ -9,7 +9,7 @@
 | 任务 | 多语种 ASR（中/英/日/韩/粤语） |
 | 原始仓库 | [FunASR/SenseVoice](https://github.com/FunASR/SenseVoice) |
 | ModelScope | [`iic/SenseVoiceSmall`](https://www.modelscope.cn/models/iic/SenseVoiceSmall) |
-| 上游 ONNX 化 | [SenseVoice-ONNX](https://github.com) 项目，按 Encoder / CTC 分别导出 |
+| 上游 ONNX 化 | [SenseVoice-ONNX](https://github.com/HaujetZhao/SenseVoice-ONNX) 项目，按 Encoder / CTC 分别导出 |
 
 > `convert.py` 内部调用 SenseVoice-ONNX 项目的 4 个导出脚本，因此依赖较多。
 > 如果 mica-ai-voice 后续内置 ONNX 文件分发，可把 `convert.py` 简化为"目录整理"。
