@@ -37,8 +37,8 @@ public final class DbPostProcessor {
 		int srcW = (int) imgShape[1];
 
 		if (prob.dims() == 4 && prob.size(0) == 1 && prob.size(1) == 1) {
-			int hNew = (int) prob.size(2);
-			int wNew = (int) prob.size(3);
+			int hNew = prob.size(2);
+			int wNew = prob.size(3);
 			prob = prob.reshape(1, hNew);
 			if (prob.cols() != wNew) {
 				prob = prob.reshape(1, wNew);

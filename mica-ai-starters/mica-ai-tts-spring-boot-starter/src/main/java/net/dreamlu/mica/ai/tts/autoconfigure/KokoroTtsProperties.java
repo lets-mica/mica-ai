@@ -12,6 +12,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "mica.ai.tts")
 public class KokoroTtsProperties {
 
+	/**
+	 * 是否启用该 Starter。
+	 *
+	 * <p>默认 {@code true}：启用时如果必填的模型/词表/音色路径未配置，会在启动时 fail-fast 抛出异常；
+	 * 设为 {@code false} 时整个 Starter 不注入任何 Bean，可安全留空。
+	 */
+	private boolean enabled = true;
+
 	/** ONNX 模型文件路径（必填） */
 	private String modelPath;
 

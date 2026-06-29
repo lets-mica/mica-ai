@@ -20,8 +20,4 @@ public record PPOcrV6Result(String text, float score, int[][] box) {
 		);
 	}
 
-	@Override
-	public String toString() {
-		return String.format("PPOcrV6Result{text='%s', score=%.4f, box=%s}", text, score, boxAsNestedList());
-	}
 }

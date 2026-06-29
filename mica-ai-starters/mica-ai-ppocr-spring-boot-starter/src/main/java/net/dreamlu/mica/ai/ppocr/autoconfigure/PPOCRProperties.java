@@ -12,6 +12,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "mica.ai.ppocr")
 public class PPOCRProperties {
 
+	/**
+	 * 是否启用该 Starter。默认 {@code true}：启用时必填的 det/rec 模型路径及字典缺失将启动失败；
+	 * 设为 {@code false} 时整个 Starter 不注入任何 Bean。
+	 */
+	private boolean enabled = true;
+
 	/** 检测模型路径（必填） */
 	private String detModelPath;
 

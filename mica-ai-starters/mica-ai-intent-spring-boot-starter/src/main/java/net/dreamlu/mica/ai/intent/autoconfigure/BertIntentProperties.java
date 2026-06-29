@@ -30,6 +30,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "mica.ai.intent")
 public class BertIntentProperties {
 
+	/**
+	 * 是否启用该 Starter。默认 {@code true}：启用时必填的 BERT 模型/词表/标签缺失将启动失败；
+	 * 设为 {@code false} 时整个 Starter 不注入任何 Bean。
+	 */
+	private boolean enabled = true;
+
 	/** ONNX 模型文件路径（必填） */
 	private String modelPath;
 

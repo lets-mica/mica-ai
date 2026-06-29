@@ -171,6 +171,37 @@
                 <artifactId>mica-ai-voice</artifactId>
                 <version>${revision}</version>
             </dependency>
+            <!-- mica-ai Spring Boot Starters（example 模块依赖） -->
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-tts-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-voice-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-ppocr-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-speaker-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-intent-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-face-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -182,9 +213,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-                    <forkCount>1</forkCount>
-                    <reuseForks>true</reuseForks>
+                    <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true -Xshare:off</argLine>
+                    <forkCount>0</forkCount>
                 </configuration>
             </plugin>
             <plugin>
@@ -302,31 +332,47 @@
         </pluginManagement>
     </build>
 
+    <repositories>
+        <repository>
+            <id>aliyun</id>
+            <name>aliyun</name>
+            <url>https://maven.aliyun.com/repository/public/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <name>Central Portal Snapshots</name>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>aliyun-plugin</id>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <profiles>
         <profile>
             <id>develop</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <repositories>
-                <repository>
-                    <id>aliyun</id>
-                    <name>aliyun</name>
-                    <url>https://maven.aliyun.com/repository/public/</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>aliyun-plugin</id>
-                    <url>https://maven.aliyun.com/repository/public</url>
-                </pluginRepository>
-            </pluginRepositories>
+            <modules>
+                <module>mica-ai-example</module>
+            </modules>
         </profile>
         <profile>
             <id>snapshot</id>
@@ -398,19 +444,5 @@
             </build>
         </profile>
     </profiles>
-
-    <repositories>
-        <repository>
-            <name>Central Portal Snapshots</name>
-            <id>central-portal-snapshots</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
 </project>

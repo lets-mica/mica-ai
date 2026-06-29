@@ -1,0 +1,95 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mica-ai-example
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+    encoding:
+      force: true
+      enabled: true
+      charset: UTF-8
+
+mica:
+  ai:
+    # ============================================================
+    #   mica-ai 6 大能力统一开关：mica.ai.<cap>.enabled
+    #   - true  （默认）: 必须配置好必填模型路径，否则启动失败
+    #   - false         : 整个 Starter 不注入任何 Bean，可安全留空
+    # ============================================================
+    tts:
+      enabled: false
+    voice:
+      enabled: false
+    ppocr:
+      enabled: false
+    speaker:
+      enabled: false
+    intent:
+      enabled: false
+    face:
+      enabled: false
+
+# ----------------------------------------------------------------
+# 启用示例（取消注释 + 替换模型路径即可激活对应 Starter）：
+# ----------------------------------------------------------------
+# mica:
+#   ai:
+#     tts:
+#       enabled: true
+#       model-path: E:/codes/ai/kokoro-onnx/model/model_dynamic.onnx
+#       voices-dir: E:/codes/ai/kokoro-onnx/model/voices
+#       config-path: E:/codes/ai/kokoro-onnx/model/config.json
+#       default-voice: zf_001
+#       default-speed: 1.0
+#       onnx-provider: cpu
+#     voice:
+#       enabled: true
+#       encoder-path: E:/codes/ai/SenseVoice-ONNX/model/SenseVoice-Encoder.fp32.onnx
+#       decoder-path: E:/codes/ai/SenseVoice-ONNX/model/SenseVoice-CTC.fp32.onnx
+#       tokenizer-path: E:/codes/ai/SenseVoice-ONNX/model/Tokenizer.bpe.model
+#       onnx-provider: cpu
+#       itn: true
+#       top-k: 10
+#       hotwords:
+#         - mica
+#         - 梦想卢
+#     ppocr:
+#       enabled: true
+#       det-model-path: model-tools/ppocr/model/out/det/inference.onnx
+#       rec-model-path: model-tools/ppocr/model/out/rec/inference.onnx
+#       rec-char-dict-path: model-tools/ppocr/model/out/rec_char_dict.txt
+#       det-limit-side-len: 64
+#       det-thresh: 0.3
+#       det-box-thresh: 0.6
+#       det-unclip-ratio: 1.5
+#     speaker:
+#       enabled: true
+#       model-path: E:/codes/ai/Speaker-ONNX/model/speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx
+#       default-threshold: 0.58
+#     intent:
+#       enabled: true
+#       model-path: E:/codes/ai/Intent-ONNX/model/bert_intent.onnx
+#       vocab-path: E:/codes/ai/Intent-ONNX/model/vocab.txt
+#       max-length: 128
+#       labels:
+#         - weather
+#         - music
+#         - chat
+#         - news
+#     face:
+#       enabled: true
+#       det-model-path: model-tools/face/model/out/face_detection_yunet_2023mar.onnx
+#       rec-model-path: model-tools/face/model/out/face_recognition_sface_2021dec.onnx
+#       det-score-threshold: 0.6
+#       det-nms-threshold: 0.3
+
+logging:
+  level:
+    root: INFO
+    net.dreamlu.mica.ai: INFO
+    org.springframework: WARN

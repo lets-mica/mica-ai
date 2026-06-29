@@ -15,6 +15,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "mica.ai.voice")
 public class SenseVoiceProperties {
 
+	/**
+	 * 是否启用该 Starter。默认 {@code true}：启用时必填的 encoder/decoder/tokenizer 路径缺失将启动失败；
+	 * 设为 {@code false} 时整个 Starter 不注入任何 Bean。
+	 */
+	private boolean enabled = true;
+
 	/** 编码器模型路径（必填） */
 	private String encoderPath;
 
