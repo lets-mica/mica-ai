@@ -3,7 +3,7 @@
  */
 package net.dreamlu.mica.ai.face.autoconfigure;
 
-import net.dreamlu.mica.ai.face.FaceEngine;
+import net.dreamlu.mica.ai.face.engine.FaceEngine;
 import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.engine.FaceDetector;
 import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
@@ -56,7 +56,7 @@ public class FaceAutoConfiguration {
 		return new SFaceRecognizer(faceConfig);
 	}
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public FaceEngine faceEngine(FaceConfig faceConfig, FaceDetector faceDetector, FaceRecognizer faceRecognizer) {
 		return FaceEngine.builder()

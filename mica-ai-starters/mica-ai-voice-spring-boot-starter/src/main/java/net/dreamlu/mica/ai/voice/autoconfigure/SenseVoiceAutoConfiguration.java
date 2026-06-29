@@ -31,7 +31,7 @@ public class SenseVoiceAutoConfiguration {
 			.build();
 	}
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public SenseVoice senseVoice(SenseVoiceConfig senseVoiceConfig) {
 		return new SenseVoice(senseVoiceConfig);

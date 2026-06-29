@@ -1,5 +1,6 @@
 package net.dreamlu.mica.ai.speaker.autoconfigure;
 
+import net.dreamlu.mica.ai.speaker.config.SpeakerConfig;
 import net.dreamlu.mica.ai.speaker.engine.SpeakerVerifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -17,9 +18,19 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "mica.ai.speaker", name = "model-path")
 public class SpeakerVerifierAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
+	@Bean
+	public SpeakerConfig speakerConfig(SpeakerVerifierProperties properties) {
+		return SpeakerConfig.builder()
+			.modelPath(properties.getModelPath())
+			.threshold(properties.getDefaultThreshold())
+			.intraOpNumThreads(properties.getIntraOpNumThreads())
+			.interOpNumThreads(properties.getInterOpNumThreads())
+			.build();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
-	public SpeakerVerifier speakerVerifier(SpeakerVerifierProperties properties) {
-		return new SpeakerVerifier(properties.getModelPath());
+	public SpeakerVerifier speakerVerifier(SpeakerConfig speakerConfig) {
+		return new SpeakerVerifier(speakerConfig);
 	}
 }

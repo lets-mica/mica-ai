@@ -9,6 +9,7 @@ import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.utils.AudioUtils;
+import net.dreamlu.mica.ai.speaker.config.SpeakerConfig;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -49,7 +50,7 @@ import java.util.*;
  * }</pre>
  */
 @Slf4j
-public class SpeakerVerifier implements Closeable, AutoCloseable {
+public class SpeakerVerifier implements Closeable {
 
 	/**
 	 * 默认余弦相似度阈值（可根据实际场景调整）。
@@ -71,40 +72,58 @@ public class SpeakerVerifier implements Closeable, AutoCloseable {
 	private final FBankExtractor frontend;
 	private final String inputName;
 	private final String outputName;
+	private final float defaultThreshold;
 	private boolean closed = false;
 
 	/**
-	 * 从文件路径加载 ONNX 模型。
+	 * 从 {@link SpeakerConfig} 加载 ONNX 模型并初始化声纹验证器。
 	 *
-	 * @param modelPath ONNX 模型文件路径
+	 * @param config 引擎配置
 	 */
-	public SpeakerVerifier(Path modelPath) {
+	public SpeakerVerifier(SpeakerConfig config) {
+		if (config == null || config.getModelPath() == null || config.getModelPath().isBlank()) {
+			throw new IllegalArgumentException("SpeakerConfig.modelPath 不能为空");
+		}
 		try {
 			this.env = OrtEnvironment.getEnvironment();
 			OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
-			opts.setIntraOpNumThreads(1);
-			opts.setInterOpNumThreads(1);
-			opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.BASIC_OPT);
-			this.session = env.createSession(modelPath.toString(), opts);
+			opts.setIntraOpNumThreads(Math.max(1, config.getIntraOpNumThreads()));
+			opts.setInterOpNumThreads(Math.max(1, config.getInterOpNumThreads()));
+			opts.setOptimizationLevel(config.getOptimizationLevel());
+			this.session = env.createSession(config.getModelPath(), opts);
 
 			// 读取输入/输出名称
 			this.inputName = session.getInputInfo().keySet().iterator().next();
 			this.outputName = session.getOutputInfo().keySet().iterator().next();
 
 			this.frontend = new FBankExtractor();
+			this.defaultThreshold = config.getThreshold();
 
-			log.info("SpeakerVerifier 初始化完成, 输入: {} [1,T,{}], 输出: {} [1,{}]",
-				inputName, MEL_BINS, outputName, EMBEDDING_DIM);
+			log.info("SpeakerVerifier 初始化完成, 输入: {} [1,T,{}], 输出: {} [1,{}], 阈值: {}",
+				inputName, MEL_BINS, outputName, EMBEDDING_DIM, defaultThreshold);
 		} catch (OrtException e) {
-			throw new RuntimeException("加载 ONNX 模型失败: " + modelPath, e);
+			throw new RuntimeException("加载 ONNX 模型失败: " + config.getModelPath(), e);
 		}
 	}
 
 	/**
-	 * 便捷构造：接受字符串路径。
+	 * 从文件路径加载 ONNX 模型（使用默认配置）。
+	 *
+	 * @param modelPath ONNX 模型文件路径
+	 */
+	public SpeakerVerifier(Path modelPath) {
+		this(SpeakerConfig.builder()
+			.modelPath(modelPath == null ? null : modelPath.toString())
+			.build());
+	}
+
+	/**
+	 * 便捷构造：接受字符串路径（使用默认配置）。
 	 */
 	public SpeakerVerifier(String modelPath) {
-		this(Path.of(modelPath));
+		this(SpeakerConfig.builder()
+			.modelPath(modelPath)
+			.build());
 	}
 
 	// ==================== 核心 API ====================
@@ -145,7 +164,7 @@ public class SpeakerVerifier implements Closeable, AutoCloseable {
 		// 3. ONNX 推理
 		long[] featShape = {1, T, MEL_BINS};
 		try (OnnxTensor tensor = OnnxTensor.createTensor(env, featBuf, featShape);
-			 OrtSession.Result result = session.run(
+		     OrtSession.Result result = session.run(
 				 Collections.singletonMap(inputName, tensor))) {
 
 			// 4. 提取 embedding [1, 192] → float[192]
@@ -247,10 +266,10 @@ public class SpeakerVerifier implements Closeable, AutoCloseable {
 	}
 
 	/**
-	 * 使用默认阈值验证（0.58）。
+	 * 使用配置中的默认阈值验证。
 	 */
 	public boolean verify(float[] enrolled, Path testWav) throws IOException {
-		return verify(enrolled, testWav, DEFAULT_THRESHOLD);
+		return verify(enrolled, testWav, defaultThreshold);
 	}
 
 	// ==================== 工具方法 ====================

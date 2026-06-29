@@ -39,8 +39,7 @@ import java.util.*;
  * }</pre>
  */
 @Slf4j
-public final class PPOcrV6Engine implements Closeable, AutoCloseable {
-
+public final class PPOcrV6Engine implements Closeable {
 	private final OrtEnvironment env;
 	private final OrtSession detSession;
 	private final OrtSession recSession;

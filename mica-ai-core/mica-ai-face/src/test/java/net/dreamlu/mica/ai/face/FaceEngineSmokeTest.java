@@ -4,8 +4,9 @@
 package net.dreamlu.mica.ai.face;
 
 import net.dreamlu.mica.ai.face.config.FaceBox;
+import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.config.FaceEmbedding;
-import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
+import net.dreamlu.mica.ai.face.engine.*;
 
 import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
@@ -42,7 +43,9 @@ import java.util.Random;
  */
 public class FaceEngineSmokeTest {
 
-	/** OpenCV Zoo 默认模型文件名 */
+	/**
+	 * OpenCV Zoo 默认模型文件名
+	 */
 	private static final String DET_MODEL = "face_detection_yunet_2023mar.onnx";
 	private static final String REC_MODEL = "face_recognition_sface_2021dec.onnx";
 	private static final Path DEFAULT_MODELS_DIR = Path.of("model-tools", "face", "model", "out");
@@ -125,12 +128,21 @@ public class FaceEngineSmokeTest {
 		System.out.println("    " + p1);
 		System.out.println("    " + p2);
 
-		System.out.println("  加载 ONNX 模型...");
-		try (FaceEngine engine = FaceEngine.builder()
+		FaceConfig faceConfig = FaceConfig.builder()
 			.detModelPath(detPath)
 			.recModelPath(recPath)
-			.build()) {
+			.build();
 
+		System.out.println("  加载 ONNX 模型...");
+
+		try (
+			FaceDetector faceDetector = new YuNetDetector(faceConfig);
+			FaceRecognizer faceRecognizer = new SFaceRecognizer(faceConfig);
+			FaceEngine engine = FaceEngine.builder()
+				.detector(faceDetector)
+				.recognizer(faceRecognizer)
+				.config(faceConfig).build()
+		) {
 			// 2.1 detect 演示
 			List<FaceBox> boxes = engine.detect(image1);
 			System.out.printf("%n  detect(image1) -> %d 张人脸%n", boxes.size());
@@ -185,7 +197,9 @@ public class FaceEngineSmokeTest {
 		return FaceRecognizer.l2Normalize(v);
 	}
 
-	/** 在 unit vector 上叠加高斯噪声，扰动幅度 coef 越大相似度越低。 */
+	/**
+	 * 在 unit vector 上叠加高斯噪声，扰动幅度 coef 越大相似度越低。
+	 */
 	private static float[] perturb(float[] base, float coef, Random rnd) {
 		float[] v = base.clone();
 		for (int i = 0; i < v.length; i++) {

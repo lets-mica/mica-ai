@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.intent.config.BertIntentConfig;
 import net.dreamlu.mica.ai.intent.config.IntentResult;
 
+import java.io.Closeable;
 import java.nio.LongBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,8 +26,7 @@ import java.util.Map;
  * </ul>
  */
 @Slf4j
-public final class BertIntentEngine implements AutoCloseable {
-
+public final class BertIntentEngine implements Closeable {
 	private final OrtEnvironment env;
 	private final OrtSession session;
 	private final int maxLength;
@@ -119,7 +119,7 @@ public final class BertIntentEngine implements AutoCloseable {
 						? labels.get(bestIdx)
 						: String.valueOf(bestIdx);
 
-					log.debug("意图推理结果: {} (confidence={:.4f})", bestLabel, bestScore);
+					log.debug("意图推理结果: {} (confidence={})", bestLabel, bestScore);
 					return new IntentResult(bestLabel, bestScore, allScores);
 				}
 			}

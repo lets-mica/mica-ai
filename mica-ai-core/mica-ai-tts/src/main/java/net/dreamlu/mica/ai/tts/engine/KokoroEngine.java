@@ -3,6 +3,8 @@ package net.dreamlu.mica.ai.tts.engine;
 import ai.onnxruntime.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
@@ -12,7 +14,7 @@ import java.util.*;
  * <p>封装 ONNX Runtime 会话管理，执行模型推理。
  */
 @Slf4j
-public final class KokoroEngine implements AutoCloseable {
+public final class KokoroEngine implements Closeable {
 	private final OrtEnvironment env;
 	private final OrtSession session;
 
@@ -83,9 +85,13 @@ public final class KokoroEngine implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws OrtException {
+	public void close() throws IOException {
 		if (session != null) {
-			session.close();
+			try {
+				session.close();
+			} catch (OrtException e) {
+				throw new IOException(e);
+			}
 		}
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2024-2026 mica-ai
  */
-package net.dreamlu.mica.ai.face;
+package net.dreamlu.mica.ai.face.engine;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +10,10 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.config.FaceBox;
 import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.config.FaceEmbedding;
-import net.dreamlu.mica.ai.face.engine.FaceDetector;
-import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
-import net.dreamlu.mica.ai.face.preprocess.ImageUtils;
+import net.dreamlu.mica.ai.face.utils.ImageUtils;
 
 import java.awt.image.BufferedImage;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ import java.util.List;
 @Slf4j
 @Getter
 @RequiredArgsConstructor
-public class FaceEngine implements AutoCloseable {
+public class FaceEngine implements Closeable {
 	private final FaceConfig config;
 	private final FaceDetector detector;
 	private final FaceRecognizer recognizer;
@@ -101,8 +100,11 @@ public class FaceEngine implements AutoCloseable {
 	public void close() {
 		try {
 			detector.close();
-		} finally {
+		} catch (IOException ignore) {
+		}
+		try {
 			recognizer.close();
+		} catch (IOException ignore) {
 		}
 	}
 

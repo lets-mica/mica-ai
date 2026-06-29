@@ -30,7 +30,7 @@ public class KokoroTtsAutoConfiguration {
 			.build();
 	}
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public KokoroTts kokoroTts(KokoroTtsConfig kokoroTtsConfig) throws Exception {
 		return new KokoroTts(kokoroTtsConfig);

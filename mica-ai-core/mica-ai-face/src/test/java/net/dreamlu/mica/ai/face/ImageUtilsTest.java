@@ -4,7 +4,7 @@
 package net.dreamlu.mica.ai.face;
 
 import net.dreamlu.mica.ai.face.config.FaceBox;
-import net.dreamlu.mica.ai.face.preprocess.ImageUtils;
+import net.dreamlu.mica.ai.face.utils.ImageUtils;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;

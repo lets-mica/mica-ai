@@ -36,7 +36,7 @@ import java.util.List;
  * }</pre>
  */
 @Slf4j
-public class BertIntent implements Closeable, AutoCloseable {
+public class BertIntent implements Closeable {
 
 	private final BertTokenizer tokenizer;
 	private final BertIntentEngine engine;

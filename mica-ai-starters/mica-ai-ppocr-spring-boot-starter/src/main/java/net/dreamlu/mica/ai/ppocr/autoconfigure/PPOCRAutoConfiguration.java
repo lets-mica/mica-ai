@@ -38,7 +38,7 @@ public class PPOCRAutoConfiguration {
 			.build();
 	}
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public PPOcrV6Engine ppocrV6Engine(PPOcrV6Config ppOcrV6Config) {
 		return new PPOcrV6Engine(ppOcrV6Config);

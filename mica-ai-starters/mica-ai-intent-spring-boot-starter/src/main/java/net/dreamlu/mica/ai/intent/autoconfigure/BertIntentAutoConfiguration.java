@@ -35,7 +35,7 @@ public class BertIntentAutoConfiguration {
 			.build();
 	}
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public BertIntent bertIntent(BertIntentConfig config) throws IOException {
 		return new BertIntent(config);

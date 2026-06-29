@@ -1,8 +1,10 @@
 package net.dreamlu.mica.ai.tts.engine;
 
+import ai.onnxruntime.OrtException;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 import net.dreamlu.mica.ai.tts.config.TtsResult;
+import net.dreamlu.mica.ai.tts.g2p.ChineseG2P;
 import net.dreamlu.mica.ai.tts.g2p.G2P;
 
 import java.io.*;
@@ -29,7 +31,7 @@ import java.util.*;
  * }</pre>
  */
 @Slf4j
-public class KokoroTts implements AutoCloseable {
+public class KokoroTts implements Closeable {
 	private final KokoroTtsConfig config;
 	private final KokoroEngine engine;
 	private final Vocab vocab;
@@ -220,7 +222,7 @@ public class KokoroTts implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() throws IOException{
 		if (engine != null) {
 			engine.close();
 		}

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2024-2026 mica-ai
  */
-package net.dreamlu.mica.ai.face.preprocess;
+package net.dreamlu.mica.ai.face.utils;
 
 import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;

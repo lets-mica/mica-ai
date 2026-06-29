@@ -6,6 +6,7 @@ package net.dreamlu.mica.ai.face.engine;
 import net.dreamlu.mica.ai.face.config.FaceBox;
 
 import java.awt.image.BufferedImage;
+import java.io.Closeable;
 import java.util.List;
 
 /**
@@ -19,7 +20,7 @@ import java.util.List;
  * @author dreamlu
  * @since 1.0.0
  */
-public interface FaceDetector extends AutoCloseable {
+public interface FaceDetector extends Closeable {
 
 	/**
 	 * 检测图片中的人脸。
@@ -31,6 +32,4 @@ public interface FaceDetector extends AutoCloseable {
 	 */
 	List<FaceBox> detect(BufferedImage image);
 
-	@Override
-	void close();
 }

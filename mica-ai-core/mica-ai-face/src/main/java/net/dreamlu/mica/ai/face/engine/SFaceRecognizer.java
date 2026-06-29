@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.config.FaceEmbedding;
-import net.dreamlu.mica.ai.face.preprocess.ImageUtils;
+import net.dreamlu.mica.ai.face.utils.ImageUtils;
 
 import java.awt.image.BufferedImage;
 import java.nio.FloatBuffer;
