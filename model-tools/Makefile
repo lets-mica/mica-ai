@@ -64,3 +64,14 @@ $(foreach cap,$(CAPS),$(eval $(call cap_template,$(cap))))
 .PHONY: train-intent
 train-intent: ## 训练意图分类模型
 	cd intent && $(PYTHON) train.py --config configs/base.yaml
+.PHONY: publish
+publish: ## 把各 cap 的 out/ 整理到 models/，并生成 manifest.json
+	$(PYTHON) scripts/publish.py
+
+.PHONY: verify
+verify: ## 校验 models/manifest.json 里的 SHA256
+	$(PYTHON) scripts/publish.py --verify
+
+.PHONY: package
+package: ## 把 models/ 按 cap 分卷打包为 zip（用于 GitHub Release 上传）
+	$(PYTHON) scripts/package.py
