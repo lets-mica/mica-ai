@@ -23,10 +23,9 @@ import java.io.IOException;
 @ConditionalOnProperty(prefix = "mica.ai.intent", name = "model-path")
 public class BertIntentAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
-	@ConditionalOnMissingBean
-	public BertIntent bertIntent(BertIntentProperties properties) throws IOException {
-		BertIntentConfig config = BertIntentConfig.builder()
+	@Bean
+	public BertIntentConfig bertIntentConfig(BertIntentProperties properties) {
+		return BertIntentConfig.builder()
 			.modelPath(properties.getModelPath())
 			.vocabPath(properties.getVocabPath())
 			.maxLength(properties.getMaxLength())
@@ -34,6 +33,11 @@ public class BertIntentAutoConfiguration {
 			.intraOpNumThreads(properties.getIntraOpNumThreads())
 			.interOpNumThreads(properties.getInterOpNumThreads())
 			.build();
+	}
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	public BertIntent bertIntent(BertIntentConfig config) throws IOException {
 		return new BertIntent(config);
 	}
 }

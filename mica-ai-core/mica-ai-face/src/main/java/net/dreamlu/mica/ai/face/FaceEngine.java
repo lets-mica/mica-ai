@@ -3,6 +3,8 @@
  */
 package net.dreamlu.mica.ai.face;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.config.FaceBox;
@@ -10,8 +12,6 @@ import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.config.FaceEmbedding;
 import net.dreamlu.mica.ai.face.engine.FaceDetector;
 import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
-import net.dreamlu.mica.ai.face.engine.SFaceRecognizer;
-import net.dreamlu.mica.ai.face.engine.YuNetDetector;
 import net.dreamlu.mica.ai.face.preprocess.ImageUtils;
 
 import java.awt.image.BufferedImage;
@@ -48,17 +48,12 @@ import java.util.List;
  * @since 1.0.0
  */
 @Slf4j
+@Getter
+@RequiredArgsConstructor
 public class FaceEngine implements AutoCloseable {
-
 	private final FaceConfig config;
 	private final FaceDetector detector;
 	private final FaceRecognizer recognizer;
-
-	protected FaceEngine(FaceConfig config, FaceDetector detector, FaceRecognizer recognizer) {
-		this.config = config;
-		this.detector = detector;
-		this.recognizer = recognizer;
-	}
 
 	/**
 	 * Builder 入口，方便链式调用。
@@ -102,18 +97,6 @@ public class FaceEngine implements AutoCloseable {
 		return detector.detect(image);
 	}
 
-	public FaceConfig getConfig() {
-		return config;
-	}
-
-	public FaceDetector getDetector() {
-		return detector;
-	}
-
-	public FaceRecognizer getRecognizer() {
-		return recognizer;
-	}
-
 	@Override
 	public void close() {
 		try {
@@ -121,22 +104,6 @@ public class FaceEngine implements AutoCloseable {
 		} finally {
 			recognizer.close();
 		}
-	}
-
-	// ------------------------------------------------------------------------
-	// 模型工厂（新增 ModelType 时在这里加 case）
-	// ------------------------------------------------------------------------
-
-	private static FaceDetector createDefaultDetector(FaceConfig config) {
-		return switch (config.getModelType()) {
-			case YUNET_SFACE -> new YuNetDetector(config);
-		};
-	}
-
-	private static FaceRecognizer createDefaultRecognizer(FaceConfig config) {
-		return switch (config.getModelType()) {
-			case YUNET_SFACE -> new SFaceRecognizer(config);
-		};
 	}
 
 	// ------------------------------------------------------------------------
@@ -174,41 +141,6 @@ public class FaceEngine implements AutoCloseable {
 			return this;
 		}
 
-		public Builder detModelPath(Path path) {
-			ensureConfigBuilder().detModelPath(path);
-			return this;
-		}
-
-		public Builder recModelPath(Path path) {
-			ensureConfigBuilder().recModelPath(path);
-			return this;
-		}
-
-		public Builder modelType(FaceConfig.ModelType type) {
-			ensureConfigBuilder().modelType(type);
-			return this;
-		}
-
-		public Builder detScoreThreshold(float v) {
-			ensureConfigBuilder().detScoreThreshold(v);
-			return this;
-		}
-
-		public Builder detNmsThreshold(float v) {
-			ensureConfigBuilder().detNmsThreshold(v);
-			return this;
-		}
-
-		public Builder intraOpNumThreads(int v) {
-			ensureConfigBuilder().intraOpNumThreads(v);
-			return this;
-		}
-
-		public Builder interOpNumThreads(int v) {
-			ensureConfigBuilder().interOpNumThreads(v);
-			return this;
-		}
-
 		public FaceEngine build() {
 			// 如果用了 configBuilder，先 build 出 config
 			if (configBuilder != null) {
@@ -220,16 +152,8 @@ public class FaceEngine implements AutoCloseable {
 			if (config.getDetModelPath() == null || config.getRecModelPath() == null) {
 				throw new MicaAiException("detModelPath and recModelPath are required");
 			}
-			FaceDetector det = detector != null ? detector : createDefaultDetector(config);
-			FaceRecognizer rec = recognizer != null ? recognizer : createDefaultRecognizer(config);
-			return new FaceEngine(config, det, rec);
+			return new FaceEngine(config, detector, recognizer);
 		}
 
-		private FaceConfig.FaceConfigBuilder ensureConfigBuilder() {
-			if (this.configBuilder == null) {
-				this.configBuilder = (config == null ? FaceConfig.builder() : config.toBuilder());
-			}
-			return this.configBuilder;
-		}
 	}
 }

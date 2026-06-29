@@ -18,10 +18,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "mica.ai.ppocr", name = "det-model-path")
 public class PPOCRAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
-	@ConditionalOnMissingBean
-	public PPOcrV6Engine ppocrV6Engine(PPOCRProperties properties) {
-		PPOcrV6Config config = PPOcrV6Config.builder()
+	@Bean
+	public PPOcrV6Config ppocrV6Config(PPOCRProperties properties) {
+		return PPOcrV6Config.builder()
 			.detModelPath(properties.getDetModelPath())
 			.recModelPath(properties.getRecModelPath())
 			.recCharDictPath(properties.getRecCharDictPath())
@@ -37,7 +36,11 @@ public class PPOCRAutoConfiguration {
 			.intraOpNumThreads(properties.getIntraOpNumThreads())
 			.interOpNumThreads(properties.getInterOpNumThreads())
 			.build();
+	}
 
-		return new PPOcrV6Engine(config);
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	public PPOcrV6Engine ppocrV6Engine(PPOcrV6Config ppOcrV6Config) {
+		return new PPOcrV6Engine(ppOcrV6Config);
 	}
 }

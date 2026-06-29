@@ -18,10 +18,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "mica.ai.voice", name = "encoder-path")
 public class SenseVoiceAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
-	@ConditionalOnMissingBean
-	public SenseVoice senseVoice(SenseVoiceProperties properties) {
-		SenseVoiceConfig config = SenseVoiceConfig.builder()
+	@Bean
+	public SenseVoiceConfig senseVoiceConfig(SenseVoiceProperties properties) {
+		return SenseVoiceConfig.builder()
 			.encoderPath(properties.getEncoderPath())
 			.decoderPath(properties.getDecoderPath())
 			.tokenizerPath(properties.getTokenizerPath())
@@ -30,6 +29,11 @@ public class SenseVoiceAutoConfiguration {
 			.hotwords(properties.getHotwords())
 			.onnxProvider(properties.getOnnxProvider())
 			.build();
-		return new SenseVoice(config);
+	}
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	public SenseVoice senseVoice(SenseVoiceConfig senseVoiceConfig) {
+		return new SenseVoice(senseVoiceConfig);
 	}
 }

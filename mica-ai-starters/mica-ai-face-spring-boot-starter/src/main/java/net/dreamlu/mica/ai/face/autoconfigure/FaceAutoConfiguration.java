@@ -7,7 +7,8 @@ import net.dreamlu.mica.ai.face.FaceEngine;
 import net.dreamlu.mica.ai.face.config.FaceConfig;
 import net.dreamlu.mica.ai.face.engine.FaceDetector;
 import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
-import org.springframework.beans.factory.ObjectProvider;
+import net.dreamlu.mica.ai.face.engine.SFaceRecognizer;
+import net.dreamlu.mica.ai.face.engine.YuNetDetector;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,13 +32,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "mica.ai.face", name = {"det-model-path", "rec-model-path"})
 public class FaceAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
-	@ConditionalOnMissingBean
-	public FaceEngine faceEngine(FaceProperties properties,
-								 ObjectProvider<FaceDetector> detectorProvider,
-								 ObjectProvider<FaceRecognizer> recognizerProvider) {
-		FaceConfig config = FaceConfig.builder()
-			.modelType(toModelType(properties.getModelType()))
+	@Bean
+	public FaceConfig faceConfig(FaceProperties properties) {
+		return FaceConfig.builder()
 			.detModelPath(properties.getDetModelPath())
 			.recModelPath(properties.getRecModelPath())
 			.detScoreThreshold(properties.getDetScoreThreshold())
@@ -45,23 +42,28 @@ public class FaceAutoConfiguration {
 			.intraOpNumThreads(properties.getIntraOpNumThreads())
 			.interOpNumThreads(properties.getInterOpNumThreads())
 			.build();
+	}
 
-		FaceDetector detector = detectorProvider.getIfAvailable(() -> null);
-		FaceRecognizer recognizer = recognizerProvider.getIfAvailable(() -> null);
+	@Bean
+	@ConditionalOnMissingBean
+	public FaceDetector faceDetector(FaceConfig faceConfig) {
+		return new YuNetDetector(faceConfig);
+	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	public FaceRecognizer faceRecognizer(FaceConfig faceConfig) {
+		return new SFaceRecognizer(faceConfig);
+	}
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	public FaceEngine faceEngine(FaceConfig faceConfig, FaceDetector faceDetector, FaceRecognizer faceRecognizer) {
 		return FaceEngine.builder()
-			.config(config)
-			.detector(detector)
-			.recognizer(recognizer)
+			.config(faceConfig)
+			.detector(faceDetector)
+			.recognizer(faceRecognizer)
 			.build();
 	}
 
-	private static FaceConfig.ModelType toModelType(FaceProperties.FaceConfigModelType type) {
-		if (type == null) {
-			return FaceConfig.ModelType.YUNET_SFACE;
-		}
-		return switch (type) {
-			case YUNET_SFACE -> FaceConfig.ModelType.YUNET_SFACE;
-		};
-	}
 }

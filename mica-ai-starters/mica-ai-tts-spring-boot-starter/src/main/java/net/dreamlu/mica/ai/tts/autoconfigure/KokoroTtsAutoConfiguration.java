@@ -18,10 +18,9 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "mica.ai.tts", name = "model-path")
 public class KokoroTtsAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
-	@ConditionalOnMissingBean
-	public KokoroTts kokoroTts(KokoroTtsProperties properties) throws Exception {
-		KokoroTtsConfig config = KokoroTtsConfig.builder()
+	@Bean
+	public KokoroTtsConfig kokoroTtsConfig(KokoroTtsProperties properties) {
+		return KokoroTtsConfig.builder()
 			.modelPath(properties.getModelPath())
 			.voicesDir(properties.getVoicesDir())
 			.configPath(properties.getConfigPath())
@@ -29,6 +28,11 @@ public class KokoroTtsAutoConfiguration {
 			.defaultSpeed(properties.getDefaultSpeed())
 			.onnxProvider(properties.getOnnxProvider())
 			.build();
-		return new KokoroTts(config);
+	}
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	public KokoroTts kokoroTts(KokoroTtsConfig kokoroTtsConfig) throws Exception {
+		return new KokoroTts(kokoroTtsConfig);
 	}
 }
