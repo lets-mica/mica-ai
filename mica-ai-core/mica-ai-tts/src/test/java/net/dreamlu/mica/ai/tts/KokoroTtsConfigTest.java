@@ -36,7 +36,7 @@ class KokoroTtsConfigTest {
 			.build();
 
 		assertEquals("zf_001", config.getDefaultVoice());
-		assertEquals(1.0f, config.getDefaultSpeed());
+		assertEquals(0.82f, config.getDefaultSpeed());
 		assertEquals("cpu", config.getOnnxProvider());
 		assertEquals(510, KokoroTtsConfig.MAX_PHONEME_LENGTH);
 		assertEquals(24000, KokoroTtsConfig.SAMPLE_RATE);

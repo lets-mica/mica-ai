@@ -45,7 +45,7 @@ public class KokoroTtsConfig {
 		private String voicesDir;
 		private String configPath;
 		private String defaultVoice = "zf_001";
-		private float defaultSpeed = 1.0f;
+		private float defaultSpeed = 0.82f;
 		private String onnxProvider = "cpu";
 		private G2P g2p;
 

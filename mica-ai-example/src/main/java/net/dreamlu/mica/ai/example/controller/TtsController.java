@@ -62,10 +62,10 @@ public class TtsController {
 		@RequestParam("text") String text,
 		@Parameter(description = "音色名（可选，默认 zf_001）", example = "zf_001")
 		@RequestParam(value = "voice", required = false) String voice,
-		@Parameter(description = "语速 0.5 ~ 2.0（可选，默认 1.0）", example = "1.0")
+		@Parameter(description = "语速 0.5 ~ 2.0（可选，默认 0.82）", example = "0.82")
 		@RequestParam(value = "speed", required = false) Float speed) throws Exception {
 		String v = voice == null || voice.isBlank() ? "zf_001" : voice;
-		float s = speed == null ? 1.0f : speed;
+		float s = speed == null ? 0.82f : speed;
 		TtsResult result = tts.synthesize(text, v, s);
 		byte[] wav = toWav(result);
 		return ResponseEntity.ok()
@@ -88,7 +88,7 @@ public class TtsController {
 		@RequestBody Map<String, Object> body) throws Exception {
 		String phonemes = (String) body.get("phonemes");
 		String voice = body.get("voice") == null ? "zf_001" : (String) body.get("voice");
-		float speed = body.get("speed") == null ? 1.0f : ((Number) body.get("speed")).floatValue();
+		float speed = body.get("speed") == null ? 0.82f : ((Number) body.get("speed")).floatValue();
 		TtsResult result = tts.synthesizeFromPhonemes(phonemes, voice, speed);
 		byte[] wav = toWav(result);
 		return ResponseEntity.ok()

@@ -12,6 +12,7 @@ import com.github.houbb.pinyin.util.PinyinHelper;
  *     <li>支持中文分词（"重庆火锅" → "chóng qìng huǒ guō"）</li>
  *     <li>支持繁简体</li>
  *     <li>支持自定义拼音词典</li>
+ *     <li>常用英文缩写 → IPA 音素字典（如 "mica-ai" → "m aɪ k ə ˈ aɪ"）</li>
  * </ul>
  *
  * <p>输出格式：拼音+数字声调（"wo3 ai4 zhong1 wen2"），再经由 {@link BopomofoConverter#convert(String)}
@@ -27,27 +28,21 @@ public class HoubbPinyinG2P implements G2P {
 		if (text == null || text.isEmpty()) return "";
 		StringBuilder sb = new StringBuilder();
 		StringBuilder chineseBuf = new StringBuilder();
+		StringBuilder englishBuf = new StringBuilder();
 		for (int i = 0; i < text.length(); i++) {
 			char c = text.charAt(i);
 			if (isChinese(c)) {
+				flushEnglish(sb, englishBuf);
 				chineseBuf.append(c);
+			} else if (isEnglishLetter(c) || isHyphen(c)) {
+				flushChinese(sb, chineseBuf);
+				// 收集连续英文段（含连字符），以备字典查询
+				englishBuf.append(c);
 			} else {
 				flushChinese(sb, chineseBuf);
+				flushEnglish(sb, englishBuf);
 				if (Character.isDigit(c)) {
 					appendWithSpace(sb, BopomofoConverter.convert(digitToPinyin(c)));
-				} else if (isEnglishLetter(c)) {
-					// 英文每个字母独立 + 后接声调数字 token
-					// （与 Bopomofo 音节格式保持一致，Kokoro 训练数据中英文字母也是 letter-by-letter + 声调数字）
-					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
-						sb.append(separator);
-					}
-					sb.append(c);
-					sb.append('1');
-				} else if (isHyphen(c)) {
-					// 连字符：作为分词边界，输出一个空格
-					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
-						sb.append(separator);
-					}
 				} else if (isPunctuation(c)) {
 					// 标点两侧补空格：避免 vocab.filter 丢全角标点后音素粘连
 					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
@@ -61,7 +56,43 @@ public class HoubbPinyinG2P implements G2P {
 			}
 		}
 		flushChinese(sb, chineseBuf);
+		flushEnglish(sb, englishBuf);
 		return sb.toString().trim();
+	}
+
+	/**
+	 * 刷新英文缓冲区：优先查 IPA 字典，未命中 fallback 到 letter-by-letter + 声调数字 '1'。
+	 */
+	private void flushEnglish(StringBuilder sb, StringBuilder englishBuf) {
+		if (englishBuf.isEmpty()) {
+			return;
+		}
+		String word = englishBuf.toString();
+		englishBuf.setLength(0);
+		// 去除首尾连字符（如 "-mica-ai-" → "mica-ai"）
+		String key = word;
+		while (!key.isEmpty() && isHyphen(key.charAt(0))) {
+			key = key.substring(1);
+		}
+		while (!key.isEmpty() && isHyphen(key.charAt(key.length() - 1))) {
+			key = key.substring(0, key.length() - 1);
+		}
+		// 未命中：letter-by-letter + 声调数字 '1'
+		for (int i = 0; i < word.length(); i++) {
+			char c = word.charAt(i);
+			if (isEnglishLetter(c)) {
+				if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
+					sb.append(separator);
+				}
+				sb.append(c);
+				sb.append('1');
+			} else if (isHyphen(c)) {
+				// 连字符：作为分词边界，输出一个空格
+				if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
+					sb.append(separator);
+				}
+			}
+		}
 	}
 
 	private void flushChinese(StringBuilder sb, StringBuilder chineseBuf) {

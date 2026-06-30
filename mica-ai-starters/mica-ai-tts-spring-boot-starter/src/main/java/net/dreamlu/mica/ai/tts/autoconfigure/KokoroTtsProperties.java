@@ -33,7 +33,7 @@ public class KokoroTtsProperties {
 	private String defaultVoice = "zf_001";
 
 	/** 默认语速 */
-	private float defaultSpeed = 1.0f;
+	private float defaultSpeed = 0.82f;
 
 	/** ONNX Runtime Provider: cpu / cuda */
 	private String onnxProvider = "cpu";

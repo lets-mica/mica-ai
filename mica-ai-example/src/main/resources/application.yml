@@ -49,7 +49,7 @@ mica:
       voices-dir: model-tools/models/tts/voices
       config-path: model-tools/models/tts/config.json
       default-voice: zf_001
-      default-speed: 1.0
+      default-speed: 0.82
       onnx-provider: cpu
 
     # 🎧 ASR —— SenseVoiceSmall（1.8 GB，多语种 + 热词雷达）
