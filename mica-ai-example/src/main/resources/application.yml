@@ -1,5 +1,23 @@
 server:
-  port: 8080
+  port: 8181
+
+# ============================================================
+#  springdoc-openapi (Swagger UI / OpenAPI 3)
+#  访问: http://localhost:8181/swagger-ui.html
+#  JSON: http://localhost:8181/v3/api-docs
+# ============================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+  show-actuator: false
+  packages-to-scan: net.dreamlu.mica.ai.example.controller
 
 spring:
   application:
@@ -17,76 +35,65 @@ spring:
 mica:
   ai:
     # ============================================================
-    #   mica-ai 6 大能力统一开关：mica.ai.<cap>.enabled
-    #   - true  （默认）: 必须配置好必填模型路径，否则启动失败
-    #   - false         : 整个 Starter 不注入任何 Bean，可安全留空
+    #  模型路径统一指向 model-tools/models/<cap>/...
+    #  （由 model-tools/scripts/publish.py 从各 cap 的 out/ 整理而来，
+    #    对应 manifest.json 中的 SHA256；详见 model-tools/models/README.md）
+    #
+    #  intent 暂不发布（按 release 决策 §6.2 / 决策点 2）
     # ============================================================
+
+    # 🎤 TTS —— Kokoro-82M（362 MB, 103 音色）
     tts:
-      enabled: false
+      enabled: true
+      model-path: model-tools/models/tts/model_dynamic.onnx
+      voices-dir: model-tools/models/tts/voices
+      config-path: model-tools/models/tts/config.json
+      default-voice: zf_001
+      default-speed: 1.0
+      onnx-provider: cpu
+
+    # 🎧 ASR —— SenseVoiceSmall（1.8 GB，多语种 + 热词雷达）
     voice:
-      enabled: false
+      enabled: true
+      encoder-path: model-tools/models/voice/SenseVoice-Encoder.fp32.onnx
+      decoder-path: model-tools/models/voice/SenseVoice-CTC.fp32.onnx
+      tokenizer-path: model-tools/models/voice/Tokenizer.bpe.model
+      onnx-provider: cpu
+      itn: true
+      top-k: 10
+      hotwords:
+        - mica
+        - mica-ai
+
+    # 📷 OCR —— PP-OCRv6 tiny（6 MB；调试默认走 tiny，启动最快）
+    # 想换档：把 tiny 换成 small 或 medium，并同步改 rec-char-dict-path 后缀
     ppocr:
-      enabled: false
+      enabled: true
+      det-model-path: model-tools/models/ppocr/tiny/det/inference.onnx
+      rec-model-path: model-tools/models/ppocr/tiny/rec/inference.onnx
+      rec-char-dict-path: model-tools/models/ppocr/tiny/rec_char_dict_tiny.txt
+      det-limit-side-len: 64
+      det-thresh: 0.3
+      det-box-thresh: 0.6
+      det-unclip-ratio: 1.5
+
+    # 👤 Speaker —— ERes2NetV2（69 MB，192d Embedding）
     speaker:
-      enabled: false
+      enabled: true
+      model-path: model-tools/models/speaker/eres2net.onnx
+      default-threshold: 0.58
+
+    # 🎭 Face —— YuNet + SFace（38 MB，Apache-2.0 OpenCV Zoo）
+    face:
+      enabled: true
+      det-model-path: model-tools/models/face/face_detection_yunet_2023mar.onnx
+      rec-model-path: model-tools/models/face/face_recognition_sface_2021dec.onnx
+      det-score-threshold: 0.6
+      det-nms-threshold: 0.3
+
+    # 🧠 Intent —— 本次不发布（按 release 决策），保持 disabled
     intent:
       enabled: false
-    face:
-      enabled: false
-
-# ----------------------------------------------------------------
-# 启用示例（取消注释 + 替换模型路径即可激活对应 Starter）：
-# ----------------------------------------------------------------
-# mica:
-#   ai:
-#     tts:
-#       enabled: true
-#       model-path: E:/codes/ai/kokoro-onnx/model/model_dynamic.onnx
-#       voices-dir: E:/codes/ai/kokoro-onnx/model/voices
-#       config-path: E:/codes/ai/kokoro-onnx/model/config.json
-#       default-voice: zf_001
-#       default-speed: 1.0
-#       onnx-provider: cpu
-#     voice:
-#       enabled: true
-#       encoder-path: E:/codes/ai/SenseVoice-ONNX/model/SenseVoice-Encoder.fp32.onnx
-#       decoder-path: E:/codes/ai/SenseVoice-ONNX/model/SenseVoice-CTC.fp32.onnx
-#       tokenizer-path: E:/codes/ai/SenseVoice-ONNX/model/Tokenizer.bpe.model
-#       onnx-provider: cpu
-#       itn: true
-#       top-k: 10
-#       hotwords:
-#         - mica
-#         - 梦想卢
-#     ppocr:
-#       enabled: true
-#       det-model-path: model-tools/ppocr/model/out/det/inference.onnx
-#       rec-model-path: model-tools/ppocr/model/out/rec/inference.onnx
-#       rec-char-dict-path: model-tools/ppocr/model/out/rec_char_dict.txt
-#       det-limit-side-len: 64
-#       det-thresh: 0.3
-#       det-box-thresh: 0.6
-#       det-unclip-ratio: 1.5
-#     speaker:
-#       enabled: true
-#       model-path: E:/codes/ai/Speaker-ONNX/model/speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx
-#       default-threshold: 0.58
-#     intent:
-#       enabled: true
-#       model-path: E:/codes/ai/Intent-ONNX/model/bert_intent.onnx
-#       vocab-path: E:/codes/ai/Intent-ONNX/model/vocab.txt
-#       max-length: 128
-#       labels:
-#         - weather
-#         - music
-#         - chat
-#         - news
-#     face:
-#       enabled: true
-#       det-model-path: model-tools/face/model/out/face_detection_yunet_2023mar.onnx
-#       rec-model-path: model-tools/face/model/out/face_recognition_sface_2021dec.onnx
-#       det-score-threshold: 0.6
-#       det-nms-threshold: 0.3
 
 logging:
   level:

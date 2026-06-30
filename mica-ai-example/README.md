@@ -32,7 +32,7 @@ mvn -pl mica-ai-example -am -DskipTests clean install
 mvn -pl mica-ai-example spring-boot:run
 ```
 
-启动后访问 `http://localhost:8080`，由于没有任何能力启用，所有 Controller 都已被 `@ConditionalOnBean` 跳过注册。
+启动后访问 `http://localhost:8181`，由于没有任何能力启用，所有 Controller 都已被 `@ConditionalOnProperty(mica.ai.<cap>.enabled)` 跳过注册。
 
 ### 2.2 启用指定能力
 
@@ -85,7 +85,7 @@ mvn -pl mica-ai-example -am test
 | `/face/detect` | POST | 上传图片，返回人脸框 + 关键点 | mica-ai-face |
 | `/face/extract` | POST | 上传图片，返回 512 维 embedding | mica-ai-face |
 
-所有 Controller 都用 `@ConditionalOnBean(<Engine>)` 装饰，未启用对应能力时不会注册，访问会返回 404。
+所有 Controller 都用 `@ConditionalOnProperty(prefix = "mica.ai.<cap>", name = "enabled")` 装饰，未启用对应能力时不会注册，访问会返回 404。
 
 ---
 

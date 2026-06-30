@@ -21,7 +21,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
+        <!-- springdoc-openapi (Swagger UI / OpenAPI 3) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
         <!-- mica-ai 全部 6 个 Starter -->
         <dependency>
             <groupId>net.dreamlu</groupId>
@@ -47,7 +51,6 @@
             <groupId>net.dreamlu</groupId>
             <artifactId>mica-ai-face-spring-boot-starter</artifactId>
         </dependency>
-
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

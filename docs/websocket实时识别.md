@@ -74,7 +74,7 @@
 ### 浏览器（JavaScript）
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8080/asr');
+const ws = new WebSocket('ws://localhost:8181/asr');
 const mediaStream = await navigator.mediaDevices.getUserMedia({
     audio: { sampleRate: 16000, channelCount: 1 }
 });

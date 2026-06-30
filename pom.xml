@@ -51,6 +51,8 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.34</logback.version>
         <lombok.version>1.18.46</lombok.version>
+        <!-- springdoc-openapi（Swagger UI / OpenAPI 3，Spring Boot 4.x 兼容） -->
+        <springdoc.version>2.7.0</springdoc.version>
     </properties>
 
     <modules>
@@ -139,6 +141,12 @@
                 <artifactId>mica-auto</artifactId>
                 <version>${mcia.auto.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <!-- springdoc-openapi（Swagger UI / OpenAPI 3） -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
             </dependency>
             <!-- mica-ai 相关组件 -->
             <dependency>

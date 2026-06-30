@@ -164,7 +164,8 @@ public class KokoroTts implements Closeable {
 		inputIds[inputIds.length - 1] = 0;
 
 		// 获取 style 向量
-		float[] refS = voiceManager.getStyle(voice, tokenList.size());
+		// voice 行数 = 含首尾 padding 0 的 input_ids 长度（对齐 kokoro-onnx Python 参考实现）
+		float[] refS = voiceManager.getStyle(voice, inputIds.length);
 
 		// 推理
 		return engine.inference(inputIds, refS, speed);

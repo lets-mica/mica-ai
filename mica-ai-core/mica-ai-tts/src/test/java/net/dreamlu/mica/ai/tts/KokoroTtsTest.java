@@ -38,8 +38,10 @@ class KokoroTtsTest {
 			.build();
 
 		try (KokoroTts tts = new KokoroTts(config)) {
-			// 使用预生成的音素（避免依赖 G2P）
-			String phonemes = "ㄋㄧ3 ㄏㄠ3 ㄨㄛ3 ㄕ4 Kokoro";
+			// 使用预生成的音素（避免依赖 G2P）。
+			// 注意：词表里 '/' 后面的空格代表词间分隔符；3/4 这类数字是 Kokoro 数字读音 token，并非声调标记，
+			// 这里严格只用 bopomofo + 词间空格，避免造出 "泥-衣-三-..." 这种会被读成数字的怪音。
+			String phonemes = "ㄋㄧ ㄏㄠ ㄨㄛ ㄕ";
 			TtsResult result = tts.synthesizeFromPhonemes(phonemes, "zf_001", 1.0f);
 
 			assertNotNull(result);
