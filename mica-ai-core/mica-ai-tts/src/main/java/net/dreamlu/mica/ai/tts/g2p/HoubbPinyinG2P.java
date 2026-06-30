@@ -36,7 +36,18 @@ public class HoubbPinyinG2P implements G2P {
 				if (Character.isDigit(c)) {
 					appendWithSpace(sb, BopomofoConverter.convert(digitToPinyin(c)));
 				} else if (isEnglishLetter(c)) {
+					// 英文每个字母独立 + 后接声调数字 token
+					// （与 Bopomofo 音节格式保持一致，Kokoro 训练数据中英文字母也是 letter-by-letter + 声调数字）
+					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
+						sb.append(separator);
+					}
 					sb.append(c);
+					sb.append('1');
+				} else if (isHyphen(c)) {
+					// 连字符：作为分词边界，输出一个空格
+					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
+						sb.append(separator);
+					}
 				} else if (isPunctuation(c)) {
 					// 标点两侧补空格：避免 vocab.filter 丢全角标点后音素粘连
 					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
@@ -110,6 +121,10 @@ public class HoubbPinyinG2P implements G2P {
 
 	private static boolean isEnglishLetter(char c) {
 		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+	}
+
+	private static boolean isHyphen(char c) {
+		return c == '-' || c == '‐' || c == '–' || c == '—';
 	}
 
 	private static boolean isPunctuation(char c) {
