@@ -4,7 +4,6 @@ import ai.onnxruntime.OrtException;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.tts.config.KokoroTtsConfig;
 import net.dreamlu.mica.ai.tts.config.TtsResult;
-import net.dreamlu.mica.ai.tts.g2p.ChineseG2P;
 import net.dreamlu.mica.ai.tts.g2p.G2P;
 
 import java.io.*;
@@ -127,8 +126,8 @@ public class KokoroTts implements Closeable {
 
 	/**
 	 * G2P：文本转音素（使用注入的 G2P）。
-	 * <p>默认使用 {@link ChineseG2P} 简化实现。
-	 * 可通过 {@link KokoroTtsConfig.Builder#g2p(G2P)} 注入自定义实现（如 houbb/pinyin）。
+	 * <p>默认使用 {@link net.dreamlu.mica.ai.tts.g2p.HoubbPinyinG2P}（基于 houbb/pinyin，多音字消歧）。
+	 * 可通过 {@link KokoroTtsConfig.Builder#g2p(G2P)} 注入自定义实现。
 	 */
 	private String g2p(String text) {
 		return g2p.convert(text);

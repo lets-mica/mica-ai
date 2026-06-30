@@ -1,10 +1,10 @@
 package net.dreamlu.mica.ai.tts.g2p;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import com.github.houbb.pinyin.constant.enums.PinyinStyleEnum;
+import com.github.houbb.pinyin.util.PinyinHelper;
 
 /**
- * 基于 <a href="https://github.com/houbb/pinyin">houbb/pinyin</a> 的高质量中文 G2P 实现。
+ * 基于 <a href="https://github.com/houbb/pinyin">houbb/pinyin</a> 的高质量中文 G2P 实现（默认实现）。
  *
  * <p>特性：
  * <ul>
@@ -14,96 +14,18 @@ import java.lang.reflect.Method;
  *     <li>支持自定义拼音词典</li>
  * </ul>
  *
- * <p>输出格式：拼音+数字声调（"wo3 ai4 zhong1 wen2"），再经由 {@link ChineseG2P#pinyinToBopomofo(String)}
+ * <p>输出格式：拼音+数字声调（"wo3 ai4 zhong1 wen2"），再经由 {@link BopomofoConverter#convert(String)}
  * 转换为 Kokoro 所需的注音符号。
- *
- * <p><b>使用方式</b>：在项目中显式添加依赖：
- * <pre>{@code
- * <dependency>
- *     <groupId>com.github.houbb</groupId>
- *     <artifactId>pinyin</artifactId>
- *     <version>0.4.0</version>
- * </dependency>
- * }</pre>
- *
- * <p><b>注意</b>：本类使用反射调用 houbb 库，避免 mica-ai-tts 对其产生强依赖。
- * 如果未引入 houbb 库，调用 {@link #convert(String)} 时会抛 {@link IllegalStateException}。
  *
  * @author L.cm
  */
 public class HoubbPinyinG2P implements G2P {
-
-	private final Method toPinyinMethod;
-	private final boolean initialized;
-	private final String separator = " ";
-
-	/**
-	 * 创建默认实例（反射加载 houbb/pinyin）。
-	 *
-	 * @throws IllegalStateException 未找到 houbb/pinyin 依赖
-	 */
-	public HoubbPinyinG2P() {
-		Method m = null;
-		boolean ok = false;
-		try {
-			// 反射加载 com.github.houbb.pinyin.PinyinHelper
-			// API: PinyinHelper.toPinyin(String, PinyinStyleEnum, String)
-			// 反射：避免 mica-ai-tts 对 houbb 库的强依赖
-			Class<?> styleEnum = Class.forName("com.github.houbb.pinyin.constant.enums.PinyinStyleEnum");
-			Object numLast = null;
-			for (Object constant : styleEnum.getEnumConstants()) {
-				if ("NUM_LAST".equals(((Enum<?>) constant).name())) {
-					numLast = constant;
-					break;
-				}
-			}
-			if (numLast == null) {
-				throw new IllegalStateException("PinyinStyleEnum.NUM_LAST not found in houbb/pinyin");
-			}
-			// 实际类位于 com.github.houbb.pinyin.util.PinyinHelper
-			Class<?> helper = Class.forName("com.github.houbb.pinyin.util.PinyinHelper");
-			// 找到签名 (String, PinyinStyleEnum) 的 toPinyin 方法
-			for (Method method : helper.getMethods()) {
-				if ("toPinyin".equals(method.getName())
-					&& method.getParameterCount() == 2
-					&& method.getParameterTypes()[0] == String.class
-					&& method.getParameterTypes()[1] == styleEnum) {
-					m = method;
-					break;
-				}
-			}
-			if (m == null) {
-				throw new IllegalStateException("PinyinHelper.toPinyin(String, PinyinStyleEnum) not found");
-			}
-			ok = true;
-		} catch (ClassNotFoundException e) {
-			// houbb/pinyin 未引入，保持非初始化状态
-		}
-		this.toPinyinMethod = m;
-		this.initialized = ok;
-	}
-
-	/**
-	 * 检查 houbb/pinyin 库是否可用。
-	 */
-	public boolean isAvailable() {
-		return initialized;
-	}
+	private final char separator = ' ';
 
 	@Override
 	public String convert(String text) {
 		if (text == null || text.isEmpty()) return "";
-		if (!initialized) {
-			throw new IllegalStateException(
-				"houbb/pinyin 库未找到，请添加依赖：\n"
-					+ "<dependency>\n"
-					+ "    <groupId>com.github.houbb</groupId>\n"
-					+ "    <artifactId>pinyin</artifactId>\n"
-					+ "    <version>0.4.0</version>\n"
-					+ "</dependency>");
-		}
 		StringBuilder sb = new StringBuilder();
-		// 按字符处理：中文 → 拼音转换；英文/数字/标点/空白 → 保留
 		StringBuilder chineseBuf = new StringBuilder();
 		for (int i = 0; i < text.length(); i++) {
 			char c = text.charAt(i);
@@ -112,13 +34,15 @@ public class HoubbPinyinG2P implements G2P {
 			} else {
 				flushChinese(sb, chineseBuf);
 				if (Character.isDigit(c)) {
-					appendWithSpace(sb, ChineseG2P.pinyinToBopomofo(digitToPinyin(c)));
+					appendWithSpace(sb, BopomofoConverter.convert(digitToPinyin(c)));
 				} else if (isEnglishLetter(c)) {
 					sb.append(c);
 				} else if (isPunctuation(c)) {
-					sb.append(c);
+					// 标点两侧补空格：避免 vocab.filter 丢全角标点后音素粘连
+					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
+						sb.append(separator);
+					}
 				} else if (Character.isWhitespace(c)) {
-					// 直接追加空格，不经过 appendWithSpace（空串会被跳过）
 					if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') {
 						sb.append(separator);
 					}
@@ -133,42 +57,27 @@ public class HoubbPinyinG2P implements G2P {
 		if (chineseBuf.isEmpty()) {
 			return;
 		}
-		String pinyinStr = toPinyin(chineseBuf.toString());
-		// 拼音格式: "wo3 ai4 zhong1 wen2"
+		String pinyinStr = PinyinHelper.toPinyin(chineseBuf.toString(), PinyinStyleEnum.NUM_LAST);
 		String[] syllables = pinyinStr.split("\\s+");
 		for (String syllable : syllables) {
-			if (!syllable.isEmpty()) {
-				String bpmf = ChineseG2P.pinyinToBopomofo(syllable);
-				appendWithSpace(sb, bpmf);
+			if (syllable.isEmpty()) continue;
+			// houbb/pinyin 输出 "zhong1" 这种 拼音+数字声调 格式
+			// Kokoro 训练数据中每个 Bopomofo 音节后必须跟随一个声调数字 token (U+0031-U+0035)
+			int tone = 0;
+			String pinyinBase = syllable;
+			char last = syllable.charAt(syllable.length() - 1);
+			if (last >= '1' && last <= '5') {
+				tone = last - '0';
+				pinyinBase = syllable.substring(0, syllable.length() - 1);
+			}
+			String bpmf = BopomofoConverter.convert(pinyinBase);
+			if (bpmf.isEmpty()) continue;
+			appendWithSpace(sb, bpmf);
+			if (tone > 0) {
+				sb.append((char) ('0' + tone));
 			}
 		}
 		chineseBuf.setLength(0);
-	}
-
-	private String toPinyin(String chinese) {
-		try {
-			Object result = toPinyinMethod.invoke(null, chinese, getNumLastStyle());
-			return result == null ? "" : result.toString();
-		} catch (IllegalAccessException | InvocationTargetException e) {
-			throw new IllegalStateException("Failed to call PinyinHelper.toPinyin: " + e.getMessage(), e);
-		}
-	}
-
-	private Object numLastStyleCache;
-
-	private Object getNumLastStyle() {
-		if (numLastStyleCache != null) return numLastStyleCache;
-		try {
-			Class<?> styleEnum = Class.forName("com.github.houbb.pinyin.constant.enums.PinyinStyleEnum");
-			for (Object constant : styleEnum.getEnumConstants()) {
-				if ("NUM_LAST".equals(((Enum<?>) constant).name())) {
-					numLastStyleCache = constant;
-					return constant;
-				}
-			}
-		} catch (ClassNotFoundException ignored) {
-		}
-		throw new IllegalStateException("PinyinStyleEnum.NUM_LAST not found");
 	}
 
 	private static String digitToPinyin(char c) {

@@ -37,15 +37,12 @@
             <scope>test</scope>
         </dependency>
         <!--
-            可选 G2P 库依赖（houbb/pinyin）。
-            如需使用 net.dreamlu.mica.ai.tts.g2p.HoubbPinyinG2P（支持多音字、中文分词、繁简体），
-            请在使用方项目中显式引入该依赖。本模块使用反射调用，避免强制依赖。
+            G2P 库依赖（houbb/pinyin），默认 G2P 使用，强制依赖。
         -->
         <dependency>
             <groupId>com.github.houbb</groupId>
             <artifactId>pinyin</artifactId>
             <version>0.4.0</version>
-            <optional>true</optional>
         </dependency>
     </dependencies>
 

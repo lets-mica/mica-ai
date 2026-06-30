@@ -2,11 +2,12 @@ package net.dreamlu.mica.ai.tts.config;
 
 import lombok.Getter;
 import net.dreamlu.mica.ai.tts.g2p.G2P;
-import net.dreamlu.mica.ai.tts.g2p.ChineseG2P;
+import net.dreamlu.mica.ai.tts.g2p.HoubbPinyinG2P;
 
 /**
  * Kokoro TTS 配置。
  */
+@Getter
 public class KokoroTtsConfig {
 	/**
 	 * 最大音素长度
@@ -17,17 +18,11 @@ public class KokoroTtsConfig {
 	 */
 	public static final int SAMPLE_RATE = 24000;
 
-	@Getter
 	private final String modelPath;
-	@Getter
 	private final String voicesDir;
-	@Getter
 	private final String configPath;
-	@Getter
 	private final String defaultVoice;
-	@Getter
 	private final float defaultSpeed;
-	@Getter
 	private final String onnxProvider;
 	private final G2P g2p;
 
@@ -39,13 +34,6 @@ public class KokoroTtsConfig {
 		this.defaultSpeed = builder.defaultSpeed;
 		this.onnxProvider = builder.onnxProvider;
 		this.g2p = builder.g2p;
-	}
-
-	/**
-	 * 获取 G2P 转换器。若未设置，返回默认的 {@link ChineseG2P}。
-	 */
-	public G2P getG2p() {
-		return g2p == null ? ChineseG2P.getDefault() : g2p;
 	}
 
 	public static Builder builder() {
@@ -93,8 +81,8 @@ public class KokoroTtsConfig {
 
 		/**
 		 * 注入自定义 G2P 转换器。
-		 * <p>不设置时使用 {@link ChineseG2P} 简化实现（仅覆盖 ~80 个常用汉字）。
-		 * <p>推荐使用 {@code net.dreamlu.mica.ai.tts.g2p.HoubbPinyinG2P}（需自行引入 houbb/pinyin 依赖）。
+		 * <p>不设置时使用默认的 {@link HoubbPinyinG2P}（基于 houbb/pinyin，多音字消歧、繁简体支持）。
+		 * <p>备选：可通过自定义实现 G2P 接口的方式替换，参见 {@link G2P}。
 		 *
 		 * @param g2p G2P 实例
 		 */
@@ -112,6 +100,9 @@ public class KokoroTtsConfig {
 			}
 			if (configPath == null) {
 				throw new IllegalArgumentException("configPath is required");
+			}
+			if (g2p == null) {
+				this.g2p = new HoubbPinyinG2P();
 			}
 			return new KokoroTtsConfig(this);
 		}

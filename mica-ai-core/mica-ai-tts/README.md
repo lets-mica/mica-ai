@@ -4,7 +4,7 @@
 
 零 PyTorch / 零 Python 依赖。完整复现分句 → G2P → ONNX 推理 → 静音裁剪 → WAV 编码全链路逻辑。
 
-支持中 / 英双语、103 个音色（zf/zm/af/bf_*），内置可插拔 G2P 接口，可选用 `houbb/pinyin` 实现多音字智能消歧。
+支持中 / 英双语、103 个音色（zf/zm/af/bf_*），内置可插拔 G2P 接口，默认采用 `houbb/pinyin` 实现多音字智能消歧。
 
 ---
 
@@ -16,7 +16,7 @@
 | Maven | 3.6+ | 编译 / 打包 |
 | ONNX Runtime | 1.20+ | 通过 Maven 自动拉取 |
 
-无其他强制依赖。G2P 默认使用内置简化实现（覆盖 ~80 个常用汉字）；如需多音字消歧与中文分词，引入 `houbb/pinyin` 即可。
+无其他强制依赖（默认 G2P 使用 `com.github.houbb:pinyin:0.4.0`，随主模块一同传递）。
 
 ---
 
@@ -129,11 +129,10 @@ mica-ai-tts 通过 `G2P` 接口让用户自由选择文本前端实现：
 
 | 实现 | 覆盖度 | 多音字 | 分词 | 繁简体 | 依赖 |
 |------|--------|--------|------|--------|------|
-| `ChineseG2P`（默认） | ~80 常用汉字 | ❌ | ❌ | ❌ | 零 |
-| `HoubbPinyinG2P` | 全字符 | ✅ | ✅ | ✅ | `com.github.houbb:pinyin:0.4.0` |
+| `HoubbPinyinG2P`（默认） | 全字符 | ✅ | ✅ | ✅ | `com.github.houbb:pinyin:0.4.0` |
 | 自定义 `G2P` | 自由 | - | - | - | - |
 
-### 4.1 默认实现（零依赖）
+### 4.1 默认实现（houbb/pinyin）
 
 ```java
 KokoroTtsConfig config = KokoroTtsConfig.builder()
@@ -141,39 +140,16 @@ KokoroTtsConfig config = KokoroTtsConfig.builder()
     .voicesDir(...)
     .configPath(...)
     .build();
-// 自动使用 ChineseG2P 简化实现
-```
-
-### 4.2 高质量实现（houbb/pinyin）
-
-引入依赖：
-
-```xml
-<dependency>
-    <groupId>com.github.houbb</groupId>
-    <artifactId>pinyin</artifactId>
-    <version>0.4.0</version>
-</dependency>
-```
-
-注入 G2P：
-
-```java
-KokoroTtsConfig config = KokoroTtsConfig.builder()
-    .modelPath(...)
-    .voicesDir(...)
-    .configPath(...)
-    .g2p(new HoubbPinyinG2P())  // 注入高质量 G2P
-    .build();
+// 自动使用 HoubbPinyinG2P（基于 houbb/pinyin，多音字消歧、繁简体支持）
 ```
 
 `HoubbPinyinG2P` 特性：
 - **多音字智能消歧**：通过分词识别语境，例如 `重庆火锅` → `chóng qìng huǒ guō`（非 `zhòng qìng`）
 - **中文分词**：`重量级` 不会被错误地切分为 `zhòng liàng jí`
 - **繁简体支持**：`奮鬥` → `fèn dòu`
-- **反射加载**：mica-ai-tts 对 houbb/pinyin 无强依赖，调用时检查 `isAvailable()`
+- **标点处理**：全角标点两侧自动补空格，避开 Kokoro vocab 过滤后的音素粘连问题
 
-### 4.3 自定义 G2P（Lambda）
+### 4.2 自定义 G2P（Lambda）
 
 ```java
 G2P customG2p = text -> {
@@ -189,7 +165,7 @@ KokoroTtsConfig config = KokoroTtsConfig.builder()
     .build();
 ```
 
-### 4.4 跳过 G2P，直接用音素
+### 4.3 跳过 G2P，直接用音素
 
 如果已有外部 G2P（如 misaki、Python espeak）生成的音素，可直接调用 `synthesizeFromPhonemes`：
 
@@ -212,10 +188,8 @@ TtsResult result = tts.synthesizeFromPhonemes(phonemes, "zf_001", 1.0f);
 | **词表** | `Vocab` | 从 config.json 解析字符→token 映射 |
 | **音色管理** | `VoiceManager` | 加载 raw float32 [510,256] 音色文件 |
 | **G2P 接口** | `G2P` | 函数式接口，可注入任意实现 |
-| **默认 G2P** | `ChineseG2P` | 简化实现，~80 常用汉字 |
-| **高质量 G2P** | `HoubbPinyinG2P` | 基于 houbb/pinyin，多音字消歧 |
-| **文本前端** | `TextFrontend` | 分句（≤510 音素/批）+ 静音裁剪 |
-| **拼音→注音** | `ChineseG2P.pinyinToBopomofo()` | 公开静态方法，供 HoubbPinyinG2P 复用 |
+| **默认 G2P** | `HoubbPinyinG2P` | 基于 houbb/pinyin，多音字消歧、繁简体支持 |
+| **拼音→注音** | `BopomofoConverter` | 静态工具，供 HoubbPinyinG2P 复用 |
 
 ### 数据结构
 
@@ -243,7 +217,7 @@ record TtsResult(
 
 - **采样率**：固定 24kHz 单声道，`saveWav()` 输出 PCM 16-bit 格式。
 - **最大音素长度**：单批 ≤ 510 音素，超长文本自动按标点分句。
-- **G2P 选择**：默认 `ChineseG2P` 仅覆盖 ~80 常用汉字，生产环境强烈推荐注入 `HoubbPinyinG2P` 或外部 G2P。
+- **G2P 选择**：默认 `HoubbPinyinG2P` 基于 houbb/pinyin，多音字消歧、繁简体支持。
 - **音色文件**：每个 .bin 是 raw float32 二进制（[510, 256] = 522240 字节），不可直接打开查看。
 - **GPU 加速**：替换 `onnxruntime` 为 `onnxruntime_gpu` 并设置 `onnxProvider("cuda")` 即可。
 - **Surefire 警告**：Windows 沙箱环境下 `mvn test` 末尾可能报 "Error occurred in starting fork"，但实际测试全部通过。
