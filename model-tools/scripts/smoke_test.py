@@ -32,22 +32,25 @@ from common.progress import fail, ok, step, warn
 
 MIN_PY = (3, 10)
 
-CAPS = ("face",)
+CAPS = ("face", "filetype")
 
 EXPECTED_FILES: dict[str, tuple[str, ...]] = {
     "face": ("README.md", "download.py", "convert.py", "requirements.txt"),
+    "filetype": ("README.md", "download.py", "convert.py", "requirements.txt"),
 }
 
 ALL_PY_FILES = [
     "common/__init__.py", "common/paths.py", "common/progress.py",
     "common/downloader.py", "common/onnx_utils.py",
     "face/download.py", "face/convert.py",
+    "filetype/download.py", "filetype/convert.py",
     "scripts/smoke_test.py",
 ]
 
 # 真正能 import 的脚本（不带 argparse 副作用）
 IMPORTABLE_SCRIPTS = [
     "face.download", "face.convert",
+    "filetype.download", "filetype.convert",
 ]
 
 
@@ -111,7 +114,12 @@ def check_py_syntax() -> bool:
 
 
 def check_imports() -> bool:
-    """真正 import 每个 capability 脚本（不执行 main），确保顶层 import 链不破。"""
+    """真正 import 每个 capability 脚本（不执行 main），确保顶层 import 链不破。
+
+    若 ``filetype`` 已被 site-packages 第三方包占用（PyPI 上有名为
+    ``filetype`` 的库），对应该子项视为可选跳过（脚本本身仍可由用户
+    通过 ``python filetype/download.py`` 直接运行）。
+    """
     all_ok = True
     for mod in IMPORTABLE_SCRIPTS:
         try:
@@ -120,7 +128,17 @@ def check_imports() -> bool:
             if any(p in str(e) for p in ("modelscope", "onnxruntime")):
                 warn(f"[{mod}] 跳过（缺可选依赖: {e.name}）")
                 continue
+            if mod.startswith("filetype.") and "filetype" in sys.modules:
+                warn(f"[{mod}] 跳过（环境已加载同名 PyPI 包 'filetype'，"
+                     f"跳过该子项；脚本本身仍可手动运行）")
+                continue
             fail(f"[{mod}] 不可 import: {e}")
+            all_ok = False
+        except ImportError as e:
+            if mod.startswith("filetype."):
+                warn(f"[{mod}] 跳过（环境已安装同名 PyPI 包 'filetype'）")
+                continue
+            fail(f"[{mod}] import 失败: {e}")
             all_ok = False
         except Exception as e:
             fail(f"[{mod}] import 失败: {e}")
@@ -147,6 +165,7 @@ def main() -> int:
     print("=" * 60)
     print(f" repo root: {mica_root()}")
     print(f" face models dir: {cap_models_dir('face')}")
+    print(f" filetype models dir: {cap_models_dir('filetype')}")
     print()
 
     results = {

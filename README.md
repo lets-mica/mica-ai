@@ -65,16 +65,17 @@
 
 | 模块 | 模型 | 维度 | License |
 |------|------|------|---------|
-| 检测 | YuNet (`face_detection_yunet_2023mar.onnx`) | — | Apache 2.0 |
-| 特征 | SFace (`face_recognition_sface_2021dec.onnx`) | 128d | Apache 2.0 |
+| 人脸检测 | YuNet (`face_detection_yunet_2023mar.onnx`) | — | Apache 2.0 |
+| 人脸特征 | SFace (`face_recognition_sface_2021dec.onnx`) | 128d | Apache 2.0 |
 | 活体 | MiniFASNetV2 (`2.7_80x80_MiniFASNetV2.onnx`) | 3 类 | MIT（minivision Silent-Face-Anti-Spoofing，可商用） |
+| 文件类型识别 | Google Magika `standard_v3_3` | 214 类 | Apache 2.0 |
 
-> 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸相关模块。
+> 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸 + 文件类型识别模块。
 >
 > - OCR：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr) — PaddleOCR / PP-OCRv4 的 Java 推理
 > - 语音（ASR / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
 >
-> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），无 liveness 模型路径时跳过加载；商业落地前请按 §6.1 自查模型许可（当前 MiniFASNetV2 已确认 MIT，可商用）。
+> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），无 liveness 模型路径时跳过加载；商业落地前请按 §6.1 自查模型许可（当前所有依赖模型均已确认可商用）。
 
 ---
 
@@ -171,6 +172,7 @@ public class FaceEnrollService {
 | Starter | 配置前缀 | 一句话能力 |
 |---------|---------|----------|
 | [mica-ai-face-spring-boot-starter](mica-ai-starters/mica-ai-face-spring-boot-starter/README.md) | `mica.ai.face` | 人脸检测 + 128d 特征 + 活体 + 头像 / 证件卡片提取 |
+| [mica-ai-filetype-spring-boot-starter](mica-ai-starters/mica-ai-filetype-spring-boot-starter/README.md) | `mica.ai.filetype` | Google Magika 复刻，214 类文件类型识别（含 / 排除置信度三模式） |
 
 只需在 `application.yml` 配好模型路径，对应 `Bean` 即可 `@Autowired` 直接用。
 
@@ -182,13 +184,16 @@ public class FaceEnrollService {
 mica-ai/
 ├── mica-ai-common/                       # 公共：ONNX 通用基础设施、统一异常
 ├── mica-ai-core/                         # 核心引擎（零 Spring，纯 Java 8）
-│   └── mica-ai-face/                     #   🎭 OpenCV Zoo 人脸识别
+│   ├── mica-ai-face/                     #   🎭 OpenCV Zoo 人脸识别
+│   └── mica-ai-filetype/                 #   📄 Google Magika 文件类型识别
 ├── mica-ai-starters/                     # Spring Boot 2 Starter
-│   └── mica-ai-face-spring-boot-starter/
+│   ├── mica-ai-face-spring-boot-starter/
+│   └── mica-ai-filetype-spring-boot-starter/
 ├── mica-ai-example/                      # Spring Boot 集成示例
 └── model-tools/                          # Python 模型工具链（下载 / 转换）
     ├── common/                           #   downloader、onnx_utils、progress
     ├── face/                             #   face 能力脚本
+    ├── filetype/                         #   filetype 能力脚本
     └── scripts/                          #   smoke_test / publish / package
 ```
 
@@ -225,6 +230,7 @@ mica-ai/
 | 🎭 **人脸识别 / 门禁 / 考勤** | mica-ai-face + Milvus / pgvector（向量库做 1:N 检索） |
 | 🪪 **证件核验 / 人证合一** | mica-ai-face.FaceVerifier + CardExtractor |
 | 🖼️ **头像 / 证件卡片标准化** | mica-ai-face.AvatarExtractor / CardExtractor |
+| 📄 **任意文件 MIME 推断 / 内容审计** | mica-ai-filetype — 214 类 + 三种置信度模式 |
 
 ---
 
@@ -238,7 +244,7 @@ mica-ai/
 
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
-- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision)
+- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika)
 - 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">

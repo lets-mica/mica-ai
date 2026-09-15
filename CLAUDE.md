@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）= Java 8 + ONNX Runtime + OpenCV，封装 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取。模型推理完全在 JVM 内完成，所有运行时依赖 Maven 拉取（`onnxruntime` 1.18.0 + `openpnp/opencv` 4.9.0）。音频 / OCR / 意图识别能力已抽离到独立 mica-* 项目，本仓库不再包含。
+**mica-ai**（精简版）= Java 8 + ONNX Runtime + OpenCV，封装 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）。模型推理完全在 JVM 内完成，所有运行时依赖 Maven 拉取（`onnxruntime` 1.18.0 + `openpnp/opencv` 4.9.0）。音频 / OCR / 意图识别能力已抽离到独立 mica-* 项目，本仓库不再包含。
 
 包前缀：`net.dreamlu.mica.ai.face`；顶层 Maven `${revision}=1.0.0`。
 
@@ -21,13 +21,16 @@ mica-ai/
 ├── pom.xml                    # 顶层 BOM（revision / spring-boot / onnxruntime / opencv）
 ├── mica-ai-common/            # ONNX 通用基础设施（OnnxModelSession / OrtSessionFactory / MicaAiException）
 ├── mica-ai-core/              # 核心引擎（零 Spring，纯 Java 8）
-│   └── mica-ai-face/          #   🎭 OpenCV Zoo（YuNet + SFace + MiniFASNetV2 + 头像 + 卡片）
-├── mica-ai-starters/          # Spring Boot 2 Starter（`mica.ai.face` 前缀 + 自动注入）
-│   └── mica-ai-face-spring-boot-starter/
+│   ├── mica-ai-face/          #   🎭 OpenCV Zoo（YuNet + SFace + MiniFASNetV2 + 头像 + 卡片）
+│   └── mica-ai-filetype/      #   📄 Google Magika（standard_v3_3 + 知识库）
+├── mica-ai-starters/          # Spring Boot 2 Starter（自动注入 Bean）
+│   ├── mica-ai-face-spring-boot-starter/
+│   └── mica-ai-filetype-spring-boot-starter/
 ├── mica-ai-example/           # Spring Boot 集成示例（默认在 `develop` profile 下编译）
 └── model-tools/               # Python 工具链：download / convert / publish / package
     ├── common/                #   downloader / onnx_utils / progress
     ├── face/                  #   face 能力脚本
+    ├── filetype/              #   filetype 能力脚本
     └── scripts/               #   smoke_test / publish / package
 ```
 
@@ -72,8 +75,16 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
    - `alignment.FaceAligner` — 5 点仿射到 112×112
    - `avatar.AvatarExtractor` — 头像提取（自动摆正 / 分块兜底 / 两阶段重采样）
    - `card.CardExtractor` — 证件卡片提取（掩膜 + 四边形拟合 + 透视矫正 + USM/CLAHE）
-6. **Spring Boot Starter 约定**：`FaceProperties`（`@ConfigurationProperties(prefix = "mica.ai.face")`）+ `FaceAutoConfiguration`（`@Component`），自动装配由 `mica-auto` 插件生成 `spring.factories`，**不要**手改。
-7. **依赖收口**：版本号统一在根 `pom.xml` 的 `dependencyManagement`；新增能力 / 三方库先在根 POM 评审。
+
+6. **filetype 模块结构**：
+   - `FiletypeDetector` — Magika standard_v3_3 推理门面（`detectPath` / `detectBytes` / `detectStream` + `AutoCloseable`）
+   - `config.ModelConfig` — `config.min.json` 解析（beg/end/mid/padding/thresholds/overwrite_map）
+   - `config.ContentTypeRegistry` — `content_types_kb.min.json` 知识库（label → mime/group/desc）
+   - `feature.FeaturesExtractor` — Magika features v2：head+tail lstrip/rstrip → int 数组
+   - `postprocess.PredictionPostProcessor` — overwrite_map + 三模式（HIGH_CONFIDENCE / MEDIUM_CONFIDENCE / BEST_GUESS）
+
+7. **Spring Boot Starter 约定**：`FaceProperties` / `FiletypeProperties`（`@ConfigurationProperties(prefix = "mica.ai.face")` / `mica.ai.filetype`）+ 对应 `*AutoConfiguration`（`@Component`），自动装配由 `mica-auto` 插件生成 `spring.factories`，**不要**手改。
+8. **依赖收口**：版本号统一在根 `pom.xml` 的 `dependencyManagement`；新增能力 / 三方库先在根 POM 评审。
 
 ## 5. 编码约定要点
 
@@ -100,8 +111,9 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 
 | 场景 | 必读 | 标准动作 |
 |------|------|---------|
-| 新增 ONNX 输入节点 | `mica-ai-face/.../detection/FaceDetector.java` 或 `recognition/FeatureExtractor.java` 或 `liveness/LivenessDetector.java` | 改推理段常量 → 更新 mica-ai-face/README.md「I/O 格式」节 |
-| 替换底层模型 | `model-tools/face/download.py` + `convert.py` | 先按 §6 自检 License → 改 `MODEL_*` 常量 → 重跑 `make smoke` → 更新 README 模型规格表 |
+| 新增一个 ONNX 输入节点 | `mica-ai-face/.../detection/FaceDetector.java` 或 `recognition/FeatureExtractor.java` 或 `liveness/LivenessDetector.java` | 改推理段常量 → 更新 mica-ai-face/README.md「I/O 格式」节 |
+| 新增 filetype 预测模式 / 后处理 | `mica-ai-filetype/postprocess/PredictionPostProcessor.java` | 改分支 → 更新 mica-ai-filetype/README.md「预测模式」节 |
+| 替换底层模型 | `model-tools/<cap>/download.py` + `convert.py` | 先按 §6 自检 License → 改 `MODEL_*` 常量 → 重跑 `make smoke` → 更新对应 README 模型规格表 |
 | 新增 Spring Boot 配置项 | Starter `FaceProperties.java` + `FaceAutoConfiguration.java` | 用 `mica-auto` 生成 import → `mvn install` → mica-ai-face/README.md 加示例 |
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调 `intraOpNumThreads` / `interOpNumThreads` / `device` |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | Builder 加字段 → `validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」节 |

@@ -7,7 +7,7 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含。
 
@@ -27,15 +27,23 @@ mica-ai/
 ├── pom.xml                         # 顶层 BOM（revision / spring-boot / onnxruntime）
 ├── mica-ai-common/                 # ONNX 通用基础设施（OnnxModelSession / OrtSessionFactory / 统一异常）
 ├── mica-ai-core/                   # 核心引擎（零 Spring，纯 Java 8）
-│   └── mica-ai-face/               # 🎭 OpenCV Zoo（人脸检测 + 128d 向量 + 活体 + 头像 + 卡片，Apache-2.0）
+│   ├── mica-ai-face/               # 🎭 OpenCV Zoo（人脸检测 + 128d 向量 + 活体 + 头像 + 卡片，Apache-2.0）
+│   └── mica-ai-filetype/           # 📄 Google Magika（214 类文件类型识别，Apache-2.0）
 ├── mica-ai-starters/               # Spring Boot Starter（自动注入 Bean）
-│   └── mica-ai-face-spring-boot-starter/
+│   ├── mica-ai-face-spring-boot-starter/
+│   └── mica-ai-filetype-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
-├── model-tools/                    # Python 端：download / convert / smoke
-└── CHANGELOG.md
+└── model-tools/                    # Python 端：download / convert / smoke
+    ├── common/                      #   downloader / onnx_utils / progress
+    ├── face/                        #   face 能力脚本
+    └── filetype/                    #   filetype 能力脚本
 ```
 
-> **重要**：`mica-ai-core/mica-ai-face/README.md` 是该能力的"模型规格 / 核心组件 / I/O 格式"事实来源，Agent 在该能力内做修改前**先读**。
+> **重要**：
+> - `mica-ai-core/mica-ai-face/README.md` 是 face 能力的"模型规格 / 核心组件 / I/O 格式"事实来源
+> - `mica-ai-core/mica-ai-filetype/README.md` 是 filetype 能力的事实来源
+>
+> Agent 在对应能力内做修改前**先读**对应 README。
 
 ---
 
@@ -110,6 +118,7 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
   |------|------|---------|------|
   | `mica-ai-face` 检测 / 特征 | YuNet + SFace（OpenCV Zoo） | Apache 2.0 | ✅ |
   | `mica-ai-face` 活体 | MiniFASNetV2（minivision Silent-Face-Anti-Spoofing） | MIT | ✅ |
+  | `mica-ai-filetype` 检测 | Google Magika `standard_v3_3`（model.onnx + config.min.json + content_types_kb.min.json） | Apache 2.0 | ✅ |
 
 - **禁止**：
   - 直接搬运 GPL / AGPL / LGPL 模型权重并以"商用"名义打包
@@ -140,8 +149,8 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 | 场景 | 必读 | 标准动作 |
 |------|------|---------|
 | 新增一个 ONNX 输入节点 | `mica-ai-face/.../FaceDetector.java` 或 `FeatureExtractor.java` 或 `LivenessDetector.java` | 在检测器 / 提取器 / 活体类的推理段加常量 → 更新 mica-ai-face/README.md「I/O 格式」 |
-| 替换底层模型 | `model-tools/face/download.py` + `convert.py` | 先按 §6.1 自检 License → 改 `MODEL_*` 常量 → 重跑 smoke test → 更新 README 模型规格表 |
-| 新增 Spring Boot 配置项 | Starter `FaceProperties.java` + `FaceAutoConfiguration.java` | 用 `mica-auto` 生成 import → 跑 `mvn install` → mica-ai-face/README.md 加示例 |
+| 替换底层模型 | `model-tools/<cap>/download.py` + `convert.py` | 先按 §6.1 自检 License → 改 `MODEL_*` 常量 → 重跑 smoke test → 更新对应 README 模型规格表 |
+| 新增 Spring Boot 配置项 | Starter `FaceProperties.java` / `FiletypeProperties.java` + 对应 `*AutoConfiguration.java` | 用 `mica-auto` 生成 import → 跑 `mvn install` → 子 README 加示例 |
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调整 `intraOpNumThreads` / `interOpNumThreads` / `device` (cpu/gpu) |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
 

@@ -18,5 +18,6 @@
     <modules>
         <module>mica-ai-common</module>
         <module>mica-ai-face</module>
+        <module>mica-ai-filetype</module>
     </modules>
 </project>

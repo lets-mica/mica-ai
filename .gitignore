@@ -57,6 +57,9 @@ logs
 *.properties~
 *.xml~
 
+# build helper (用户特定环境的 Maven settings 绕过本地镜像)
+.mvn/
+
 # system ignore
 .DS_Store
 Thumbs.db

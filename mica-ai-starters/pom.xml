@@ -17,5 +17,6 @@
 
     <modules>
         <module>mica-ai-face-spring-boot-starter</module>
+        <module>mica-ai-filetype-spring-boot-starter</module>
     </modules>
 </project>

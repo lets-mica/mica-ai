@@ -8,6 +8,8 @@
 # 单独操作 face：
 #   make -C model-tools download-face
 #   make -C model-tools convert-face
+#
+# 当前 cap = face filetype
 
 PYTHON ?= python
 ROOT := $(shell pwd)
@@ -33,7 +35,7 @@ help: ## 显示帮助
 	@echo "  PYTHON=python3.10   指定 Python 解释器"
 	@echo "  MICA_MODELS_DIR=... 指定模型根目录（默认 model-tools/<cap>/model）"
 
-CAPS := face
+CAPS := face filetype
 
 .PHONY: download
 download: $(addprefix download-,$(CAPS)) ## 下载所有能力的模型

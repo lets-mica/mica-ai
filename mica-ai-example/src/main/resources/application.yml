@@ -38,6 +38,15 @@ mica:
       verify:
         threshold: 0.35
       device: cpu
+    # ============================================================
+    #  📄 Filetype —— Google Magika standard_v3_3（Apache-2.0）
+    #  路径留空走 classpath: mica-ai/models/filetype/standard_v3_3/*
+    #  也可直接给绝对路径指向 model-tools/filetype/model/out/{model.onnx,config.min.json,content_types_kb.min.json}
+    # ============================================================
+    filetype:
+      model-version: standard_v3_3
+      prediction-mode: HIGH_CONFIDENCE
+      device: cpu
 
 logging:
   level:

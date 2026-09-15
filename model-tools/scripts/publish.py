@@ -64,6 +64,18 @@ CAP_RULES: list = [
         "source_url": "https://github.com/opencv/opencv_zoo",
         "license": "Apache-2.0",
     },
+    {
+        "cap": "filetype",
+        "out_dir": ROOT / "filetype" / "model" / "out",
+        "scope": None,
+        "files": [
+            "model.onnx",
+            "config.min.json",
+            "content_types_kb.min.json",
+        ],
+        "source_url": "https://github.com/google/magika",
+        "license": "Apache-2.0",
+    },
 ]
 
 
