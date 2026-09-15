@@ -48,7 +48,7 @@
         <javax-annotation.version>1.3.2</javax-annotation.version>
         <lombok.version>1.18.48</lombok.version>
         <spring-boot.version>2.7.18</spring-boot.version>
-        <springdoc.version>1.7.0</springdoc.version>
+        <springdoc.version>1.8.0</springdoc.version>
         <junit.version>5.10.2</junit.version>
         <mica-auto.version>2.3.5</mica-auto.version>
     </properties>
