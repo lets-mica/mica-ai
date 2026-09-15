@@ -42,7 +42,7 @@
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-        <onnxruntime.version>1.18.0</onnxruntime.version>
+        <onnxruntime.version>1.30.0</onnxruntime.version>
         <opencv.version>4.9.0-0</opencv.version>
         <slf4j.version>1.7.36</slf4j.version>
         <javax-annotation.version>1.3.2</javax-annotation.version>
