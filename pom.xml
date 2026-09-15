@@ -44,7 +44,7 @@
         <!-- mica-auto -->
         <mcia.auto.version>4.0.1</mcia.auto.version>
         <!-- spring boot 全家桶 -->
-        <spring.boot.version>4.1.0</spring.boot.version>
+        <spring.boot.version>4.1.1</spring.boot.version>
         <onnxruntime.version>1.26.0</onnxruntime.version>
         <opencv.version>4.9.0-0</opencv.version>
         <jts.version>1.20.0</jts.version>
