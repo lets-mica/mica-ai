@@ -71,6 +71,9 @@
 
 > 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸相关模块。
 >
+> - OCR：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr) — PaddleOCR / PP-OCRv4 的 Java 推理
+> - 语音（ASR / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
+>
 > 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），无 liveness 模型路径时跳过加载；商业落地前请按 §6.1 自查模型许可（当前 MiniFASNetV2 已确认 MIT，可商用）。
 
 ---
@@ -236,6 +239,7 @@ mica-ai/
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
 - [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision)
+- 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">
 
