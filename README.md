@@ -67,11 +67,11 @@
 |------|------|------|---------|
 | 检测 | YuNet (`face_detection_yunet_2023mar.onnx`) | — | Apache 2.0 |
 | 特征 | SFace (`face_recognition_sface_2021dec.onnx`) | 128d | Apache 2.0 |
-| 活体 | MiniFASNetV2 (`2.7_80x80_MiniFASNetV2.onnx`) | 3 类 | 非商用 → 仅作参考 |
+| 活体 | MiniFASNetV2 (`2.7_80x80_MiniFASNetV2.onnx`) | 3 类 | MIT（minivision Silent-Face-Anti-Spoofing，可商用） |
 
 > 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸相关模块。
 >
-> 📌 活体模型 MiniFASNetV2 来自开源社区，**未自带可商用 License**；如需商用请自行替换为商业活体模型。本仓库默认不加载活体，需 `mica.ai.face.liveness.enabled=true` 显式启用。
+> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），无 liveness 模型路径时跳过加载；商业落地前请按 §6.1 自查模型许可（当前 MiniFASNetV2 已确认 MIT，可商用）。
 
 ---
 

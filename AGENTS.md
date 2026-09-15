@@ -108,7 +108,8 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 
   | 能力 | 模型 | License | 商用 |
   |------|------|---------|------|
-  | `mica-ai-face` | YuNet + SFace + MiniFASNetV2（OpenCV Zoo） | Apache 2.0 | ✅ |
+  | `mica-ai-face` 检测 / 特征 | YuNet + SFace（OpenCV Zoo） | Apache 2.0 | ✅ |
+  | `mica-ai-face` 活体 | MiniFASNetV2（minivision Silent-Face-Anti-Spoofing） | MIT | ✅ |
 
 - **禁止**：
   - 直接搬运 GPL / AGPL / LGPL 模型权重并以"商用"名义打包
