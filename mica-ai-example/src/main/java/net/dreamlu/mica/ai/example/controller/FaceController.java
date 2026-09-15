@@ -10,12 +10,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import lombok.RequiredArgsConstructor;
-import net.dreamlu.mica.ai.face.config.FaceBox;
-import net.dreamlu.mica.ai.face.config.FaceEmbedding;
-import net.dreamlu.mica.ai.face.engine.FaceEngine;
-import net.dreamlu.mica.ai.face.utils.ImageUtils;
+import net.dreamlu.mica.ai.face.alignment.FaceAligner;
+import net.dreamlu.mica.ai.face.detection.FaceDetector;
+import net.dreamlu.mica.ai.face.model.FaceBox;
+import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
+import net.dreamlu.mica.ai.face.util.ImageUtils;
+import net.dreamlu.mica.ai.face.verification.FaceVerifier;
+import org.opencv.core.Mat;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,14 +36,17 @@ import java.util.Map;
 /**
  * 人脸检测 + 识别 REST 端点。
  */
-@Tag(name = "Face 人脸识别", description = "OpenCV Zoo · YuNet 检测 + SFace 512d 向量")
+@Tag(name = "Face 人脸识别", description = "OpenCV Zoo · YuNet 检测 + SFace 128d 向量")
 @RestController
 @RequestMapping("/face")
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "mica.ai.face", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FaceController {
 
-	private final FaceEngine face;
+	private final FaceDetector detector;
+	private final FaceAligner aligner;
+	private final FeatureExtractor extractor;
+	private final FaceVerifier verifier;
 
 	@Operation(summary = "人脸检测", description = "仅做检测：返回每张人脸的 bbox + 关键点 + score")
 	@ApiResponses(value = {
@@ -58,16 +63,17 @@ public class FaceController {
 				schema = @Schema(type = "string", format = "binary")))
 		@RequestParam("file") MultipartFile file) throws IOException {
 		Path tmp = save(file);
+		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
 		try {
-			var img = ImageUtils.read(tmp);
-			List<FaceBox> boxes = face.detect(img);
+			List<FaceBox> boxes = detector.detect(img);
 			return boxes.stream().map(FaceController::boxView).toList();
 		} finally {
+			img.release();
 			Files.deleteIfExists(tmp);
 		}
 	}
 
-	@Operation(summary = "人脸特征提取", description = "检测 + 提取 embedding，返回 512 维向量预览与 L2 范数")
+	@Operation(summary = "人脸特征提取", description = "检测 + 对齐 + 提取 embedding，返回 128 维向量预览与 L2 范数")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "提取成功",
 			content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -82,12 +88,27 @@ public class FaceController {
 				schema = @Schema(type = "string", format = "binary")))
 		@RequestParam("file") MultipartFile file) throws IOException {
 		Path tmp = save(file);
+		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
 		try {
-			var img = ImageUtils.read(tmp);
-			List<FaceEmbedding> embeddings = face.extract(img);
-			return embeddings.stream().map(FaceController::embeddingView).toList();
+			final Mat work = img;
+			List<FaceBox> boxes = detector.detect(work);
+			return boxes.stream().map(box -> extractOne(work, box)).toList();
 		} finally {
+			img.release();
 			Files.deleteIfExists(tmp);
+		}
+	}
+
+	private Map<String, Object> extractOne(Mat img, FaceBox box) {
+		Mat aligned = null;
+		try {
+			aligned = aligner.align(img, box);
+			float[] feature = extractor.extract(aligned);
+			return embeddingView(feature);
+		} finally {
+			if (aligned != null) {
+				aligned.release();
+			}
 		}
 	}
 
@@ -110,15 +131,15 @@ public class FaceController {
 		return m;
 	}
 
-	private static Map<String, Object> embeddingView(FaceEmbedding emb) {
+	private static Map<String, Object> embeddingView(float[] vec) {
 		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("dim", emb.dimension());
+		m.put("dim", vec.length);
 		double norm = 0;
-		for (float v : emb.getVector()) {
+		for (float v : vec) {
 			norm += (double) v * v;
 		}
 		m.put("l2Norm", Math.sqrt(norm));
-		m.put("preview", preview(emb.getVector(), 8));
+		m.put("preview", preview(vec, 8));
 		return m;
 	}
 

@@ -1,8 +1,7 @@
 """统一的模型下载器。
 
 设计要点：
-- 默认走 **ModelScope**（国内速度快，覆盖 PaddleOCR / SenseVoice / Kokoro 等）
-- 可通过参数切换到 **Hugging Face**
+- 默认走 **ModelScope**（国内镜像），可切换到 **Hugging Face** 或直链下载（适合 OpenCV Zoo 等没有 ModelScope 镜像的仓库）
 - 内置重试（网络抖动时自动重试 3 次）
 - 解析模型目录下的特定文件（如 ``vocab.txt``），返回绝对路径
 - 与 mica-ai 版本号联动，写入 manifest 文件
@@ -14,10 +13,10 @@
     from common import download_model, DownloadSource
 
     model_dir = download_model(
-        cap="intent",
-        modelscope_id="AI-ModelScope/chinese-bert-wwm-ext",
+        cap="face",
+        modelscope_id="AI-ModelScope/face-detection-yunet",
     )
-    print(model_dir)  # .../model-tools/intent/model/chinese-bert-wwm-ext
+    print(model_dir)  # .../model-tools/face/model/face-detection-yunet
 """
 
 from __future__ import annotations
@@ -212,7 +211,7 @@ def download_model(
     Parameters
     ----------
     cap : str
-        能力名（ppocr / tts / voice / speaker / intent），用于确定默认根目录
+        能力名（当前仅 face），用于确定默认根目录
     spec : DownloadSpec or Iterable[DownloadSpec]
         一个或多个下载规格
     source : DownloadSource

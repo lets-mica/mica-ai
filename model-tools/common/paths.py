@@ -23,7 +23,7 @@ def mica_root() -> Path:
 
 
 def cap_models_dir(cap: str, *, env_override: bool = True) -> Path:
-    """获取某个能力（ppocr / tts / voice / speaker / intent）的模型根目录。
+    """获取某个能力（当前仅 face）的模型根目录。
 
     优先级：
       1. 环境变量 ``MICA_MODELS_DIR``（若设置，目录为 ``$MICA_MODELS_DIR/<cap>``）

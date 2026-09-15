@@ -3,45 +3,100 @@
  */
 package net.dreamlu.mica.ai.face.autoconfigure;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.nio.file.Path;
-
 /**
- * Face 引擎配置属性。
- *
- * <p>对应 {@code mica.ai.face} 配置前缀。
- * <p>默认模型实现：OpenCV Zoo YuNet + SFace（Apache-2.0，可商用）。
- *
- * @since 1.0.0
+ * mica-ai-face 配置属性，对应 {@code mica.ai.face} 前缀。
  */
-@Data
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "mica.ai.face")
 public class FaceProperties {
 
-	/**
-	 * 是否启用该 Starter。默认 {@code true}：启用时必填的检测/识别模型路径缺失将启动失败；
-	 * 设为 {@code false} 时整个 Starter 不注入任何 Bean。
-	 */
-	private boolean enabled = true;
+	private Model model = new Model();
+	private Detection detection = new Detection();
+	private Liveness liveness = new Liveness();
+	private Verify verify = new Verify();
+	private Avatar avatar = new Avatar();
+	private Card card = new Card();
+	private String device = "cpu";
+	private Onnx onnx = new Onnx();
 
-	/** 检测 ONNX 模型路径（必填，OpenCV Zoo: face_detection_yunet_*.onnx） */
-	private Path detModelPath;
+	@Getter
+	@Setter
+	public static class Model {
+		private ModelEntry detection = new ModelEntry();
+		private ModelEntry recognition = new ModelEntry();
+		private ModelEntry liveness = new ModelEntry();
+	}
 
-	/** 识别 ONNX 模型路径（必填，OpenCV Zoo: face_recognition_sface_*.onnx） */
-	private Path recModelPath;
+	@Getter
+	@Setter
+	public static class ModelEntry {
+		private String path;
+	}
 
-	/** 检测置信度阈值，默认 0.6 */
-	private float detScoreThreshold = 0.6f;
+	@Getter
+	@Setter
+	public static class Detection {
+		private float threshold = 0.9f;
+		private float nmsThreshold = 0.3f;
+	}
 
-	/** NMS IoU 阈值，默认 0.3（YuNet 内部已做 NMS，留作自定义 detector 使用） */
-	private float detNmsThreshold = 0.3f;
+	@Getter
+	@Setter
+	public static class Liveness {
+		private boolean enabled = true;
+		private float threshold = 0.85f;
+		private double cropScale = 2.7;
+	}
 
-	/** ONNX 内部线程数 */
-	private int intraOpNumThreads = 1;
+	@Getter
+	@Setter
+	public static class Verify {
+		private float threshold = 0.35f;
+	}
 
-	/** ONNX 交互线程数 */
-	private int interOpNumThreads = 1;
+	@Getter
+	@Setter
+	public static class Avatar {
+		private int size = 256;
+		private double faceScale = 1.6;
+		private double verticalOffset = 0.0;
+		private boolean deRotate = true;
+		private double rotationDegrees = 0.0;
+		private boolean autoOrient = true;
+		private String background = "#FFFFFF";
+		private boolean tileDetect = true;
+		private int tileSize = 480;
+		private double tileOverlap = 0.30;
+		private double tileThreshold = 0.60;
+		private int minFaceSize = 40;
+		private int maxFaces = 0;
+	}
 
+	@Getter
+	@Setter
+	public static class Onnx {
+		private String device;
+		private int cudaDeviceId = 0;
+		private int intraOpNumThreads = 0;
+		private int interOpNumThreads = 0;
+		private String graphOptimizationLevel = "ORT_ENABLE_ALL";
+		private String executionMode = "ORT_PARALLEL";
+	}
+
+	@Getter
+	@Setter
+	public static class Card {
+		private int outputWidth = 1011;
+		private int outputHeight = 638;
+		private double aspectTolerance = 0.35;
+		private boolean enhance = true;
+		private double sharpenAmount = 1.5;
+		private double sharpenSigma = 1.2;
+		private int minCardSize = 400;
+	}
 }

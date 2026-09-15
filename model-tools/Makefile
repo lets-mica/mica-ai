@@ -4,13 +4,10 @@
 #   make -C model-tools smoke
 #   make -C model-tools download
 #   make -C model-tools convert
-#   make -C model-tools train-intent
 #
-# 单独操作某个能力：
-#   make -C model-tools download-ppocr
-#   make -C model-tools convert-voice
-#   make -C model-tools download-speaker
-#   make -C model-tools train-intent
+# 单独操作 face：
+#   make -C model-tools download-face
+#   make -C model-tools convert-face
 
 PYTHON ?= python
 ROOT := $(shell pwd)
@@ -27,18 +24,16 @@ help: ## 显示帮助
 	@echo "  make smoke          离线冒烟测试（验证骨架完整性）"
 	@echo "  make download       下载所有能力的原始模型"
 	@echo "  make convert        把原始模型转换为 mica-ai 可用的 ONNX 产物"
-	@echo "  make train-intent   训练意图分类模型"
 	@echo ""
 	@echo "单能力命令："
-	@echo "  make download-<cap>   cap ∈ {ppocr, tts, voice, speaker, intent}"
+	@echo "  make download-<cap>   cap = face"
 	@echo "  make convert-<cap>"
-	@echo "  make train-intent"
 	@echo ""
 	@echo "环境变量："
 	@echo "  PYTHON=python3.10   指定 Python 解释器"
 	@echo "  MICA_MODELS_DIR=... 指定模型根目录（默认 model-tools/<cap>/model）"
 
-CAPS := ppocr tts voice speaker intent face
+CAPS := face
 
 .PHONY: download
 download: $(addprefix download-,$(CAPS)) ## 下载所有能力的模型
@@ -61,11 +56,8 @@ endef
 
 $(foreach cap,$(CAPS),$(eval $(call cap_template,$(cap))))
 
-.PHONY: train-intent
-train-intent: ## 训练意图分类模型
-	cd intent && $(PYTHON) train.py --config configs/base.yaml
 .PHONY: publish
-publish: ## 把各 cap 的 out/ 整理到 models/，并生成 manifest.json
+publish: ## 把 face 的 out/ 整理到 models/，并生成 manifest.json
 	$(PYTHON) scripts/publish.py
 
 .PHONY: verify
@@ -73,5 +65,5 @@ verify: ## 校验 models/manifest.json 里的 SHA256
 	$(PYTHON) scripts/publish.py --verify
 
 .PHONY: package
-package: ## 把 models/ 按 cap 分卷打包为 zip（用于 GitHub Release 上传）
+package: ## 把 models/face 打包为 zip（用于 GitHub Release 上传）
 	$(PYTHON) scripts/package.py

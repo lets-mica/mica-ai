@@ -1,4 +1,0 @@
-# tts 工具链私有依赖
-
-# 可选：convert.py --quantize 启用 ONNX 动态量化
-# onnxruntime>=1.17.0

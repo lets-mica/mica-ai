@@ -1,24 +1,6 @@
 server:
   port: 8181
 
-# ============================================================
-#  springdoc-openapi (Swagger UI / OpenAPI 3)
-#  访问: http://localhost:8181/swagger-ui.html
-#  JSON: http://localhost:8181/v3/api-docs
-# ============================================================
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-    tags-sorter: alpha
-    operations-sorter: alpha
-    display-request-duration: true
-  show-actuator: false
-  packages-to-scan: net.dreamlu.mica.ai.example.controller
-
 spring:
   application:
     name: mica-ai-example
@@ -35,65 +17,27 @@ spring:
 mica:
   ai:
     # ============================================================
-    #  模型路径统一指向 model-tools/models/<cap>/...
-    #  （由 model-tools/scripts/publish.py 从各 cap 的 out/ 整理而来，
-    #    对应 manifest.json 中的 SHA256；详见 model-tools/models/README.md）
-    #
-    #  intent 暂不发布（按 release 决策 §6.2 / 决策点 2）
+    #  🎭 Face —— YuNet + SFace + MiniFASNetV2（Apache-2.0 OpenCV Zoo）
+    #  模型路径可填 classpath:... 或绝对文件系统路径，未配置时启动失败。
     # ============================================================
-
-    # 🎤 TTS —— Kokoro-82M（362 MB, 103 音色）
-    tts:
-      enabled: true
-      model-path: model-tools/models/tts/model_dynamic.onnx
-      voices-dir: model-tools/models/tts/voices
-      config-path: model-tools/models/tts/config.json
-      default-voice: zf_001
-      default-speed: 0.82
-      onnx-provider: cpu
-
-    # 🎧 ASR —— SenseVoiceSmall（1.8 GB，多语种 + 热词雷达）
-    voice:
-      enabled: true
-      encoder-path: model-tools/models/voice/SenseVoice-Encoder.fp32.onnx
-      decoder-path: model-tools/models/voice/SenseVoice-CTC.fp32.onnx
-      tokenizer-path: model-tools/models/voice/Tokenizer.bpe.model
-      onnx-provider: cpu
-      itn: true
-      top-k: 10
-      hotwords:
-        - mica
-        - mica-ai
-
-    # 📷 OCR —— PP-OCRv6 tiny（6 MB；调试默认走 tiny，启动最快）
-    # 想换档：把 tiny 换成 small 或 medium，并同步改 rec-char-dict-path 后缀
-    ppocr:
-      enabled: true
-      det-model-path: model-tools/models/ppocr/tiny/det/inference.onnx
-      rec-model-path: model-tools/models/ppocr/tiny/rec/inference.onnx
-      rec-char-dict-path: model-tools/models/ppocr/tiny/rec_char_dict_tiny.txt
-      det-limit-side-len: 64
-      det-thresh: 0.3
-      det-box-thresh: 0.6
-      det-unclip-ratio: 1.5
-
-    # 👤 Speaker —— ERes2NetV2（69 MB，192d Embedding）
-    speaker:
-      enabled: true
-      model-path: model-tools/models/speaker/eres2net.onnx
-      default-threshold: 0.58
-
-    # 🎭 Face —— YuNet + SFace（38 MB，Apache-2.0 OpenCV Zoo）
     face:
-      enabled: true
-      det-model-path: model-tools/models/face/face_detection_yunet_2023mar.onnx
-      rec-model-path: model-tools/models/face/face_recognition_sface_2021dec.onnx
-      det-score-threshold: 0.6
-      det-nms-threshold: 0.3
-
-    # 🧠 Intent —— 本次不发布（按 release 决策），保持 disabled
-    intent:
-      enabled: false
+      model:
+        detection:
+          path: classpath:models/face_detection_yunet_2023mar.onnx
+        recognition:
+          path: classpath:models/face_recognition_sface_2021dec.onnx
+        liveness:
+          path: classpath:models/2.7_80x80_MiniFASNetV2.onnx
+      detection:
+        threshold: 0.9
+        nms-threshold: 0.3
+      liveness:
+        enabled: true
+        threshold: 0.85
+        crop-scale: 2.7
+      verify:
+        threshold: 0.35
+      device: cpu
 
 logging:
   level:

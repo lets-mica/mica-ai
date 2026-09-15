@@ -7,26 +7,31 @@
     <artifactId>mica-ai-face</artifactId>
     <name>${project.artifactId}</name>
     <url>https://www.dreamlu.net</url>
-    <description>OpenCV Zoo (YuNet + SFace) 人脸检测 + 识别推理（纯 ONNX Runtime），Apache-2.0 可商用，可插拔 detector/recognizer 接口</description>
+    <description>OpenCV Zoo (YuNet + SFace + MiniFASNetV2) 人脸识别 + 头像 / 证件卡片提取：纯 ONNX Runtime + OpenCV，Apache-2.0 可商用</description>
 
     <parent>
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai-core</artifactId>
-        <version>${revision}</version>
+        <version>1.0.0</version>
     </parent>
 
     <dependencies>
-        <!-- mica-ai common -->
         <dependency>
             <groupId>net.dreamlu</groupId>
             <artifactId>mica-ai-common</artifactId>
         </dependency>
-        <!-- ONNX Runtime Java API -->
         <dependency>
             <groupId>com.microsoft.onnxruntime</groupId>
             <artifactId>onnxruntime</artifactId>
         </dependency>
-        <!-- Logging -->
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -36,6 +41,37 @@
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+                    <forkCount>0</forkCount>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

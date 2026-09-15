@@ -65,4 +65,8 @@ Servers
 gen_code
 
 # model files
+*.onnx
+*.bin
+*.pb
+*.tflite
 !models/*.tar

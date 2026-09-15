@@ -2,7 +2,7 @@
 
 > mica-ai Spring Boot Starter 聚合模块，一行配置即可将 AI 能力接入 Spring Boot 应用。
 
-本模块为聚合 POM（packaging=pom），包含以下 6 个 starter：
+本模块为聚合 POM（packaging=pom），包含 1 个 starter：
 
 ---
 
@@ -10,12 +10,7 @@
 
 | Starter | 功能 | 配置前缀 |
 |---------|------|---------|
-| [mica-ai-ppocr-spring-boot-starter](mica-ai-ppocr-spring-boot-starter/README.md) | PP-OCRv6 文字识别 | `mica.ai.ppocr` |
-| [mica-ai-tts-spring-boot-starter](mica-ai-tts-spring-boot-starter/README.md) | Kokoro TTS 语音合成 | `mica.ai.tts` |
-| [mica-ai-voice-spring-boot-starter](mica-ai-voice-spring-boot-starter/README.md) | SenseVoice 语音识别 | `mica.ai.voice` |
-| [mica-ai-speaker-spring-boot-starter](mica-ai-speaker-spring-boot-starter/README.md) | ERes2Net 声纹识别 | `mica.ai.speaker` |
-| [mica-ai-intent-spring-boot-starter](mica-ai-intent-spring-boot-starter/README.md) | BERT 中文意图识别 | `mica.ai.intent` |
-| [mica-ai-face-spring-boot-starter](mica-ai-face-spring-boot-starter/README.md) | InsightFace 人脸识别（检测+512d 向量） | `mica.ai.face` |
+| [mica-ai-face-spring-boot-starter](mica-ai-face-spring-boot-starter/README.md) | OpenCV Zoo 人脸识别（YuNet 检测 + SFace 512d 向量） | `mica.ai.face` |
 
 ---
 
@@ -30,13 +25,10 @@
 
 ### Maven 依赖
 
-所有 starter 的 groupId 为 `net.dreamlu`，artifactId 以 `-spring-boot-starter` 结尾：
-
 ```xml
-<!-- 以 TTS 为例 -->
 <dependency>
     <groupId>net.dreamlu</groupId>
-    <artifactId>mica-ai-tts-spring-boot-starter</artifactId>
+    <artifactId>mica-ai-face-spring-boot-starter</artifactId>
     <version>${mica-ai.version}</version>
 </dependency>
 ```

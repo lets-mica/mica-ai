@@ -12,15 +12,11 @@
     <parent>
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
-        <version>${revision}</version>
+        <version>1.0.0</version>
     </parent>
 
     <modules>
-        <module>mica-ai-ppocr</module>
-        <module>mica-ai-voice</module>
-        <module>mica-ai-tts</module>
-        <module>mica-ai-speaker</module>
-        <module>mica-ai-intent</module>
+        <module>mica-ai-common</module>
         <module>mica-ai-face</module>
     </modules>
 </project>

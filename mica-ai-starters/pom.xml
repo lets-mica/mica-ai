@@ -12,15 +12,10 @@
     <parent>
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
-        <version>${revision}</version>
+        <version>1.0.0</version>
     </parent>
 
     <modules>
-        <module>mica-ai-tts-spring-boot-starter</module>
-        <module>mica-ai-ppocr-spring-boot-starter</module>
-        <module>mica-ai-voice-spring-boot-starter</module>
-        <module>mica-ai-speaker-spring-boot-starter</module>
-        <module>mica-ai-intent-spring-boot-starter</module>
         <module>mica-ai-face-spring-boot-starter</module>
     </modules>
 </project>

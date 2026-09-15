@@ -1,81 +1,182 @@
+/*
+ * Copyright (c) 2024-2026 mica-ai
+ */
 package net.dreamlu.mica.ai.face.autoconfigure;
 
-import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.face.engine.FaceEngine;
-import net.dreamlu.mica.ai.face.config.FaceConfig;
-import net.dreamlu.mica.ai.face.engine.FaceDetector;
-import net.dreamlu.mica.ai.face.engine.FaceRecognizer;
-import net.dreamlu.mica.ai.face.engine.SFaceRecognizer;
-import net.dreamlu.mica.ai.face.engine.YuNetDetector;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.face.alignment.FaceAligner;
+import net.dreamlu.mica.ai.face.avatar.AvatarExtractor;
+import net.dreamlu.mica.ai.face.avatar.AvatarOptions;
+import net.dreamlu.mica.ai.face.card.CardExtractor;
+import net.dreamlu.mica.ai.face.card.CardOptions;
+import net.dreamlu.mica.ai.face.config.ModelConfig;
+import net.dreamlu.mica.ai.face.detection.FaceDetector;
+import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
+import net.dreamlu.mica.ai.face.model.ModelManager;
+import net.dreamlu.mica.ai.face.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
+import net.dreamlu.mica.ai.face.verification.FaceVerifier;
+import nu.pattern.OpenCV;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-
-import java.nio.file.Path;
+import org.springframework.stereotype.Component;
 
 /**
- * Face 引擎自动配置。
+ * mica-ai-face Spring Boot 自动装配（基于 mica-auto）。
  *
- * <p>本 Starter 暴露 {@link FaceEngine} Bean，模型实现走 OpenCV Zoo YuNet + SFace（Apache-2.0）。
- * 人脸库入库与 1:N 检索由调用方自行使用向量数据库（Milvus / pgvector / Qdrant 等）实现。
- *
- * <p>如果用户已经声明了 {@link FaceDetector} 或 {@link FaceRecognizer} 的 Bean，Starter 会自动注入而非创建默认实现。
- *
- * <p>启用条件：{@code mica.ai.face.enabled=true}（默认）。
- * 启用后必填项（{@code det-model-path} / {@code rec-model-path}）缺失将启动失败。
- *
- * @since 1.0.0
+ * <p>由 {@code mica-auto} 扫描本类上的 {@link Component} 注解，自动生成
+ * {@code META-INF/spring.factories} 中的 {@code EnableAutoConfiguration} 条目。
  */
-@AutoConfiguration
-@ConditionalOnClass(FaceEngine.class)
+@Slf4j
+@Component
 @EnableConfigurationProperties(FaceProperties.class)
-@ConditionalOnProperty(prefix = "mica.ai.face", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class FaceAutoConfiguration {
+@ConditionalOnClass(FaceDetector.class)
+public class FaceAutoConfiguration implements InitializingBean {
 
-	@Bean
-	public FaceConfig faceConfig(FaceProperties properties) {
-		requireNonNull(properties.getDetModelPath(), "mica.ai.face.det-model-path");
-		requireNonNull(properties.getRecModelPath(), "mica.ai.face.rec-model-path");
-		return FaceConfig.builder()
-			.detModelPath(properties.getDetModelPath())
-			.recModelPath(properties.getRecModelPath())
-			.detScoreThreshold(properties.getDetScoreThreshold())
-			.detNmsThreshold(properties.getDetNmsThreshold())
-			.intraOpNumThreads(properties.getIntraOpNumThreads())
-			.interOpNumThreads(properties.getInterOpNumThreads())
+	@Bean(destroyMethod = "destroy")
+	@ConditionalOnMissingBean
+	public ModelManager modelManager(FaceProperties properties) {
+		FaceProperties.Model model = properties.getModel();
+		ModelConfig config = ModelConfig.builder()
+			.detectionModelPath(model.getDetection().getPath())
+			.recognitionModelPath(model.getRecognition().getPath())
+			.livenessModelPath(properties.getLiveness().isEnabled() ? model.getLiveness().getPath() : null)
+			.detectionThreshold(properties.getDetection().getThreshold())
+			.nmsThreshold(properties.getDetection().getNmsThreshold())
+			.verifyThreshold(properties.getVerify().getThreshold())
+			.onnx(buildOnnxOptions(properties))
+			.build();
+		return ModelManager.create(config);
+	}
+
+	private OrtSessionOptions buildOnnxOptions(FaceProperties properties) {
+		FaceProperties.Onnx o = properties.getOnnx();
+		String dev = (o.getDevice() == null || o.getDevice().trim().isEmpty())
+			? properties.getDevice() : o.getDevice();
+		return OrtSessionOptions.builder()
+			.device(parseDevice(dev))
+			.cudaDeviceId(o.getCudaDeviceId())
+			.intraOpNumThreads(o.getIntraOpNumThreads())
+			.interOpNumThreads(o.getInterOpNumThreads())
+			.graphOptimizationLevel(parseLevel(o.getGraphOptimizationLevel()))
+			.executionMode(parseMode(o.getExecutionMode()))
 			.build();
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	public FaceDetector faceDetector(FaceConfig faceConfig) {
-		return new YuNetDetector(faceConfig);
+	private static OrtSessionOptions.Device parseDevice(String s) {
+		return "gpu".equalsIgnoreCase(s) ? OrtSessionOptions.Device.GPU : OrtSessionOptions.Device.CPU;
+	}
+
+	private static OrtSessionOptions.GraphOptimizationLevel parseLevel(String s) {
+		if (s == null) {
+			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_ALL;
+		}
+		String key = s.trim().toUpperCase();
+		if ("ORT_DISABLE_ALL".equals(key)) {
+			return OrtSessionOptions.GraphOptimizationLevel.ORT_DISABLE_ALL;
+		}
+		if ("ORT_ENABLE_BASIC".equals(key)) {
+			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_BASIC;
+		}
+		if ("ORT_ENABLE_EXTENDED".equals(key)) {
+			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_EXTENDED;
+		}
+		return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_ALL;
+	}
+
+	private static OrtSessionOptions.ExecutionMode parseMode(String s) {
+		if (s == null) {
+			return OrtSessionOptions.ExecutionMode.ORT_PARALLEL;
+		}
+		String key = s.trim().toUpperCase();
+		if ("ORT_SEQUENTIAL".equals(key)) {
+			return OrtSessionOptions.ExecutionMode.ORT_SEQUENTIAL;
+		}
+		return OrtSessionOptions.ExecutionMode.ORT_PARALLEL;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FaceRecognizer faceRecognizer(FaceConfig faceConfig) {
-		return new SFaceRecognizer(faceConfig);
+	public FaceDetector faceDetector(ModelManager modelManager) {
+		return new FaceDetector(modelManager);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FaceEngine faceEngine(FaceConfig faceConfig, FaceDetector faceDetector, FaceRecognizer faceRecognizer) {
-		return FaceEngine.builder()
-			.config(faceConfig)
-			.detector(faceDetector)
-			.recognizer(faceRecognizer)
+	public FaceAligner faceAligner() {
+		return new FaceAligner();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FeatureExtractor featureExtractor(ModelManager modelManager) {
+		return new FeatureExtractor(modelManager);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "mica.ai.face.liveness", name = "enabled", havingValue = "true", matchIfMissing = true)
+	public LivenessDetector livenessDetector(ModelManager modelManager, FaceProperties properties) {
+		return new LivenessDetector(modelManager,
+			properties.getLiveness().getThreshold(),
+			properties.getLiveness().getCropScale());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FaceVerifier faceVerifier(ModelManager modelManager) {
+		return new FaceVerifier(modelManager);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public AvatarExtractor avatarExtractor(FaceDetector faceDetector, FaceProperties properties) {
+		FaceProperties.Avatar a = properties.getAvatar();
+		AvatarOptions defaults = AvatarOptions.builder()
+			.size(a.getSize())
+			.faceScale(a.getFaceScale())
+			.verticalOffset(a.getVerticalOffset())
+			.deRotate(a.isDeRotate())
+			.rotationDegrees(a.getRotationDegrees())
+			.autoOrient(a.isAutoOrient())
+			.background(a.getBackground())
+			.tileDetect(a.isTileDetect())
+			.tileSize(a.getTileSize())
+			.tileOverlap(a.getTileOverlap())
+			.tileThreshold(a.getTileThreshold())
+			.minFaceSize(a.getMinFaceSize())
+			.maxFaces(a.getMaxFaces())
 			.build();
+		return new AvatarExtractor(faceDetector, defaults);
 	}
 
-	private static void requireNonNull(Path value, String name) {
-		if (value == null) {
-			throw new MicaAiException(
-				"mica-ai-face 启用失败：[" + name + "] 必须配置（可在 application.yml 中设置 mica.ai.face.enabled=false 关闭该 Starter）");
+	@Bean
+	@ConditionalOnMissingBean
+	public CardExtractor cardExtractor(FaceProperties properties) {
+		FaceProperties.Card c = properties.getCard();
+		CardOptions.CardOptionsBuilder builder = CardOptions.defaults().toBuilder()
+			.outputWidth(c.getOutputWidth())
+			.outputHeight(c.getOutputHeight())
+			.aspectTolerance(c.getAspectTolerance())
+			.enhance(c.isEnhance())
+			.sharpenAmount(c.getSharpenAmount())
+			.sharpenSigma(c.getSharpenSigma())
+			.minCardSize(c.getMinCardSize());
+		// 默认不注入 FaceDetector；需要 autoOrient 时由业务模块自行提供带检测器的 CardExtractor
+		return new CardExtractor(builder.build());
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		try {
+			OpenCV.loadLocally();
+			log.info("mica-ai-face: OpenCV 原生库加载完成");
+		} catch (Throwable t) {
+			log.warn("mica-ai-face: OpenCV 原生库加载失败 - {}", t.getMessage());
 		}
 	}
-
 }

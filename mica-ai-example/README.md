@@ -1,11 +1,11 @@
 # mica-ai-example
 
-> mica-ai Spring Boot 集成测试 / Demo：聚合 6 个 Starter 的可运行示例与 `@SpringBootTest`。
+> mica-ai Spring Boot 集成测试 / Demo：聚合 Face Starter 的可运行示例与 `@SpringBootTest`。
 
 本模块面向集成测试场景：
 
-1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run` 启动后，可通过 REST 端点手工触发 TTS / ASR / OCR / 声纹 / 意图 / 人脸能力。
-2. **`@SpringBootTest` 集成测试**：覆盖 6 个 Starter 的自动装配行为（`enabled` 开关、fail-fast、Bean 注入）。
+1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run` 启动后，可通过 REST 端点触发 face 能力。
+2. **`ApplicationContextRunner` 集成测试**：覆盖 Face Starter 的自动装配行为（`enabled` 开关、fail-fast、Bean 注入）。
 
 ---
 
@@ -16,40 +16,36 @@
 | JDK | 17+ | 推荐 Azul Zulu 17 / Temurin 17 |
 | Maven | 3.6+ | 多模块构建 |
 | Spring Boot | 4.1.0+ | 由根 BOM 引入 |
-| ONNX 模型 | 视能力 | 见各子模块 README |
+| ONNX 模型 | YuNet + SFace | 见 [mica-ai-face/README.md](../mica-ai-core/mica-ai-face/README.md) |
 
 ---
 
 ## 2. 快速开始
 
-### 2.1 默认启动（所有能力 disabled）
+### 2.1 默认启动（face disabled）
 
 ```bash
-# 编译
 mvn -pl mica-ai-example -am -DskipTests clean install
-
-# 直接启动（不会注入任何 Engine Bean）
 mvn -pl mica-ai-example spring-boot:run
 ```
 
-启动后访问 `http://localhost:8181`，由于没有任何能力启用，所有 Controller 都已被 `@ConditionalOnProperty(mica.ai.<cap>.enabled)` 跳过注册。
+启动后访问 `http://localhost:8181`，由于 face 能力未启用，Controller 已被 `@ConditionalOnProperty(mica.ai.face.enabled)` 跳过注册。
 
-### 2.2 启用指定能力
+### 2.2 启用 face
 
-编辑 [src/main/resources/application.yml](src/main/resources/application.yml)，取消对应能力的注释、设置 `enabled: true`、并把模型路径改成你的实际路径：
+编辑 [src/main/resources/application.yml](src/main/resources/application.yml)，把模型路径改成你的实际路径：
 
 ```yaml
 mica:
   ai:
-    tts:
+    face:
       enabled: true
-      model-path: E:/codes/ai/kokoro-onnx/model/model_dynamic.onnx
-      voices-dir: E:/codes/ai/kokoro-onnx/model/voices
-      config-path: E:/codes/ai/kokoro-onnx/model/config.json
+      det-model-path: E:/codes/ai/mica-ai/model-tools/models/face/face_detection_yunet_2023mar.onnx
+      rec-model-path: E:/codes/ai/mica-ai/model-tools/models/face/face_recognition_sface_2021dec.onnx
 ```
 
-> ⚠️ 当 `enabled=true` 但必填项（如 `model-path`）缺失时，应用启动会 **fail-fast** 抛出 `MicaAiException`。
-> 不希望加载该能力时，直接设 `enabled: false` 即可。
+> ⚠️ 当 `enabled=true` 但必填项（如 `det-model-path`）缺失时，应用启动会 **fail-fast** 抛出 `MicaAiException`。
+> 不希望加载该能力时，设 `enabled: false` 即可。
 
 ### 2.3 跑集成测试
 
@@ -59,33 +55,30 @@ mvn -pl mica-ai-example -am test
 
 测试覆盖：
 
-- `DisabledAllTest`：默认配置下 ApplicationContext 能正常启动，6 个 Engine Bean 都不存在。
-- `ttsEnabledButMissingRequiredShouldFailFast`：TTS `enabled=true` 但缺 `model-path` → 启动抛 `MicaAiException`。
-- `intentEnabledButMissingLabelsShouldFailFast`：Intent `enabled=true` 但缺 `labels` → 启动抛 `MicaAiException`。
-- `EnabledWithPlaceholderTest`：TTS `enabled=true` 且路径齐全 → `KokoroTts` Bean 注入成功。
+- `disabledAllStartClean`：默认配置下 ApplicationContext 能正常启动，FaceEngine Bean 不存在。
+- `faceEnabledButMissingRequiredShouldFailFast`：face `enabled=true` 但缺 `det-model-path` → 启动抛 `MicaAiException`。
 
 > 集成测试不依赖任何真实 ONNX 模型文件，可放心在 CI 中执行。
 
 ---
 
-## 3. REST 端点一览
+## 3. 在你的应用里注入 Engine
 
-| 路径 | 方法 | 说明 | 依赖 Starter |
-|------|------|------|--------------|
-| `/tts/voices` | GET | 列出可用音色 | mica-ai-tts |
-| `/tts/synthesize?text=...` | POST | 文本合成语音（返回 WAV 字节流） | mica-ai-tts |
-| `/tts/synthesize-from-phonemes` | POST | 用预生成音素合成（绕过 G2P） | mica-ai-tts |
-| `/voice/recognize` | POST | 上传 WAV，返回识别文本 + 时间戳 + 热词 | mica-ai-voice |
-| `/voice/hotwords` | PUT | 动态更新热词列表 | mica-ai-voice |
-| `/ppocr/recognize` | POST | 上传图片，返回识别到的文本行 | mica-ai-ppocr |
-| `/speaker/enroll` | POST | 上传多段 WAV，返回 192 维 embedding | mica-ai-speaker |
-| `/speaker/verify` | POST | 上传 enroll + test，返回 cosine 相似度 | mica-ai-speaker |
-| `/intent/predict` | POST | 单条中文文本意图分类 | mica-ai-intent |
-| `/intent/predict-batch` | POST | 批量意图分类 | mica-ai-intent |
-| `/face/detect` | POST | 上传图片，返回人脸框 + 关键点 | mica-ai-face |
-| `/face/extract` | POST | 上传图片，返回 512 维 embedding | mica-ai-face |
+`mica-ai-example` 当前只演示 Starter 自动装配，不提供 REST Controller。在你自己的业务代码里：
 
-所有 Controller 都用 `@ConditionalOnProperty(prefix = "mica.ai.<cap>", name = "enabled")` 装饰，未启用对应能力时不会注册，访问会返回 404。
+```java
+@Service
+@RequiredArgsConstructor
+public class FaceService {
+    private final FaceEngine faceEngine;   // 由 FaceAutoConfiguration 自动注入
+
+    public List<FaceEmbedding> extract(Path imagePath) {
+        return faceEngine.extract(imagePath);
+    }
+}
+```
+
+> Controller 层可自行用 `@ConditionalOnProperty(prefix = "mica.ai.face", name = "enabled")` 装饰，未启用时不注册对应 Bean。
 
 ---
 
@@ -93,31 +86,18 @@ mvn -pl mica-ai-example -am test
 
 ```
 mica-ai-example/
-├── pom.xml                                          # 依赖 6 个 starter + spring-boot-starter-web
+├── pom.xml                                          # 依赖 face-spring-boot-starter + spring-boot-starter-web
 ├── src/main/java/net/dreamlu/mica/ai/example/
-│   ├── ExampleApplication.java                      # @SpringBootApplication 入口
-│   └── controller/
-│       ├── TtsController.java
-│       ├── VoiceController.java
-│       ├── PpocrController.java
-│       ├── SpeakerController.java
-│       ├── IntentController.java
-│       └── FaceController.java
+│   └── ExampleApplication.java                      # @SpringBootApplication 入口
 ├── src/main/resources/
-│   ├── application.yml                              # 全部 disabled + 启用示例
+│   ├── application.yml                              # face disabled + 启用示例
 │   └── logback-spring.xml
 └── src/test/java/net/dreamlu/mica/ai/example/
-    └── ExampleApplicationContextTest.java           # @SpringBootTest 集成测试
+    └── ExampleApplicationContextTest.java           # ApplicationContextRunner 集成测试
 ```
 
 ---
 
 ## 5. 已知约束
 
-- **OpenCV 原生库**：仅 `mica-ai-ppocr` 内部重度依赖 `org.opencv.*`（PP-OCRv6 文本框后处理），
-  `OpenCVNativeLoader` 已由 `mica-ai-ppocr-spring-boot-starter` 以 `@AutoConfiguration` 形式自动注入，
-  并通过 `@AutoConfigureBefore(PPOCRAutoConfiguration.class)` 保证在 PP-OCR Engine 初始化之前完成 native 加载。
-  `mica-ai-face` 完全不依赖 openpnp/opencv（仅用 ONNX Runtime 跑 YuNet+SFace）。
-- **TTS 缺 G2P 依赖**：默认 `ChineseG2P` 简化实现。要用 houbb/pinyin 多音字 G2P，
-  请在 `mica-ai-example/pom.xml` 显式追加 `com.github.houbb:pinyin` 依赖。
 - **multipart 上传**：默认最大 50MB / 请求 100MB，可在 `application.yml` 中调整 `spring.servlet.multipart`。
