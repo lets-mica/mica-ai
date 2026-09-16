@@ -12,24 +12,26 @@ model-tools/
 ├── .gitignore
 ├── face/                       # 对应 mica-ai-face
 │   ├── README.md
-│   └── models/                 # YuNet 检测 + SFace 识别（≈37MB）
+│   └── models/                 # YuNet 检测 + SFace 识别
 ├── filetype/                   # 对应 mica-ai-filetype
 │   ├── README.md
-│   └── models/                 # Magika model.onnx + config + kb（≈3.1MB）
+│   └── models/                 # Magika model.onnx + config + kb
 ├── plate/                      # 对应 mica-ai-plate
 │   ├── README.md
-│   └── models/                 # HyperLPR3 检测 / 识别 / 分类（≈18MB）
+│   └── models/                 # HyperLPR3 检测 / 识别 / 分类
 └── scripts/
     └── smoke_test.py           # 离线冒烟：校验目录与 ONNX 完整性
 ```
 
 ## 🧩 模型清单与 License
 
-| 能力 | 模型 | 大小 | 来源 | License |
-|------|------|------|------|---------|
-| face | `face_detection_yunet_2023mar.onnx` + `face_recognition_sface_2021dec.onnx` | ≈37MB | [opencv/opencv_zoo](https://github.com/opencv/opencv_zoo) | Apache-2.0 ✅ |
-| filetype | `model.onnx` + `config.min.json` + `content_types_kb.min.json` | ≈3.1MB | [google/magika standard_v3_3](https://github.com/google/magika) | Apache-2.0 ✅ |
-| plate | `y5fu_320x_sim.onnx` / `y5fu_640x_sim.onnx` / `rpv3_mdict_160_r3.onnx` / `litemodel_cls_96x_r1.onnx` | ≈18MB | [szad670401/HyperLPR](https://github.com/szad670401/HyperLPR) v20230229 | Apache-2.0 ✅ |
+| 能力 | 模型 | 来源 | License |
+|------|------|------|---------|
+| face | `face_detection_yunet_2023mar.onnx` + `face_recognition_sface_2021dec.onnx` | [opencv/opencv_zoo](https://github.com/opencv/opencv_zoo) | Apache-2.0 ✅ |
+| filetype | `model.onnx` + `config.min.json` + `content_types_kb.min.json` | [google/magika standard_v3_3](https://github.com/google/magika) | Apache-2.0 ✅ |
+| plate | `y5fu_320x_sim.onnx` / `y5fu_640x_sim.onnx` / `rpv3_mdict_160_r3.onnx` / `litemodel_cls_96x_r1.onnx` | [szad670401/HyperLPR](https://github.com/szad670401/HyperLPR) v20230229 | Apache-2.0 ✅ |
+
+> 活体（`2.7_80x80_MiniFASNetV2.onnx`，MIT）当前**不在仓库内**，按需自行下载。
 
 ## 🚀 使用
 
