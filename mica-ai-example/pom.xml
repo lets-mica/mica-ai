@@ -51,7 +51,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.18</version>
+                <version>4.1.1</version>
                 <configuration>
                     <mainClass>net.dreamlu.mica.ai.example.ExampleApplication</mainClass>
                 </configuration>
