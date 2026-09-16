@@ -1,8 +1,8 @@
 # mica-ai-face-spring-boot-starter
 
-> OpenCV Zoo（YuNet + SFace）人脸识别 Spring Boot Starter，基于 [mica-ai-face](../mica-ai-core/mica-ai-face/README.md) 核心模块。**Apache-2.0 可商用**。
->
-> **只暴露 `FaceEngine` Bean，把图片转成 512 维 Embedding。人脸库与 1:N 检索不在本 Starter 范围内。**
+> OpenCV Zoo 人脸识别 Spring Boot Starter，基于 [mica-ai-face](../../mica-ai-core/mica-ai-face/README.md) 核心模块。**Apache-2.0 / MIT 可商用**。
+
+零配置即可注入 `FaceDetector` / `FaceAligner` / `FeatureExtractor` / `LivenessDetector` / `FaceVerifier` / `AvatarExtractor` / `CardExtractor` 等引擎 Bean。
 
 ---
 
@@ -16,117 +16,168 @@
 </dependency>
 ```
 
-> 需要同时引入 `spring-boot-starter`，建议 JDK 17+。
+> 需要同时引入 `spring-boot-starter`；与父项目保持一致，推荐 JDK 8+（Spring Boot 2.7.x）。
 
 ---
 
-## 2. 配置项
+## 2. 配置项（`mica.ai.face` 前缀）
 
 ```yaml
 mica:
   ai:
     face:
-      det-model-path: models/face_detection_yunet_2023mar.onnx        # 必填
-      rec-model-path: models/face_recognition_sface_2021dec.onnx      # 必填
-      model-type: YUNET_SFACE                                         # 默认，可选
-      det-score-threshold: 0.6
-      det-nms-threshold: 0.3
-      intra-op-num-threads: 1
-      inter-op-num-threads: 1
+      enabled: true                       # 总开关，默认 true
+      device: cpu                         # cpu / gpu（GPU 需 onnxruntime_gpu）
+      detection:
+        model-path: classpath:models/face_detection_yunet_2023mar.onnx   # 必填
+        threshold: 0.9                    # 检测置信度阈值
+        nms-threshold: 0.3                # NMS IoU 阈值
+      recognition:
+        model-path: classpath:models/face_recognition_sface_2021dec.onnx # 必填
+      liveness:
+        enabled: false                    # 默认 false
+        model-path: classpath:models/2.7_80x80_MiniFASNetV2.onnx        # 启用必填
+      verify:
+        threshold: 0.35                   # 1:1 比对阈值
+      avatar:
+        size: 256
+      card:
+        output-width: 1011
+        output-height: 638
+      onnx:
+        intra-op-num-threads: 0           # 0 = ORT 默认
+        inter-op-num-threads: 0
+        graph-optimization-level: ORT_ENABLE_ALL
 ```
 
-| 配置项 | 类型 | 默认 | 说明 |
-|--------|------|------|------|
-| `mica.ai.face.det-model-path` | Path | — | YuNet 检测模型路径（必填） |
-| `mica.ai.face.rec-model-path` | Path | — | SFace 识别模型路径（必填） |
-| `mica.ai.face.model-type` | enum | `YUNET_SFACE` | 模型实现（当前仅 OpenCV Zoo） |
-| `mica.ai.face.det-score-threshold` | float | `0.6` | 检测置信度阈值 |
-| `mica.ai.face.det-nms-threshold` | float | `0.3` | NMS IoU 阈值（YuNet 内部已 NMS） |
-| `mica.ai.face.intra-op-num-threads` | int | `1` | ONNX 内部线程 |
-| `mica.ai.face.inter-op-num-threads` | int | `1` | ONNX 交互线程 |
+| 配置 | 默认 | 说明 |
+|------|------|------|
+| `mica.ai.face.enabled` | `true` | 总开关 |
+| `mica.ai.face.device` | `cpu` | `cpu` / `gpu` |
+| `mica.ai.face.detection.model-path` | — | YuNet 路径（必填，支持 `classpath:`） |
+| `mica.ai.face.detection.threshold` | `0.6` | 检测置信度阈值 |
+| `mica.ai.face.detection.nms-threshold` | `0.3` | NMS IoU 阈值 |
+| `mica.ai.face.recognition.model-path` | — | SFace 路径（必填） |
+| `mica.ai.face.liveness.enabled` | `false` | 活体开关（开启必填 `model-path`） |
+| `mica.ai.face.liveness.model-path` | — | MiniFASNetV2 路径 |
+| `mica.ai.face.verify.threshold` | `0.35` | 1:1 比对阈值 |
+| `mica.ai.face.avatar.size` | `256` | 头像边长（像素） |
+| `mica.ai.face.card.output-width` | `1011` | 卡片输出宽 |
+| `mica.ai.face.card.output-height` | `638` | 卡片输出高 |
+| `mica.ai.face.onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
+| `mica.ai.face.onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 
-> `det-model-path` 和 `rec-model-path` 至少配置一项以上，本 Starter 才会装配 `FaceEngine` Bean。
+> `enabled=false` 时不装配任何 face Bean；`detection.model-path` / `recognition.model-path` 缺失时启动会 **fail-fast**。
 
 ---
 
 ## 3. 使用示例
 
-### 3.1 控制器示例：上传图片 → 返回 512 维向量
+### 3.1 注入并使用
+
+```java
+@Service
+@RequiredArgsConstructor
+public class FaceEnrollService {
+
+    private final FaceDetector detector;              // YuNet ONNX
+    private final FaceAligner aligner;                // 5 关键点仿射
+    private final FeatureExtractor extractor;         // SFace 128d
+    private final LivenessDetector liveness;          // MiniFASNetV2（启用后可用）
+    private final FaceVerifier verifier;              // 1:1 比对门面
+    private final AvatarExtractor avatarExtractor;    // 头像提取
+    private final CardExtractor cardExtractor;        // 证件卡片提取
+
+    public float[] enroll(BufferedImage image) {
+        FaceBox box = detector.detect(image).get(0);
+        try (Mat aligned = aligner.align(image, box)) {
+            return extractor.extract(aligned);        // 128d L2 归一化
+        }
+    }
+
+    public boolean verify(BufferedImage a, BufferedImage b) {
+        float[] fa = enroll(a), fb = enroll(b);
+        return verifier.cosineSimilarity(fa, fb) > 0.35f;
+    }
+}
+```
+
+### 3.2 REST 端点：上传图片 → 128d 向量
 
 ```java
 @RestController
 @RequiredArgsConstructor
 public class FaceController {
 
-    private final FaceEngine faceEngine;
-
-    @PostMapping("/face/embed")
-    public List<float[]> embed(@RequestParam("file") MultipartFile file) throws IOException {
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        return faceEngine.extract(image).stream()
-            .map(FaceEmbedding::getVector)
-            .toList();
-    }
+    private final FaceDetector detector;
+    private final FaceAligner aligner;
+    private final FeatureExtractor extractor;
 
     @PostMapping("/face/detect")
     public List<FaceBox> detect(@RequestParam("file") MultipartFile file) throws IOException {
-        return faceEngine.detect(ImageIO.read(file.getInputStream()));
+        BufferedImage img = ImageIO.read(file.getInputStream());
+        return detector.detect(img);
+    }
+
+    @PostMapping("/face/extract")
+    public List<float[]> extract(@RequestParam("file") MultipartFile file) throws IOException {
+        BufferedImage img = ImageIO.read(file.getInputStream());
+        List<float[]> out = new ArrayList<>();
+        for (FaceBox box : detector.detect(img)) {
+            try (Mat aligned = aligner.align(img, box)) {
+                out.add(extractor.extract(aligned));
+            }
+        }
+        return out;
     }
 }
 ```
 
-### 3.2 与向量数据库协作（伪代码）
+### 3.3 与 Milvus 协作（伪代码）
 
 ```java
 @Service
 @RequiredArgsConstructor
-public class FaceService {
-
-    private final FaceEngine faceEngine;
+public class FaceGalleryService {
+    private final FeatureExtractor extractor;
     private final MilvusClient milvus;
 
-    public void enroll(String userId, MultipartFile portrait) throws IOException {
-        BufferedImage image = ImageIO.read(portrait.getInputStream());
-        FaceEmbedding emb = faceEngine.extract(image).get(0);
-        milvus.insert("face_gallery", userId, emb.getVector());
-    }
-
-    public List<Match> recognize(MultipartFile probe, int topK) throws IOException {
-        BufferedImage image = ImageIO.read(probe.getInputStream());
-        FaceEmbedding emb = faceEngine.extract(image).get(0);
-        return milvus.search("face_gallery", emb.getVector(), topK);
+    public void enroll(String userId, BufferedImage portrait) {
+        FaceBox box = detector.detect(portrait).get(0);
+        try (Mat aligned = aligner.align(portrait, box)) {
+            float[] emb = extractor.extract(aligned);
+            milvus.insert("face_gallery", userId, emb);
+        }
     }
 }
 ```
 
-> 1:N 检索由向量数据库负责，**Starter 不内置**任何 `FaceDatabase` 实现。
-
 ---
 
-## 4. 自定义 detector / recognizer
+## 4. 自定义实现
 
-Starter 通过 `ObjectProvider` 优先使用用户声明的 Bean，没声明则走默认 YuNet + SFace：
+Starter 通过 `@ConditionalOnMissingBean` 优先使用用户声明的 Bean，没声明则走默认实现：
 
 ```java
 @Configuration
 public class MyFaceConfig {
 
-    /**
-     * 用自家训练的检测器替换默认 YuNet。
-     */
     @Bean
     public FaceDetector myDetector(FaceProperties props) {
-        return new MyTrainedDetector(props.getDetModelPath());
+        return new MyTrainedDetector(props.getDetection().getModelPath());
     }
 
-    /**
-     * 用自家训练的识别器替换默认 SFace。
-     */
     @Bean
-    public FaceRecognizer myRecognizer(FaceProperties props) {
-        return new MyTrainedRecognizer(props.getRecModelPath());
+    public FeatureExtractor myExtractor(FaceProperties props) {
+        return new MyTrainedExtractor(props.getRecognition().getModelPath());
     }
 }
 ```
 
-只要 `FaceDetector` / `FaceRecognizer` 是接口实现，Starter 就会自动注入到 `FaceEngine`，**零业务代码改动**。
+只要替换的 Bean 类型一致，**业务代码零改动**。
+
+---
+
+## 5. 完整示例
+
+参见 [`mica-ai-example`](../../mica-ai-example/README.md)：已聚合 face / filetype Starter，提供 `/face/detect`、`/face/extract` 等 REST 端点。

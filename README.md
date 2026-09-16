@@ -11,11 +11,11 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Maven Central](https://img.shields.io/badge/Maven-1.0.0-red?style=flat-square&logo=apache-maven)](https://mvnrepository.com/artifact/net.dreamlu/mica-ai)
 
-> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 开箱即用
+> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 开箱即用
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
-[快速开始](#-快速开始) · [Spring Boot 一键接入](#-spring-boot-starter) · [应用场景](#-应用场景) · [更新日志](CHANGELOG.md)
+[快速开始](#-快速开始) · [Spring Boot Starter](#-spring-boot-starter) · [应用场景](#-应用场景) · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -29,8 +29,8 @@
 |--------|-----------------|
 | Python 微服务部署运维成本高、跨语言调用调试难 | **纯 Java 推理**，JVM 里直接跑，无需任何 Python 进程 |
 | PyTorch / PaddlePaddle 几百 MB 起步，包体爆炸 | **ONNX Runtime** 一个 runtime 全部搞定，CPU/GPU/CUDA 自由切换 |
-| 模型预处理、后处理各家一套，文档稀烂 | **端到端复刻 OpenCV C++ 实现**，预处理 / 后处理 / 解码全部内置，开箱即用 |
-| 集成 Spring Boot 要写一堆 Bean 配置 | **官方 Starter**，一行 YAML 即可注入引擎 Bean |
+| 模型预处理、后处理各家一套，文档稀烂 | **端到端复刻 OpenCV / Magika / HyperLPR3 实现**，预处理 / 后处理 / 解码全部内置，开箱即用 |
+| 集成 Spring Boot 要写一堆 Bean 配置 | **官方 Starter**，一行 YAML 注入引擎 Bean |
 | 模型下载慢、上手要跑 Python 脚本 | **模型直接入库**（均 <50MB），克隆即用，`make -C model-tools smoke` 一键自检 |
 
 > 💡 **Mica AI 不是又一个 SDK，而是 Java 工程师的 AI 全家桶。**
@@ -38,6 +38,17 @@
 ---
 
 ## 🎯 当前能力一览
+
+| 能力 | 模块 | 核心模型 | 输出维度 / 类别 | License | 商用 |
+|------|------|---------|----------------|---------|------|
+| 🎭 人脸检测 | `mica-ai-face` | YuNet | 人脸框 + 5 关键点 | Apache 2.0 | ✅ |
+| 🧬 人脸特征 | `mica-ai-face` | SFace | **128d** L2 归一化向量 | Apache 2.0 | ✅ |
+| 🛡️ 活体检测 | `mica-ai-face` | MiniFASNetV2 | real / replay / print | MIT | ✅ |
+| 🖼️ 头像 / 证件卡片提取 | `mica-ai-face` | 几何变换 + USM/CLAHE | 正方形头像 / 矫正卡面 | Apache 2.0 | ✅ |
+| 📄 文件类型识别 | `mica-ai-filetype` | Google Magika `standard_v3_3` | **214 类** + mime / group / description | Apache 2.0 | ✅ |
+| 🚗 中国车牌识别 | `mica-ai-plate` | HyperLPR3 v20230229 | 车牌号 + 10 类判型 + 颜色 | Apache 2.0 | ✅ |
+
+### 整体架构
 
 ```
                         ┌─────────────────────────────────────┐
@@ -54,28 +65,27 @@
                           └──────────────────────┘
                                        │
                                        ▼
-                          ┌──────────────────────┐
-                          │    mica-ai-common    │
-                          │  ONNX 通用基础设施    │
-                          │  + 统一异常          │
-                          └──────────────────────┘
+                          ┌──────────────────────┐    ┌──────────────────────┐
+                          │   mica-ai-filetype   │    │     mica-ai-plate    │
+                          │  文件类型 📄         │    │  中国车牌 🚗          │
+                          │  Magika 214 类       │    │  HyperLPR3           │
+                          └──────────────────────┘    └──────────────────────┘
+                                       │                        │
+                                       └────────────┬───────────┘
+                                                    ▼
+                                       ┌──────────────────────┐
+                                       │    mica-ai-common    │
+                                       │  ONNX 通用基础设施    │
+                                       │  + 统一异常          │
+                                       └──────────────────────┘
 ```
 
-能力清单：
-
-| 模块 | 模型 | 维度 | License |
-|------|------|------|---------|
-| 人脸检测 | YuNet (`face_detection_yunet_2023mar.onnx`) | — | Apache 2.0 |
-| 人脸特征 | SFace (`face_recognition_sface_2021dec.onnx`) | 128d | Apache 2.0 |
-| 活体 | MiniFASNetV2 (`2.7_80x80_MiniFASNetV2.onnx`) | 3 类 | MIT（minivision Silent-Face-Anti-Spoofing，可商用） |
-| 文件类型识别 | Google Magika `standard_v3_3` | 214 类 | Apache 2.0 |
-
-> 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸 + 文件类型识别模块。
+> 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸 + 文件类型识别 + 中国车牌模块：
 >
 > - OCR：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr) — PaddleOCR / PP-OCRv4 的 Java 推理
 > - 语音（ASR / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
 >
-> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），无 liveness 模型路径时跳过加载；商业落地前请按 §6.1 自查模型许可（当前所有依赖模型均已确认可商用）。
+> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），未配置路径时跳过加载；商业落地前请按 `AGENTS.md` §6.1 自查模型许可（当前所有依赖模型均已确认可商用）。
 
 ---
 
@@ -99,20 +109,35 @@
 </dependency>
 ```
 
-### 2️⃣ 30 秒跑通一个人脸识别
+其他能力依赖：
+
+```xml
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-filetype</artifactId>          <!-- 文件类型识别 -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-plate</artifactId>             <!-- 中国车牌识别 -->
+    <version>${mica-ai.version}</version>
+</dependency>
+```
+
+### 2️⃣ 30 秒跑通一个人脸识别（纯 Java）
 
 ```java
 ModelConfig config = ModelConfig.builder()
-    .detectionModelPath("models/face_detection_yunet_2023mar.onnx")
-    .recognitionModelPath("models/face_recognition_sface_2021dec.onnx")
+    .detectionModelPath(Path.of("models/face_detection_yunet_2023mar.onnx"))
+    .recognitionModelPath(Path.of("models/face_recognition_sface_2021dec.onnx"))
     .build();
 
 try (ModelManager manager = ModelManager.create(config)) {
     FaceDetector detector = new FaceDetector(manager);
-    FaceAligner aligner = new FaceAligner();
+    FaceAligner aligner   = new FaceAligner();
     FeatureExtractor extractor = new FeatureExtractor(manager);
 
-    Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(Path.of("group.jpg")));
+    BufferedImage img = ImageIO.read(new File("group.jpg"));
     List<FaceBox> boxes = detector.detect(img);
     for (FaceBox box : boxes) {
         try (Mat aligned = aligner.align(img, box)) {
@@ -129,16 +154,17 @@ try (ModelManager manager = ModelManager.create(config)) {
 mica:
   ai:
     face:
-      model:
-        detection:
-          path: classpath:models/face_detection_yunet_2023mar.onnx
-        recognition:
-          path: classpath:models/face_recognition_sface_2021dec.onnx
-        liveness:
-          path: classpath:models/2.7_80x80_MiniFASNetV2.onnx
+      enabled: true
+      device: cpu
       detection:
+        model-path: classpath:models/face_detection_yunet_2023mar.onnx
         threshold: 0.9
         nms-threshold: 0.3
+      recognition:
+        model-path: classpath:models/face_recognition_sface_2021dec.onnx
+      liveness:
+        enabled: false
+        model-path: classpath:models/2.7_80x80_MiniFASNetV2.onnx
       verify:
         threshold: 0.35
       avatar:
@@ -146,7 +172,6 @@ mica:
       card:
         output-width: 1011
         output-height: 638
-      device: cpu
       onnx:
         intra-op-num-threads: 0
         graph-optimization-level: ORT_ENABLE_ALL
@@ -156,12 +181,13 @@ mica:
 @Service
 @RequiredArgsConstructor
 public class FaceEnrollService {
-    private final FaceDetector detector;       // ← 直接注入
+    private final FaceDetector detector;            // ← 直接注入
     private final FaceAligner aligner;
-    private final FeatureExtractor extractor;
+    private final FeatureExtractor extractor;       // 128d
+    private final LivenessDetector liveness;        // 活体（启用后可用）
+    private final FaceVerifier verifier;            // 1:1 比对
     private final AvatarExtractor avatarExtractor;  // 头像提取
     private final CardExtractor cardExtractor;      // 证件卡片提取
-    private final FaceVerifier verifier;            // 1:1 比对
 }
 ```
 
@@ -173,8 +199,9 @@ public class FaceEnrollService {
 |---------|---------|----------|
 | [mica-ai-face-spring-boot-starter](mica-ai-starters/mica-ai-face-spring-boot-starter/README.md) | `mica.ai.face` | 人脸检测 + 128d 特征 + 活体 + 头像 / 证件卡片提取 |
 | [mica-ai-filetype-spring-boot-starter](mica-ai-starters/mica-ai-filetype-spring-boot-starter/README.md) | `mica.ai.filetype` | Google Magika 复刻，214 类文件类型识别（含 / 排除置信度三模式） |
+| [mica-ai-plate-spring-boot-starter](mica-ai-starters/mica-ai-plate-spring-boot-starter/README.md) | `mica.ai.plate` | HyperLPR3 中国车牌识别（检测 + CRNN 识别 + 颜色分类 + 10 类判型） |
 
-只需在 `application.yml` 配好模型路径，对应 `Bean` 即可 `@Autowired` 直接用。
+只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用。
 
 ---
 
@@ -182,19 +209,22 @@ public class FaceEnrollService {
 
 ```
 mica-ai/
-├── mica-ai-common/                       # 公共：ONNX 通用基础设施、统一异常
-├── mica-ai-core/                         # 核心引擎（零 Spring，纯 Java 8）
-│   ├── mica-ai-face/                     #   🎭 OpenCV Zoo 人脸识别
-│   └── mica-ai-filetype/                 #   📄 Google Magika 文件类型识别
-├── mica-ai-starters/                     # Spring Boot 2 Starter
+├── pom.xml                         # 顶层 BOM（revision / spring-boot / onnxruntime）
+├── mica-ai-common/                 # 公共：ONNX 通用基础设施、统一异常
+├── mica-ai-core/                   # 核心引擎（零 Spring，纯 Java 8+）
+│   ├── mica-ai-face/               #   🎭 OpenCV Zoo 人脸识别
+│   ├── mica-ai-filetype/           #   📄 Google Magika 文件类型识别
+│   └── mica-ai-plate/              #   🚗 HyperLPR3 中国车牌识别
+├── mica-ai-starters/               # Spring Boot 2 Starter
 │   ├── mica-ai-face-spring-boot-starter/
-│   └── mica-ai-filetype-spring-boot-starter/
-├── mica-ai-example/                      # Spring Boot 集成示例
-└── model-tools/                          # 模型资产（直接入库，均 <50MB）
-    ├── face/models/                      #   YuNet + SFace（Apache-2.0）
-    ├── filetype/models/                  #   Magika standard_v3_3（Apache-2.0）
-    ├── plate/models/                     #   HyperLPR3 v20230229（Apache-2.0）
-    └── scripts/smoke_test.py             #   离线冒烟：校验目录与 ONNX 完整性
+│   ├── mica-ai-filetype-spring-boot-starter/
+│   └── mica-ai-plate-spring-boot-starter/
+├── mica-ai-example/                # Spring Boot 集成示例
+└── model-tools/                    # 模型资产（直接入库，均 <50MB）
+    ├── face/models/                #   YuNet + SFace + MiniFASNetV2
+    ├── filetype/models/            #   Magika standard_v3_3
+    ├── plate/models/               #   HyperLPR3 v20230229
+    └── scripts/smoke_test.py       #   离线冒烟：校验目录与 ONNX 完整性
 ```
 
 ---
@@ -219,7 +249,7 @@ mica-ai/
 | 🧠 ONNX Runtime | 1.18.0 | Maven 自动拉取，CPU/GPU 可选 |
 | 🖼️ OpenCV | 4.9.0（openpnp） | Maven 自动拉取对应系统 / 架构的原生库 |
 
-> GPU 加速：把 `onnxruntime` 替换为 `onnxruntime_gpu`，并将 `mica.ai.face.device=gpu`（需 CUDA Toolkit + 驱动）。
+> GPU 加速：把 `onnxruntime` 替换为 `onnxruntime_gpu`，并将 `device=gpu`（需 CUDA Toolkit + 驱动）。
 
 ---
 
@@ -227,16 +257,17 @@ mica-ai/
 
 | 场景 | 推荐组合 |
 |------|---------|
-| 🎭 **人脸识别 / 门禁 / 考勤** | mica-ai-face + Milvus / pgvector（向量库做 1:N 检索） |
-| 🪪 **证件核验 / 人证合一** | mica-ai-face.FaceVerifier + CardExtractor |
-| 🖼️ **头像 / 证件卡片标准化** | mica-ai-face.AvatarExtractor / CardExtractor |
-| 📄 **任意文件 MIME 推断 / 内容审计** | mica-ai-filetype — 214 类 + 三种置信度模式 |
+| 🎭 **人脸识别 / 门禁 / 考勤** | `mica-ai-face` + Milvus / pgvector（向量库做 1:N 检索） |
+| 🪪 **证件核验 / 人证合一** | `mica-ai-face` 的 `FaceVerifier` + `CardExtractor` |
+| 🖼️ **头像 / 证件卡片标准化** | `mica-ai-face` 的 `AvatarExtractor` / `CardExtractor` |
+| 📄 **任意文件 MIME 推断 / 内容审计** | `mica-ai-filetype` — 214 类 + 三种置信度模式 |
+| 🚗 **停车场 / 道闸 / 智慧出行** | `mica-ai-plate` 的 `PlatePipeline` + 颜色分类兜底 |
 
 ---
 
 ## 📄 License
 
-本项目基于 [Apache License 2.0](LICENSE) 协议开源，可放心用于商业项目。
+本项目基于 [Apache License 2.0](LICENSE) 协议开源，可放心用于商业项目；当前所有依赖模型均确认可商用（详见 `AGENTS.md` §6.1）。
 
 ---
 
@@ -244,7 +275,7 @@ mica-ai/
 
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
-- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika)
+- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR)
 - 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">

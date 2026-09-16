@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2024-2026 mica-ai
+ */
+package net.dreamlu.mica.ai.example.repository;
+
+import net.dreamlu.mica.ai.face.model.MatchResult;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * {@link SimpleMemoryRepository} 单元测试。
+ */
+class SimpleMemoryRepositoryTest {
+
+	private SimpleMemoryRepository repository;
+
+	@BeforeEach
+	void setUp() {
+		repository = new SimpleMemoryRepository();
+	}
+
+	@Test
+	void saveAndGetShouldRoundTripFeature() {
+		float[] feature = new float[]{0.1f, 0.2f, 0.3f};
+		repository.save("alice", feature);
+
+		float[] actual = repository.getFeature("alice");
+		assertNotNull(actual);
+		assertEquals(feature.length, actual.length);
+		for (int i = 0; i < feature.length; i++) {
+			assertEquals(feature[i], actual[i]);
+		}
+		// 应返回克隆，避免外部修改污染仓库
+		assertNotSame(feature, actual);
+	}
+
+	@Test
+	void getFeatureShouldReturnNullForUnknownPerson() {
+		assertNull(repository.getFeature("ghost"));
+	}
+
+	@Test
+	void searchShouldReturnTopKByCosineSimilarityDescending() {
+		repository.save("a", new float[]{1f, 0f, 0f});
+		repository.save("b", new float[]{0f, 1f, 0f});
+		repository.save("c", new float[]{1f, 1f, 0f});
+
+		float[] query = new float[]{1f, 0f, 0f};
+		List<MatchResult> top2 = repository.search(query, 2);
+
+		assertEquals(2, top2.size());
+		// a 与查询向量完全一致，相似度 1.0
+		assertEquals("a", top2.get(0).getPersonId());
+		assertEquals(1.0f, top2.get(0).getSimilarity(), 1e-6);
+		// c 次之
+		assertEquals("c", top2.get(1).getPersonId());
+	}
+
+	@Test
+	void searchOnEmptyRepositoryShouldReturnEmpty() {
+		List<MatchResult> result = repository.search(new float[]{1f, 0f}, 5);
+		assertTrue(result.isEmpty());
+	}
+
+	@Test
+	void deleteShouldRemoveFeature() {
+		repository.save("alice", new float[]{1f, 0f, 0f});
+		repository.delete("alice");
+		assertNull(repository.getFeature("alice"));
+	}
+
+	@Test
+	void deleteOnMissingShouldBeNoop() {
+		repository.delete("ghost");
+		// 不存在的人员不应被新建
+		assertNull(repository.getFeature("ghost"));
+	}
+}

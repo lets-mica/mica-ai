@@ -1,14 +1,16 @@
 # mica-ai-filetype
 
-> Google [Magika](https://github.com/google/magika) 文件类型检测的 Java 复刻：纯 ONNX Runtime，零 Python，零 OpenCV，Apache-2.0 可商用。
+> Google [Magika](https://github.com/google/magika) 文件类型检测的 Java 复刻：纯 ONNX Runtime，**零 Python / 零 OpenCV**，Apache-2.0 可商用。
+
+---
 
 ## 1. 模型规格
 
-| 文件 | 来源 | License | 大小 | 说明 |
-|------|------|---------|------|------|
-| `model.onnx` | [google/magika `standard_v3_3`](https://github.com/google/magika/tree/main/assets/models/standard_v3_3) | Apache 2.0 | ≈3.1 MB | Magika 文件类型检测 ONNX 模型（opset=15） |
-| `config.min.json` | [google/magika `standard_v3_3/config.min.json`](https://github.com/google/magika/blob/main/assets/models/standard_v3_3/config.min.json) | Apache 2.0 | ≈2.1 KB | 超参：`beg_size` / `end_size` / `block_size` / `padding_token` / `target_labels_space` / `thresholds` / `overwrite_map` |
-| `content_types_kb.min.json` | [google/magika `python/src/magika/config/content_types_kb.min.json`](https://github.com/google/magika/blob/main/python/src/magika/config/content_types_kb.min.json) | Apache 2.0 | ≈45 KB | 类型元数据：`mime_type` / `group` / `description` / `extensions` / `is_text`，353 个条目 |
+| 文件 | 来源 | License | 说明 |
+|------|------|---------|------|
+| `model.onnx` | [google/magika `standard_v3_3`](https://github.com/google/magika/tree/main/assets/models/standard_v3_3) | Apache 2.0 | Magika 文件类型检测 ONNX 模型（opset=15） |
+| `config.min.json` | [`standard_v3_3/config.min.json`](https://github.com/google/magika/blob/main/assets/models/standard_v3_3/config.min.json) | Apache 2.0 | 超参：`beg_size` / `end_size` / `block_size` / `padding_token` / `target_labels_space` / `thresholds` / `overwrite_map` |
+| `content_types_kb.min.json` | [`python/src/magika/config/content_types_kb.min.json`](https://github.com/google/magika/blob/main/python/src/magika/config/content_types_kb.min.json) | Apache 2.0 | 类型元数据：`mime_type` / `group` / `description` / `extensions` / `is_text`，353 个条目 |
 
 模型已直接入库：[`model-tools/filetype/models/`](../../model-tools/filetype/README.md)（无需下载脚本）。
 
@@ -23,7 +25,31 @@
 
 > **注**：`block_size` (4096) 是读取窗口大小，`features_size = beg_size + end_size = 2048` 才是模型输入张量长度。来源：[`rust/lib/src/config.rs`](https://github.com/google/magika/blob/main/rust/lib/src/config.rs)。
 
-## 2. 核心组件
+---
+
+## 2. 环境要求
+
+| 组件 | 版本 | 说明 |
+|------|------|------|
+| JDK | **8+** | 推荐 Temurin / Azul Zulu 8、11、17 |
+| Maven | 3.6+ | 编译 / 打包 |
+| ONNX Runtime | 1.18.0 | Maven 自动拉取；GPU 场景换 `onnxruntime_gpu` |
+
+---
+
+## 3. Maven 依赖
+
+```xml
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-filetype</artifactId>
+    <version>${mica-ai.version}</version>
+</dependency>
+```
+
+---
+
+## 4. 核心组件
 
 | 组件 | 类 | 职责 |
 |------|----|------|
@@ -57,7 +83,9 @@ Path / Bytes / Stream
 FiletypeResult{outputLabel, modelLabel, score, contentType, mode, isText}
 ```
 
-## 3. 预测模式
+---
+
+## 5. 预测模式
 
 | 模式 | 行为 |
 |------|------|
@@ -65,9 +93,9 @@ FiletypeResult{outputLabel, modelLabel, score, contentType, mode, isText}
 | `MEDIUM_CONFIDENCE` | `score >= medium_confidence_threshold=0.5` → 信任模型输出；否则同上兜底 |
 | `BEST_GUESS` | 不做阈值检查，永远采用模型 argmax 输出 |
 
-## 4. I/O 格式
+---
 
-### 输入
+## 6. 快速使用
 
 ```java
 FiletypeConfig config = FiletypeConfig.builder()
@@ -78,7 +106,7 @@ FiletypeConfig config = FiletypeConfig.builder()
     .build();
 try (FiletypeDetector detector = new FiletypeDetector(config)) {
     FiletypeResult r = detector.detectPath(Paths.get("test.pdf"));
-    // r.getOutputLabel()  == "pdf"
+    // r.getOutputLabel()              == "pdf"
     // r.getContentType().getMimeType() == "application/pdf"
     // r.getContentType().getGroup()     == "document"
     // r.isText()                         == false
@@ -96,6 +124,16 @@ try (FiletypeDetector detector = new FiletypeDetector(config)) {
 | `mode`        | `PredictionMode` | 当前预测模式 |
 | `isText`      | `boolean` | 是否文本类型（`contentType.isText()` 或 fallback 到 `txt`） |
 
-## 5. License
+---
 
-Apache License 2.0（代码 + 模型权重 + 配置文件均来自 Google Magika，可商用）。
+## 7. License
+
+- 代码：Apache License 2.0
+- 模型：Google Magika `standard_v3_3`，[Apache License 2.0](https://github.com/google/magika/blob/main/LICENSE)，**可商用** ✅
+
+---
+
+## 8. 相关链接
+
+- 启动器：[`mica-ai-starters/mica-ai-filetype-spring-boot-starter/README.md`](../../mica-ai-starters/mica-ai-filetype-spring-boot-starter/README.md)
+- 模型资产：[`model-tools/filetype/README.md`](../../model-tools/filetype/README.md)
