@@ -145,27 +145,37 @@
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-common</artifactId>
-                <version>1.0.0</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-face</artifactId>
-                <version>1.0.0</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-face-spring-boot-starter</artifactId>
-                <version>1.0.0</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-filetype</artifactId>
-                <version>1.0.0</version>
+                <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-filetype-spring-boot-starter</artifactId>
-                <version>1.0.0</version>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-plate</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-plate-spring-boot-starter</artifactId>
+                <version>${revision}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

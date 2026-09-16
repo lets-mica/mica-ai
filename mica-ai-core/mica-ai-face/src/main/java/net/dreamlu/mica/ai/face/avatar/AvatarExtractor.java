@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.face.avatar;
 
 import lombok.Getter;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.model.FaceBox;
@@ -51,7 +52,7 @@ public class AvatarExtractor {
 		AvatarOptions opts = options == null ? defaults : options;
 		List<AvatarResult> results = extractAll(image, opts.toBuilder().maxFaces(1).build());
 		if (results.isEmpty()) {
-			throw new MicaAiException(MicaAiException.ErrorCode.AVATAR_FAILED, "未检测到人脸");
+			throw new MicaAiException(ErrorCode.AVATAR_FAILED, "未检测到人脸");
 		}
 		return results.get(0);
 	}
@@ -62,7 +63,7 @@ public class AvatarExtractor {
 
 	public List<AvatarResult> extractAll(Mat image, AvatarOptions options) {
 		if (image == null || image.empty()) {
-			throw new MicaAiException(MicaAiException.ErrorCode.AVATAR_FAILED, "头像提取入参图像为空");
+			throw new MicaAiException(ErrorCode.AVATAR_FAILED, "头像提取入参图像为空");
 		}
 		AvatarOptions opts = options == null ? defaults : options;
 		opts.validate();
@@ -95,7 +96,7 @@ public class AvatarExtractor {
 
 	public static Mat drawDebug(Mat image, List<AvatarResult> results, AvatarOptions options) {
 		if (image == null || image.empty()) {
-			throw new MicaAiException(MicaAiException.ErrorCode.AVATAR_FAILED, "标注入参图像为空");
+			throw new MicaAiException(ErrorCode.AVATAR_FAILED, "标注入参图像为空");
 		}
 		Mat canvas = image.clone();
 		if (results == null || results.isEmpty()) {
@@ -248,7 +249,7 @@ public class AvatarExtractor {
 				return dst;
 			default:
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
+					ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
 		}
 	}
 
@@ -264,7 +265,7 @@ public class AvatarExtractor {
 				return new float[]{y, w - x};
 			default:
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
+					ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
 		}
 	}
 
@@ -280,7 +281,7 @@ public class AvatarExtractor {
 				return new float[]{w - y, x};
 			default:
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
+					ErrorCode.AVATAR_FAILED, "不支持的旋转角度: " + degrees);
 		}
 	}
 
@@ -374,7 +375,7 @@ public class AvatarExtractor {
 		double bh = y2 - y1;
 		if (bw <= 0 || bh <= 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.AVATAR_FAILED,
+				ErrorCode.AVATAR_FAILED,
 				String.format("人脸框尺寸无效: %.1f × %.1f", bw, bh));
 		}
 		double l = Math.max(bw, bh);
@@ -442,7 +443,7 @@ public class AvatarExtractor {
 		double det = a[0] * a[4] - a[1] * a[3];
 		if (Math.abs(det) < 1e-12) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.AVATAR_FAILED, "裁剪仿射矩阵不可逆");
+				ErrorCode.AVATAR_FAILED, "裁剪仿射矩阵不可逆");
 		}
 		double ia = a[4] / det;
 		double ib = -a[1] / det;

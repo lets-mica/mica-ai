@@ -6,6 +6,7 @@ package net.dreamlu.mica.ai.filetype.config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeInfo;
@@ -41,7 +42,7 @@ public class ContentTypeRegistry {
 	public static ContentTypeRegistry load(String path) {
 		if (path == null || path.isEmpty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ILLEGAL_ARGUMENT, "content types 路径为空");
+				ErrorCode.ILLEGAL_ARGUMENT, "content types 路径为空");
 		}
 		try {
 			if (OnnxModelSession.isClasspath(path)) {
@@ -56,7 +57,7 @@ public class ContentTypeRegistry {
 			}
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED,
+				ErrorCode.MODEL_LOAD_FAILED,
 				"加载 content types 知识库失败: " + path, e);
 		}
 	}
@@ -69,7 +70,7 @@ public class ContentTypeRegistry {
 			return of(raw);
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED, "解析 content types 知识库失败", e);
+				ErrorCode.MODEL_LOAD_FAILED, "解析 content types 知识库失败", e);
 		}
 	}
 

@@ -20,9 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIf("isModelPresent")
 class FiletypeDetectorTest {
 
-	private static final Path MODEL_PATH = Paths.get("E:/codes/ai/mica-ai/model-tools/filetype/model/out/model.onnx").toAbsolutePath();
-	private static final Path CONFIG_PATH = Paths.get("E:/codes/ai/mica-ai/model-tools/filetype/model/out/config.min.json").toAbsolutePath();
-	private static final Path KB_PATH = Paths.get("E:/codes/ai/mica-ai/model-tools/filetype/model/out/content_types_kb.min.json").toAbsolutePath();
+	private static final Path MODEL_PATH = repoPath("model-tools/filetype/models/model.onnx");
+	private static final Path CONFIG_PATH = repoPath("model-tools/filetype/models/config.min.json");
+	private static final Path KB_PATH = repoPath("model-tools/filetype/models/content_types_kb.min.json");
+
+	private static Path repoPath(String relativePath) {
+		Path dir = Paths.get("").toAbsolutePath();
+		while (dir != null && !Files.exists(dir.resolve("model-tools"))) {
+			dir = dir.getParent();
+		}
+		return dir == null ? Paths.get(relativePath) : dir.resolve(relativePath);
+	}
 
 	static boolean isModelPresent() {
 		return Files.exists(MODEL_PATH)

@@ -1,14 +1,13 @@
 """model-tools 工具链的离线冒烟测试。
 
-不下载任何模型、不连外网，只验证：
+模型已直接入库（各能力子目录 models/），本脚本不连外网，只验证：
   1. Python 版本满足要求（>=3.10）
-  2. common/ 模块可以正常 import
-  3. face 能力子目录文件齐全
-  4. 所有 .py 文件语法合法（用 py_compile 重核一次）
+  2. 根目录结构完整（README / Makefile / .gitignore / requirements.txt）
+  3. 各能力子目录的 README 与 models/ 模型文件齐全
+  4. ONNX 模型结构合法（需本机安装 onnx，缺失则跳过该项）
 
 用法：
     python scripts/smoke_test.py
-    python -m scripts.smoke_test          # 等价
 
 返回码：
     0 = 全部通过
@@ -17,41 +16,48 @@
 
 from __future__ import annotations
 
-import importlib
-import py_compile
 import sys
 from pathlib import Path
 
-# 把自己加进 sys.path，便于 ``python scripts/smoke_test.py`` 也能 import common
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-sys.path.insert(0, str(ROOT))
-
-from common import cap_models_dir, mica_root
-from common.progress import fail, ok, step, warn
 
 MIN_PY = (3, 10)
 
-CAPS = ("face", "filetype")
-
-EXPECTED_FILES: dict[str, tuple[str, ...]] = {
-    "face": ("README.md", "download.py", "convert.py", "requirements.txt"),
-    "filetype": ("README.md", "download.py", "convert.py", "requirements.txt"),
+# 各能力子目录：README + 必须存在的模型文件
+EXPECTED_MODELS: dict[str, tuple[str, ...]] = {
+    "face": (
+        "face_detection_yunet_2023mar.onnx",
+        "face_recognition_sface_2021dec.onnx",
+    ),
+    "filetype": (
+        "model.onnx",
+        "config.min.json",
+        "content_types_kb.min.json",
+    ),
+    "plate": (
+        "y5fu_320x_sim.onnx",
+        "y5fu_640x_sim.onnx",
+        "rpv3_mdict_160_r3.onnx",
+        "litemodel_cls_96x_r1.onnx",
+    ),
 }
 
-ALL_PY_FILES = [
-    "common/__init__.py", "common/paths.py", "common/progress.py",
-    "common/downloader.py", "common/onnx_utils.py",
-    "face/download.py", "face/convert.py",
-    "filetype/download.py", "filetype/convert.py",
-    "scripts/smoke_test.py",
-]
 
-# 真正能 import 的脚本（不带 argparse 副作用）
-IMPORTABLE_SCRIPTS = [
-    "face.download", "face.convert",
-    "filetype.download", "filetype.convert",
-]
+def ok(msg: str) -> None:
+    print(f"  ✅ {msg}")
+
+
+def fail(msg: str) -> None:
+    print(f"  ❌ {msg}")
+
+
+def warn(msg: str) -> None:
+    print(f"  ⚠️  {msg}")
+
+
+def step(msg: str) -> None:
+    print(f"\n🔹 {msg}")
 
 
 def check_python_version() -> bool:
@@ -63,94 +69,9 @@ def check_python_version() -> bool:
     return True
 
 
-def check_common_imports() -> bool:
-    step("导入 common 模块")
-    try:
-        mod = importlib.import_module("common")
-        for name in ("download_model", "DownloadSource", "DownloadSpec",
-                     "cap_models_dir", "mica_root", "step", "ok", "fail", "warn",
-                     "check_onnx", "quantize_dynamic"):
-            if not hasattr(mod, name):
-                fail(f"common.{name} 缺失")
-                return False
-        ok(f"common 模块导出齐全（{len(mod.__all__)} 个公开符号）")
-        return True
-    except Exception as e:
-        fail(f"导入 common 失败: {e}")
-        return False
-
-
-def check_capabilities() -> bool:
-    step("检查 face 能力子目录")
-    all_ok = True
-    for cap in CAPS:
-        cap_dir = ROOT / cap
-        if not cap_dir.is_dir():
-            fail(f"[{cap}] 目录不存在: {cap_dir}")
-            all_ok = False
-            continue
-        missing = [f for f in EXPECTED_FILES[cap] if not (cap_dir / f).is_file()]
-        if missing:
-            fail(f"[{cap}] 缺少文件: {missing}")
-            all_ok = False
-            continue
-        ok(f"[{cap}] {len(EXPECTED_FILES[cap])} 个文件齐全")
-    return all_ok
-
-
-def check_py_syntax() -> bool:
-    step(f"重核 {len(ALL_PY_FILES)} 个 .py 文件语法")
-    all_ok = True
-    for rel in ALL_PY_FILES:
-        path = ROOT / rel
-        try:
-            py_compile.compile(str(path), doraise=True)
-        except py_compile.PyCompileError as e:
-            fail(f"[{rel}] 语法错误: {e}")
-            all_ok = False
-    if all_ok:
-        ok("所有 .py 语法通过")
-    return all_ok
-
-
-def check_imports() -> bool:
-    """真正 import 每个 capability 脚本（不执行 main），确保顶层 import 链不破。
-
-    若 ``filetype`` 已被 site-packages 第三方包占用（PyPI 上有名为
-    ``filetype`` 的库），对应该子项视为可选跳过（脚本本身仍可由用户
-    通过 ``python filetype/download.py`` 直接运行）。
-    """
-    all_ok = True
-    for mod in IMPORTABLE_SCRIPTS:
-        try:
-            importlib.import_module(mod)
-        except ModuleNotFoundError as e:
-            if any(p in str(e) for p in ("modelscope", "onnxruntime")):
-                warn(f"[{mod}] 跳过（缺可选依赖: {e.name}）")
-                continue
-            if mod.startswith("filetype.") and "filetype" in sys.modules:
-                warn(f"[{mod}] 跳过（环境已加载同名 PyPI 包 'filetype'，"
-                     f"跳过该子项；脚本本身仍可手动运行）")
-                continue
-            fail(f"[{mod}] 不可 import: {e}")
-            all_ok = False
-        except ImportError as e:
-            if mod.startswith("filetype."):
-                warn(f"[{mod}] 跳过（环境已安装同名 PyPI 包 'filetype'）")
-                continue
-            fail(f"[{mod}] import 失败: {e}")
-            all_ok = False
-        except Exception as e:
-            fail(f"[{mod}] import 失败: {e}")
-            all_ok = False
-    if all_ok:
-        ok(f"所有 {len(IMPORTABLE_SCRIPTS)} 个轻量脚本 import 成功")
-    return all_ok
-
-
 def check_root_layout() -> bool:
     step("检查根目录结构")
-    expected = ("README.md", "Makefile", "requirements.txt", ".gitignore", "common")
+    expected = ("README.md", "Makefile", "requirements.txt", ".gitignore", "scripts/smoke_test.py")
     missing = [f for f in expected if not (ROOT / f).exists()]
     if missing:
         fail(f"根目录缺少: {missing}")
@@ -159,22 +80,62 @@ def check_root_layout() -> bool:
     return True
 
 
+def check_capabilities() -> bool:
+    step("检查各能力子目录（README + models/）")
+    all_ok = True
+    for cap, models in EXPECTED_MODELS.items():
+        cap_dir = ROOT / cap
+        if not cap_dir.is_dir():
+            fail(f"[{cap}] 目录不存在: {cap_dir}")
+            all_ok = False
+            continue
+        if not (cap_dir / "README.md").is_file():
+            fail(f"[{cap}] 缺少 README.md")
+            all_ok = False
+            continue
+        missing = [m for m in models if not (cap_dir / "models" / m).is_file()]
+        if missing:
+            fail(f"[{cap}] models/ 缺少文件: {missing}")
+            all_ok = False
+            continue
+        ok(f"[{cap}] README + {len(models)} 个模型文件齐全")
+    return all_ok
+
+
+def check_onnx_structure() -> bool:
+    step("校验 ONNX 结构（可选，缺 onnx 包则跳过）")
+    try:
+        import onnx
+    except ImportError:
+        warn("未安装 onnx，跳过结构校验（pip install onnx）")
+        return True
+
+    all_ok = True
+    for cap, models in EXPECTED_MODELS.items():
+        for name in models:
+            path = ROOT / cap / "models" / name
+            if path.suffix != ".onnx":
+                continue
+            try:
+                model = onnx.load(str(path))
+                onnx.checker.check_model(model)
+                ok(f"[{cap}] {name} 结构合法")
+            except Exception as e:
+                fail(f"[{cap}] {name} 校验失败: {e}")
+                all_ok = False
+    return all_ok
+
+
 def main() -> int:
     print("=" * 60)
     print(" mica-ai model-tools 冒烟测试")
     print("=" * 60)
-    print(f" repo root: {mica_root()}")
-    print(f" face models dir: {cap_models_dir('face')}")
-    print(f" filetype models dir: {cap_models_dir('filetype')}")
-    print()
 
     results = {
         "Python 版本": check_python_version(),
-        "common 导入":  check_common_imports(),
-        "根目录":       check_root_layout(),
-        "能力子目录":    check_capabilities(),
-        "Python 语法":  check_py_syntax(),
-        "脚本 import":  check_imports(),
+        "根目录": check_root_layout(),
+        "能力子目录": check_capabilities(),
+        "ONNX 结构": check_onnx_structure(),
     }
 
     print()
@@ -189,9 +150,9 @@ def main() -> int:
     print(f"\n  通过 {passed}/{total}")
 
     if all(results.values()):
-        ok("冒烟测试全部通过 🎉")
+        print("\n✅ 冒烟测试全部通过 🎉")
         return 0
-    fail("冒烟测试未通过，请根据上方提示修复")
+    print("\n❌ 冒烟测试未通过，请根据上方提示修复")
     return 1
 
 

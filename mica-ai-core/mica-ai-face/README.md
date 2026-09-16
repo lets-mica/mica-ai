@@ -34,13 +34,7 @@ models/
 └── face_recognition_sface_2021dec.onnx      # SFace 识别（112x112 RGB，~89 MB）
 ```
 
-下载 / 转换方式见 [`model-tools/face/`](../../model-tools/face/README.md)：
-
-```bash
-cd model-tools/face
-python download.py        # 从 OpenCV Zoo GitHub raw 下载 YuNet + SFace
-python convert.py         # 拷贝/链接到 model/out/
-```
+模型已直接入库：[`model-tools/face/models/`](../../model-tools/face/README.md)（无需下载脚本）。
 
 ---
 

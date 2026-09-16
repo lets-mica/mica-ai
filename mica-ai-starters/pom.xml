@@ -12,11 +12,12 @@
     <parent>
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <modules>
         <module>mica-ai-face-spring-boot-starter</module>
         <module>mica-ai-filetype-spring-boot-starter</module>
+        <module>mica-ai-plate-spring-boot-starter</module>
     </modules>
 </project>

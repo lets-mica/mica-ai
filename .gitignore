@@ -33,6 +33,7 @@ nbdist/
 .codegraph
 .claude
 .opencode
+.trae
 -p
 
 ### maven ###
@@ -67,9 +68,9 @@ Servers
 .metadata
 gen_code
 
-# model files
-*.onnx
+# model files（model-tools/*/models/ 下的入库模型除外）
 *.bin
 *.pb
 *.tflite
 !models/*.tar
+!model-tools/*/models/**

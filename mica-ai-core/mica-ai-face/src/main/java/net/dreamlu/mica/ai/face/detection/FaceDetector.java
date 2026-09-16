@@ -9,6 +9,7 @@ import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OnnxValue;
 import ai.onnxruntime.OrtSession;
 import lombok.Getter;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.model.ModelManager;
@@ -149,7 +150,7 @@ public class FaceDetector {
 					return decodeAndNms(result, invScale, origW, origH, threshold);
 				} catch (OrtException e) {
 					throw new MicaAiException(
-						MicaAiException.ErrorCode.DETECTION_FAILED, "YuNet 推理失败", e);
+						ErrorCode.DETECTION_FAILED, "YuNet 推理失败", e);
 				}
 			}
 		} finally {
@@ -226,7 +227,7 @@ public class FaceDetector {
 		final int strideCount = STRIDES.length;
 		if (result.size() != headCount * strideCount) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED,
+				ErrorCode.DETECTION_FAILED,
 				"YuNet 输出数量异常，期望 " + (headCount * strideCount) + "，实际 " + result.size());
 		}
 
@@ -300,7 +301,7 @@ public class FaceDetector {
 		OnnxValue value = result.get(index);
 		if (!(value instanceof OnnxTensor)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED,
+				ErrorCode.DETECTION_FAILED,
 				"YuNet 第 " + index + " 个输出不是 tensor: "
 					+ (value == null ? "null" : value.getClass().getName()));
 		}
@@ -309,13 +310,13 @@ public class FaceDetector {
 			float[][][] arr = (float[][][]) tensor.getValue();
 			if (arr.length != 1) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.DETECTION_FAILED,
+					ErrorCode.DETECTION_FAILED,
 					"YuNet 第 " + index + " 个输出 batch 维应为 1，实际 " + arr.length);
 			}
 			float[][] rows = arr[0];
 			if (rows.length != featArea || (rows.length > 0 && rows[0].length != channels)) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.DETECTION_FAILED,
+					ErrorCode.DETECTION_FAILED,
 					"YuNet 第 " + index + " 个输出形状不符合 stride " + stride
 						+ " 预期：期望 [" + featArea + ", " + channels
 						+ "]，实际 [" + rows.length + ", "
@@ -324,7 +325,7 @@ public class FaceDetector {
 			return rows;
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED, "读取 YuNet 输出失败", e);
+				ErrorCode.DETECTION_FAILED, "读取 YuNet 输出失败", e);
 		}
 	}
 
@@ -334,7 +335,7 @@ public class FaceDetector {
 				new long[]{1, 3, INPUT_SIZE, INPUT_SIZE});
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED, "构造 YuNet 输入张量失败", e);
+				ErrorCode.DETECTION_FAILED, "构造 YuNet 输入张量失败", e);
 		}
 	}
 }

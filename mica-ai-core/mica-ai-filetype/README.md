@@ -10,7 +10,7 @@
 | `config.min.json` | [google/magika `standard_v3_3/config.min.json`](https://github.com/google/magika/blob/main/assets/models/standard_v3_3/config.min.json) | Apache 2.0 | ≈2.1 KB | 超参：`beg_size` / `end_size` / `block_size` / `padding_token` / `target_labels_space` / `thresholds` / `overwrite_map` |
 | `content_types_kb.min.json` | [google/magika `python/src/magika/config/content_types_kb.min.json`](https://github.com/google/magika/blob/main/python/src/magika/config/content_types_kb.min.json) | Apache 2.0 | ≈45 KB | 类型元数据：`mime_type` / `group` / `description` / `extensions` / `is_text`，353 个条目 |
 
-模型版本固定为 `standard_v3_3`，由 `model-tools/filetype/download.py` 顶部常量控制，便于后续升级。
+模型已直接入库：[`model-tools/filetype/models/`](../../model-tools/filetype/README.md)（无需下载脚本）。
 
 ### 模型 I/O
 

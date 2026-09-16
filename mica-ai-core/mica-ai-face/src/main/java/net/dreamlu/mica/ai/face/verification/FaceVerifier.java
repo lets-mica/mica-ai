@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.face.verification;
 
 import lombok.Getter;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
@@ -79,7 +80,7 @@ public class FaceVerifier {
 		List<FaceBox> boxes = detector.detect(image);
 		if (boxes.isEmpty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.VERIFICATION_FAILED, "未检测到人脸");
+				ErrorCode.VERIFICATION_FAILED, "未检测到人脸");
 		}
 		FaceBox box = boxes.get(0);
 		if (boxes.size() > 1) {

@@ -11,6 +11,7 @@ import ai.onnxruntime.OrtSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
@@ -100,7 +101,7 @@ public class FiletypeDetector implements AutoCloseable {
 	public FiletypeResult detectPath(String path) {
 		if (path == null || path.isEmpty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ILLEGAL_ARGUMENT, "待检测路径为空");
+				ErrorCode.ILLEGAL_ARGUMENT, "待检测路径为空");
 		}
 		return detectPath(Paths.get(path));
 	}
@@ -114,27 +115,27 @@ public class FiletypeDetector implements AutoCloseable {
 			if (!Files.isRegularFile(path)) {
 				if (!Files.exists(path)) {
 					throw new MicaAiException(
-						MicaAiException.ErrorCode.NOT_FOUND, "文件不存在: " + path);
+						ErrorCode.NOT_FOUND, "文件不存在: " + path);
 				}
 				return specialResult(ContentTypeLabel.UNKNOWN);
 			}
 			if (!Files.isReadable(path)) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.ILLEGAL_ARGUMENT, "文件不可读: " + path);
+					ErrorCode.ILLEGAL_ARGUMENT, "文件不可读: " + path);
 			}
 			try (SeekableByteChannel channel = Files.newByteChannel(path)) {
 				return detect(new ChannelSeekable(channel, Files.size(path)));
 			}
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.INFERENCE_FAILED, "读取文件失败: " + path, e);
+				ErrorCode.INFERENCE_FAILED, "读取文件失败: " + path, e);
 		}
 	}
 
 	public FiletypeResult detectBytes(byte[] content) {
 		if (content == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ILLEGAL_ARGUMENT, "待检测字节数组为空");
+				ErrorCode.ILLEGAL_ARGUMENT, "待检测字节数组为空");
 		}
 		return detect(new ByteArraySeekable(content));
 	}
@@ -149,7 +150,7 @@ public class FiletypeDetector implements AutoCloseable {
 			return detectBytes(readAll(stream));
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.INFERENCE_FAILED, "读取输入流失败", e);
+				ErrorCode.INFERENCE_FAILED, "读取输入流失败", e);
 		}
 	}
 
@@ -178,7 +179,7 @@ public class FiletypeDetector implements AutoCloseable {
 			return buildResult(dlLabel, outputLabel, score);
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.INFERENCE_FAILED, "读取待检测内容失败", e);
+				ErrorCode.INFERENCE_FAILED, "读取待检测内容失败", e);
 		}
 	}
 
@@ -206,7 +207,7 @@ public class FiletypeDetector implements AutoCloseable {
 				}
 			} catch (OrtException e) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.INFERENCE_FAILED, "filetype 模型推理失败", e);
+					ErrorCode.INFERENCE_FAILED, "filetype 模型推理失败", e);
 			}
 		}
 	}
@@ -219,7 +220,7 @@ public class FiletypeDetector implements AutoCloseable {
 			return ((float[]) value).clone();
 		}
 		throw new MicaAiException(
-			MicaAiException.ErrorCode.INFERENCE_FAILED,
+			ErrorCode.INFERENCE_FAILED,
 			"不支持的模型输出类型: " + (value == null ? "null" : value.getClass().getName()));
 	}
 
@@ -274,7 +275,7 @@ public class FiletypeDetector implements AutoCloseable {
 			}
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED, "加载模型配置失败: " + path, e);
+				ErrorCode.MODEL_LOAD_FAILED, "加载模型配置失败: " + path, e);
 		}
 	}
 
@@ -291,7 +292,7 @@ public class FiletypeDetector implements AutoCloseable {
 			so.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
+				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
 		}
 		if (opts.isGpu()) {
 			try {

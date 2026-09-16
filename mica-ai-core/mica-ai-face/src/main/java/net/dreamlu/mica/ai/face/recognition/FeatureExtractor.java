@@ -7,6 +7,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.ModelManager;
 import net.dreamlu.mica.ai.face.util.ImageUtils;
@@ -45,11 +46,11 @@ public class FeatureExtractor {
 	public static float compare(float[] a, float[] b) {
 		if (a == null || b == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.EXTRACTION_FAILED, "特征向量为空");
+				ErrorCode.EXTRACTION_FAILED, "特征向量为空");
 		}
 		if (a.length == 0 || a.length != b.length) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.EXTRACTION_FAILED,
+				ErrorCode.EXTRACTION_FAILED,
 				"特征维度不匹配: " + a.length + "/" + b.length);
 		}
 		double dot = 0d;
@@ -87,7 +88,7 @@ public class FeatureExtractor {
 	public float[] extract(Mat alignedFace) {
 		if (alignedFace == null || alignedFace.empty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.EXTRACTION_FAILED, "对齐人脸为空");
+				ErrorCode.EXTRACTION_FAILED, "对齐人脸为空");
 		}
 		int h = alignedFace.rows();
 		int w = alignedFace.cols();
@@ -104,7 +105,7 @@ public class FeatureExtractor {
 				return feature;
 			} catch (OrtException e) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.EXTRACTION_FAILED, "SFace 推理失败", e);
+					ErrorCode.EXTRACTION_FAILED, "SFace 推理失败", e);
 			}
 		}
 	}
@@ -114,7 +115,7 @@ public class FeatureExtractor {
 			return OnnxTensor.createTensor(env, FloatBuffer.wrap(data), new long[]{1, 3, h, w});
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.EXTRACTION_FAILED, "构造 SFace 输入张量失败", e);
+				ErrorCode.EXTRACTION_FAILED, "构造 SFace 输入张量失败", e);
 		}
 	}
 
@@ -126,7 +127,7 @@ public class FeatureExtractor {
 			return ((float[]) value).clone();
 		}
 		throw new MicaAiException(
-			MicaAiException.ErrorCode.EXTRACTION_FAILED,
+			ErrorCode.EXTRACTION_FAILED,
 			"不支持的 SFace 输出类型: " + (value == null ? "null" : value.getClass().getName()));
 	}
 }

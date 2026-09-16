@@ -31,7 +31,7 @@
 | PyTorch / PaddlePaddle 几百 MB 起步，包体爆炸 | **ONNX Runtime** 一个 runtime 全部搞定，CPU/GPU/CUDA 自由切换 |
 | 模型预处理、后处理各家一套，文档稀烂 | **端到端复刻 OpenCV C++ 实现**，预处理 / 后处理 / 解码全部内置，开箱即用 |
 | 集成 Spring Boot 要写一堆 Bean 配置 | **官方 Starter**，一行 YAML 即可注入引擎 Bean |
-| 国产模型下载速度感人 | **ModelScope 国内镜像优先**，配套 Python 工具链 `make download` 一键搞定 |
+| 模型下载慢、上手要跑 Python 脚本 | **模型直接入库**（均 <50MB），克隆即用，`make -C model-tools smoke` 一键自检 |
 
 > 💡 **Mica AI 不是又一个 SDK，而是 Java 工程师的 AI 全家桶。**
 
@@ -190,11 +190,11 @@ mica-ai/
 │   ├── mica-ai-face-spring-boot-starter/
 │   └── mica-ai-filetype-spring-boot-starter/
 ├── mica-ai-example/                      # Spring Boot 集成示例
-└── model-tools/                          # Python 模型工具链（下载 / 转换）
-    ├── common/                           #   downloader、onnx_utils、progress
-    ├── face/                             #   face 能力脚本
-    ├── filetype/                         #   filetype 能力脚本
-    └── scripts/                          #   smoke_test / publish / package
+└── model-tools/                          # 模型资产（直接入库，均 <50MB）
+    ├── face/models/                      #   YuNet + SFace（Apache-2.0）
+    ├── filetype/models/                  #   Magika standard_v3_3（Apache-2.0）
+    ├── plate/models/                     #   HyperLPR3 v20230229（Apache-2.0）
+    └── scripts/smoke_test.py             #   离线冒烟：校验目录与 ONNX 完整性
 ```
 
 ---

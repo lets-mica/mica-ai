@@ -3,6 +3,7 @@
  */
 package net.dreamlu.mica.ai.face.alignment;
 
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import org.opencv.calib3d.Calib3d;
@@ -33,12 +34,12 @@ public class FaceAligner {
 	public Mat align(Mat image, FaceBox faceBox) {
 		if (image == null || image.empty() || faceBox == null || faceBox.getLandmarks() == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ALIGNMENT_FAILED, "对齐入参为空");
+				ErrorCode.ALIGNMENT_FAILED, "对齐入参为空");
 		}
 		float[][] landmarks = faceBox.getLandmarks();
 		if (landmarks.length != 5) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ALIGNMENT_FAILED, "需要 5 个关键点，实际 " + landmarks.length);
+				ErrorCode.ALIGNMENT_FAILED, "需要 5 个关键点，实际 " + landmarks.length);
 		}
 
 		MatOfPoint2f src = new MatOfPoint2f();
@@ -57,7 +58,7 @@ public class FaceAligner {
 		try {
 			m = Calib3d.estimateAffinePartial2D(src, dst);
 			if (m.empty()) {
-				throw new MicaAiException(MicaAiException.ErrorCode.ALIGNMENT_FAILED, "仿射矩阵估计失败");
+				throw new MicaAiException(ErrorCode.ALIGNMENT_FAILED, "仿射矩阵估计失败");
 			}
 			Imgproc.warpAffine(image, aligned, m, new Size(OUTPUT_SIZE, OUTPUT_SIZE));
 		} finally {

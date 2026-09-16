@@ -12,12 +12,13 @@
     <parent>
         <groupId>net.dreamlu</groupId>
         <artifactId>mica-ai</artifactId>
-        <version>1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <modules>
         <module>mica-ai-common</module>
         <module>mica-ai-face</module>
         <module>mica-ai-filetype</module>
+        <module>mica-ai-plate</module>
     </modules>
 </project>

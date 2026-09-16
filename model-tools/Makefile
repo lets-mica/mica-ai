@@ -1,71 +1,19 @@
-# mica-ai 模型工具链的顶层 Makefile
+# mica-ai 模型工具链的 Makefile
+# 模型已直接入库（各能力子目录 models/，均 <50MB），无需下载脚本。
+#
 # 用法：
 #   make -C model-tools help
 #   make -C model-tools smoke
-#   make -C model-tools download
-#   make -C model-tools convert
-#
-# 单独操作 face：
-#   make -C model-tools download-face
-#   make -C model-tools convert-face
-#
-# 当前 cap = face filetype
 
 PYTHON ?= python
-ROOT := $(shell pwd)
-
-.PHONY: smoke
-smoke: ## 离线冒烟测试（不下载任何模型）
-	$(PYTHON) scripts/smoke_test.py
 
 .PHONY: help
 help: ## 显示帮助
-	@echo "mica-ai 模型工具链"
+	@echo "mica-ai 模型工具链（模型已直接入库，见各能力子目录 models/）"
 	@echo ""
-	@echo "常用命令："
-	@echo "  make smoke          离线冒烟测试（验证骨架完整性）"
-	@echo "  make download       下载所有能力的原始模型"
-	@echo "  make convert        把原始模型转换为 mica-ai 可用的 ONNX 产物"
-	@echo ""
-	@echo "单能力命令："
-	@echo "  make download-<cap>   cap = face"
-	@echo "  make convert-<cap>"
-	@echo ""
-	@echo "环境变量："
-	@echo "  PYTHON=python3.10   指定 Python 解释器"
-	@echo "  MICA_MODELS_DIR=... 指定模型根目录（默认 model-tools/<cap>/model）"
+	@echo "命令："
+	@echo "  make smoke          离线冒烟测试（校验目录与脚本完整性）"
 
-CAPS := face filetype
-
-.PHONY: download
-download: $(addprefix download-,$(CAPS)) ## 下载所有能力的模型
-	@echo "✅ 全部下载完成"
-
-.PHONY: convert
-convert: $(addprefix convert-,$(CAPS)) ## 转换所有能力的模型
-	@echo "✅ 全部转换完成"
-
-# ---- 单能力 ----
-define cap_template
-.PHONY: download-$(1)
-download-$(1): ## 下载 $(1) 的模型
-	cd $(1) && $(PYTHON) download.py
-
-.PHONY: convert-$(1)
-convert-$(1): ## 转换 $(1) 的模型
-	cd $(1) && $(PYTHON) convert.py
-endef
-
-$(foreach cap,$(CAPS),$(eval $(call cap_template,$(cap))))
-
-.PHONY: publish
-publish: ## 把 face 的 out/ 整理到 models/，并生成 manifest.json
-	$(PYTHON) scripts/publish.py
-
-.PHONY: verify
-verify: ## 校验 models/manifest.json 里的 SHA256
-	$(PYTHON) scripts/publish.py --verify
-
-.PHONY: package
-package: ## 把 models/face 打包为 zip（用于 GitHub Release 上传）
-	$(PYTHON) scripts/package.py
+.PHONY: smoke
+smoke: ## 离线冒烟测试（不依赖网络）
+	$(PYTHON) scripts/smoke_test.py

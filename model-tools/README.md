@@ -1,109 +1,66 @@
 # Model Tools
 
-> mica-ai 的 **Python 端模型工具链**：下载 + 转换。
-> 与 Java 业务代码同级、互不依赖、互不污染。
-
-当前只覆盖 `face`（OpenCV Zoo YuNet + SFace，Apache-2.0 可商用）。其他 mica-* 项目的工具链独立维护。
-
-| 脚本 | 用途 |
-|------|------|
-| `download.py` | 从 OpenCV Zoo GitHub 下载 YuNet + SFace（裸 .onnx，无需转换） |
-| `convert.py`  | 校验 ONNX，并把 mica-ai-face 真正用到的两个文件拷贝 / 链接到 `model/out/` |
-
----
+> mica-ai 的模型资产目录。**所有模型（<50MB）已直接入库**，放在各能力子目录的 `models/` 下，无需下载脚本。
 
 ## 📁 目录结构
 
 ```
 model-tools/
 ├── README.md                   # 本文件
-├── Makefile                    # 一键命令：make download / convert / publish / package
-├── requirements.txt            # 公共依赖（modelscope, tqdm, rich, pyyaml）
-├── .gitignore                  # 忽略 model/、output/、__pycache__/
-│
-├── common/                     # 跨能力复用的工具
-│   ├── downloader.py           # 统一下载器（ModelScope / HuggingFace / DIRECT）
-│   ├── onnx_utils.py           # ONNX 检查 / 简化 / 量化
-│   ├── paths.py                # mica_root / cap_models_dir / 版本号
-│   └── progress.py             # 带颜色的日志 / 进度条
-│
+├── Makefile                    # 仅剩 make smoke（离线冒烟）
+├── requirements.txt            # 可选依赖（onnx，用于结构校验）
+├── .gitignore
 ├── face/                       # 对应 mica-ai-face
 │   ├── README.md
-│   ├── download.py             # OpenCV Zoo YuNet + SFace
-│   ├── convert.py              # 校验 + 拷贝到 model/out/
-│   └── requirements.txt        # face 私有依赖（仅 requests）
-│
-└── scripts/                    # 跨能力工具
-    ├── smoke_test.py           # 离线冒烟（不下载模型）
-    ├── publish.py              # out/ → models/，生成 manifest.json
-    └── package.py              # models/face → mica-ai-models-face-*.zip
+│   └── models/                 # YuNet 检测 + SFace 识别（≈37MB）
+├── filetype/                   # 对应 mica-ai-filetype
+│   ├── README.md
+│   └── models/                 # Magika model.onnx + config + kb（≈3.1MB）
+├── plate/                      # 对应 mica-ai-plate
+│   ├── README.md
+│   └── models/                 # HyperLPR3 检测 / 识别 / 分类（≈18MB）
+└── scripts/
+    └── smoke_test.py           # 离线冒烟：校验目录与 ONNX 完整性
 ```
 
----
+## 🧩 模型清单与 License
 
-## 🚀 快速开始
+| 能力 | 模型 | 大小 | 来源 | License |
+|------|------|------|------|---------|
+| face | `face_detection_yunet_2023mar.onnx` + `face_recognition_sface_2021dec.onnx` | ≈37MB | [opencv/opencv_zoo](https://github.com/opencv/opencv_zoo) | Apache-2.0 ✅ |
+| filetype | `model.onnx` + `config.min.json` + `content_types_kb.min.json` | ≈3.1MB | [google/magika standard_v3_3](https://github.com/google/magika) | Apache-2.0 ✅ |
+| plate | `y5fu_320x_sim.onnx` / `y5fu_640x_sim.onnx` / `rpv3_mdict_160_r3.onnx` / `litemodel_cls_96x_r1.onnx` | ≈18MB | [szad670401/HyperLPR](https://github.com/szad670401/HyperLPR) v20230229 | Apache-2.0 ✅ |
 
-### 1. 安装 Python 依赖
+## 🚀 使用
 
-```bash
-# 建议 Python 3.10+
-python -m venv venv
-source venv/bin/activate            # Windows: venv\Scripts\activate
-
-# 公共依赖
-pip install -r model-tools/requirements.txt
-
-# face 私有依赖
-pip install -r model-tools/face/requirements.txt
-```
-
-### 2. 下载 + 转换
-
-```bash
-# 顶层 Makefile 一键命令
-make -C model-tools download     # 仅 face
-make -C model-tools convert      # 仅 face
-
-# 或者直接进入子目录
-cd model-tools/face && python download.py
-cd model-tools/face && python convert.py       # 默认复制；可加 --link 用符号链接
-```
-
-### 3. 整理 + 打包（用于 GitHub Release）
-
-```bash
-python model-tools/scripts/publish.py        # out/ → models/face/ + manifest.json
-python model-tools/scripts/publish.py --verify   # 校验 manifest
-python model-tools/scripts/package.py            # 打 zip：model-tools/release/mica-ai-models-face-*.zip
-```
-
----
-
-## 🔧 设计原则
-
-- **零侵入**：所有脚本放在 `model-tools/` 下，不修改 Java 模块的 `pom.xml`。
-- **能力维度切分**：每个能力一个子目录，与 Java 的 `mica-ai-core/mica-ai-xxx/` 一一对应。
-- **可重入**：`download.py` 重复执行会跳过已下载文件。
-- **版本对齐**：与根 `pom.xml` 的 `<revision>` 同号，写在 `common/paths.py`。
-
----
-
-## ❓ 与 Java 端如何对接
-
-转换完成后 face 的产物：
-
-```
-model-tools/face/model/out/
-├── face_detection_yunet_2023mar.onnx     # YuNet（320x320 RGB）
-└── face_recognition_sface_2021dec.onnx   # SFace（112x112 RGB, 512d）
-```
-
-发布时经 `publish.py` 整理到 `model-tools/models/face/`，再由 `package.py` 打 zip 上传到 GitHub Release。Java 端把目录路径配到 Spring Boot 的 `application.yml` 即可使用：
+Java 端直接按路径引用（支持 `classpath:`），以 plate 为例：
 
 ```yaml
 mica:
   ai:
-    face:
-      det-model-path: <abs>/model/out/face_detection_yunet_2023mar.onnx
-      rec-model-path: <abs>/model/out/face_recognition_sface_2021dec.onnx
+    plate:
+      detection-model-path: model-tools/plate/models/y5fu_320x_sim.onnx
+      recognition-model-path: model-tools/plate/models/rpv3_mdict_160_r3.onnx
+      classification-model-path: model-tools/plate/models/litemodel_cls_96x_r1.onnx
 ```
+
+模型规格 / I/O 格式见各能力主 README：
+
+- [`mica-ai-core/mica-ai-face/README.md`](../mica-ai-core/mica-ai-face/README.md)
+- [`mica-ai-core/mica-ai-filetype/README.md`](../mica-ai-core/mica-ai-filetype/README.md)
+- [`mica-ai-core/mica-ai-plate/README.md`](../mica-ai-core/mica-ai-plate/README.md)
+
+## ✅ 冒烟测试
+
+```bash
+make -C model-tools smoke
+```
+
+不连外网，校验：目录结构完整、各能力 README 与模型文件齐全、ONNX 结构合法（缺 `onnx` 包时跳过校验项）。
+
+## 🔄 替换 / 升级模型
+
+1. 按 `AGENTS.md` §6.1 完成 License 商用自检
+2. 用新模型文件覆盖对应 `models/` 目录
+3. `make -C model-tools smoke` 确认 ONNX 结构合法
+4. 更新对应能力主 README 的模型规格表

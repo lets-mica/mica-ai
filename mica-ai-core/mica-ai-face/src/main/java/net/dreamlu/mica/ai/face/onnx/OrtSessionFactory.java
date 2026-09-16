@@ -11,6 +11,7 @@ import ai.onnxruntime.OrtSession.SessionOptions.ExecutionMode;
 import ai.onnxruntime.OrtSession.SessionOptions.OptLevel;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
 import java.util.Set;
@@ -36,7 +37,7 @@ public class OrtSessionFactory {
 			so.setExecutionMode(mapMode(options.getExecutionMode()));
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
+				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
 		}
 
 		if (options.getDevice() == OrtSessionOptions.Device.GPU) {

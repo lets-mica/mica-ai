@@ -8,6 +8,7 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import lombok.Getter;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.model.LivenessResult;
@@ -50,7 +51,7 @@ public class LivenessDetector {
 		OrtSession s = modelManager.getLivenessSession();
 		if (s == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED,
+				ErrorCode.MODEL_LOAD_FAILED,
 				"活体模型未加载，无法创建 LivenessDetector");
 		}
 		this.session = s;
@@ -85,7 +86,7 @@ public class LivenessDetector {
 	public LivenessResult check(Mat image, FaceBox box) {
 		if (image == null || image.empty() || box == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.LIVENESS_FAILED, "活体检测入参为空");
+				ErrorCode.LIVENESS_FAILED, "活体检测入参为空");
 		}
 		Mat cropped = ImageUtils.cropWithMargin(image, box, cropScale, INPUT_SIZE);
 		try {
@@ -111,7 +112,7 @@ public class LivenessDetector {
 					return new LivenessResult(liveScore, isLive, attackType);
 				} catch (OrtException e) {
 					throw new MicaAiException(
-						MicaAiException.ErrorCode.LIVENESS_FAILED, "活体推理失败", e);
+						ErrorCode.LIVENESS_FAILED, "活体推理失败", e);
 				}
 			}
 		} finally {
@@ -127,7 +128,7 @@ public class LivenessDetector {
 			return ((float[]) value);
 		}
 		throw new MicaAiException(
-			MicaAiException.ErrorCode.LIVENESS_FAILED,
+			ErrorCode.LIVENESS_FAILED,
 			"不支持的活体模型输出类型: " + (value == null ? "null" : value.getClass().getName()));
 	}
 
@@ -137,7 +138,7 @@ public class LivenessDetector {
 				new long[]{1, 3, INPUT_SIZE, INPUT_SIZE});
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.LIVENESS_FAILED, "构造活体输入张量失败", e);
+				ErrorCode.LIVENESS_FAILED, "构造活体输入张量失败", e);
 		}
 	}
 }

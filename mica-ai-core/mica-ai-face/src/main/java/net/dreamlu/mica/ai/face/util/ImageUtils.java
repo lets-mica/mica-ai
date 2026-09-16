@@ -3,6 +3,7 @@
  */
 package net.dreamlu.mica.ai.face.util;
 
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import org.opencv.core.Core;
@@ -28,13 +29,13 @@ public class ImageUtils {
 	public static Mat byteArrayToMat(byte[] imageBytes) {
 		if (imageBytes == null || imageBytes.length == 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED, "图像字节为空");
+				ErrorCode.DETECTION_FAILED, "图像字节为空");
 		}
 		MatOfByte mob = new MatOfByte(imageBytes);
 		Mat mat = Imgcodecs.imdecode(mob, Imgcodecs.IMREAD_COLOR);
 		if (mat.empty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.DETECTION_FAILED, "图像解码失败或格式不支持");
+				ErrorCode.DETECTION_FAILED, "图像解码失败或格式不支持");
 		}
 		return mat;
 	}
@@ -42,7 +43,7 @@ public class ImageUtils {
 	public static Mat cropWithMargin(Mat image, FaceBox box, double scale, int outputSize) {
 		if (image == null || image.empty() || box == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.LIVENESS_FAILED, "裁剪入参为空");
+				ErrorCode.LIVENESS_FAILED, "裁剪入参为空");
 		}
 		float cx = (box.getX1() + box.getX2()) / 2f;
 		float cy = (box.getY1() + box.getY2()) / 2f;
@@ -59,7 +60,7 @@ public class ImageUtils {
 		int ch = y2 - y1;
 		if (cw <= 0 || ch <= 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.LIVENESS_FAILED, "外扩裁剪区域无效");
+				ErrorCode.LIVENESS_FAILED, "外扩裁剪区域无效");
 		}
 
 		Rect roi = new Rect(x1, y1, cw, ch);
@@ -112,7 +113,7 @@ public class ImageUtils {
 	public static byte[] matToBytes(Mat bgr, String format, int quality) {
 		if (bgr == null || bgr.empty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.ENCODE_FAILED, "待编码图像为空");
+				ErrorCode.ENCODE_FAILED, "待编码图像为空");
 		}
 		String ext = normalizeFormat(format);
 		MatOfByte mob = new MatOfByte();
@@ -124,7 +125,7 @@ public class ImageUtils {
 			}
 			if (!Imgcodecs.imencode("." + ext, bgr, mob, params)) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.ENCODE_FAILED,
+					ErrorCode.ENCODE_FAILED,
 					"图片编码失败，格式: " + ext);
 			}
 			return mob.toArray();
@@ -150,7 +151,7 @@ public class ImageUtils {
 				return f;
 			default:
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.ENCODE_FAILED,
+					ErrorCode.ENCODE_FAILED,
 					"不支持的图片格式: " + format + "（支持 png / jpg / bmp / webp）");
 		}
 	}

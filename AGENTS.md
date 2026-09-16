@@ -33,10 +33,11 @@ mica-ai/
 │   ├── mica-ai-face-spring-boot-starter/
 │   └── mica-ai-filetype-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
-└── model-tools/                    # Python 端：download / convert / smoke
-    ├── common/                      #   downloader / onnx_utils / progress
-    ├── face/                        #   face 能力脚本
-    └── filetype/                    #   filetype 能力脚本
+└── model-tools/                    # 模型资产（直接入库，均 <50MB）
+    ├── face/models/                #   YuNet + SFace（Apache-2.0）
+    ├── filetype/models/            #   Magika standard_v3_3（Apache-2.0）
+    ├── plate/models/               #   HyperLPR3 v20230229（Apache-2.0）
+    └── scripts/smoke_test.py       #   离线冒烟：校验目录与 ONNX 完整性
 ```
 
 > **重要**：
@@ -62,14 +63,10 @@ JDK：**8+**（推荐 Temurin / Azul Zulu 8/11/17；源码兼容到 JDK 17）。
 ### 3.2 模型工具链（Python）
 
 ```bash
-make -C model-tools smoke       # 离线冒烟（不下载任何模型）
-make -C model-tools download    # 下载 face 模型（默认 ModelScope）
-make -C model-tools convert     # 把原始模型转换为 ONNX 产物
-make -C model-tools publish     # 整理 out/ → models/ 并生成 manifest
-make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub Release）
+make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性，不连外网）
 ```
 
-下载源可用 `--source modelscope|huggingface` 切换；`MICA_MODELS_DIR` 环境变量改变模型根目录。
+> 模型已直接入库（各能力子目录 `models/`，均 <50MB），无需下载 / 转换脚本；替换模型时直接覆盖对应文件。
 
 ---
 
@@ -124,7 +121,7 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
   - 直接搬运 GPL / AGPL / LGPL 模型权重并以"商用"名义打包
   - 在 README / 文档里推荐带 `NC`（NonCommercial）字样的权重
   - 把"我可以自己用"当作"我可以让别人商用"的依据 —— 默认按"允许下游商用"的口径来评估
-- **Agent 自检清单**（在写任何 `download.py` / `convert.py` / README 之前过一遍）：
+- **Agent 自检清单**（在替换 `model-tools/<cap>/models/` 下任何模型 / 写 README 之前过一遍）：
   - [ ] 我要引入 / 推荐的模型 License 是什么？
   - [ ] 该 License 是否允许「商业使用」「分发」「修改」？
   - [ ] 是否需要在 README / NOTICE 里保留署名 / 来源声明？
@@ -133,10 +130,10 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 ### 6.2 其它硬性约束
 
 - **不要创建无意义文件**：没有用户显式要求时，不要新建 `*.md`、空目录、占位脚本。
-- **不要**提交 `model/` / `output/` / `*.onnx` / `*.bin` / `target/` 等产物；`.gitignore` 已配置。
+- **不要**提交 `model/` / `output/` / `*.bin` / `target/` 等产物；`.gitignore` 已配置。**例外**：`model-tools/<cap>/models/` 下的入库模型（均 <50MB）按 owner 要求随仓库分发。
 - **不要**在 Java 端引 `torch*` / `paddle*` / `python*` 依赖，破坏「零 Python 进程」原则。
 - **不要**直接修改 `pom.xml` 中 `mica-auto` 插件配置（它负责生成 `@AutoConfiguration.imports`）。
-- **不要**把模型 / 训练数据 commit 到仓库。
+- **不要**把训练数据 commit 到仓库；**推理模型**仅在 `model-tools/<cap>/models/`（均 <50MB）随仓库分发，其它位置禁止。
 - **不要**主动 commit / push / merge 任何东西；改动完等用户确认。
 - **不要**引入与「商业可用」冲突的依赖（含 GPL 类 Java 库）；如有疑虑，宁可不加。
 
@@ -149,7 +146,7 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 | 场景 | 必读 | 标准动作 |
 |------|------|---------|
 | 新增一个 ONNX 输入节点 | `mica-ai-face/.../FaceDetector.java` 或 `FeatureExtractor.java` 或 `LivenessDetector.java` | 在检测器 / 提取器 / 活体类的推理段加常量 → 更新 mica-ai-face/README.md「I/O 格式」 |
-| 替换底层模型 | `model-tools/<cap>/download.py` + `convert.py` | 先按 §6.1 自检 License → 改 `MODEL_*` 常量 → 重跑 smoke test → 更新对应 README 模型规格表 |
+| 替换底层模型 | `model-tools/<cap>/models/` | 先按 §6.1 自检 License → 覆盖模型文件 → 跑 `make -C model-tools smoke` → 更新对应 README 模型规格表 |
 | 新增 Spring Boot 配置项 | Starter `FaceProperties.java` / `FiletypeProperties.java` + 对应 `*AutoConfiguration.java` | 用 `mica-auto` 生成 import → 跑 `mvn install` → 子 README 加示例 |
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调整 `intraOpNumThreads` / `interOpNumThreads` / `device` (cpu/gpu) |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
@@ -161,7 +158,7 @@ make -C model-tools package     # 把 models/face 打包成 zip（用于 GitHub 
 - [ ] `mvn -DskipTests install` 通过
 - [ ] `mvn test` 通过（14 个用例：face 12 + example 2）
 - [ ] `make -C model-tools smoke` 通过
-- [ ] 改了模型脚本：跑 `download.py` + `convert.py`，产物可被 Java 端加载
+- [ ] 替换了模型：`smoke` 的 ONNX 结构校验通过，产物可被 Java 端加载
 - [ ] 改了 Starter：在 `application.yml` 加示例，且至少 1 个 `@Autowired` 使用点
 - [ ] 改了 README：标题层级、代码块语言、链接自检
 - [ ] 新增/替换模型：**§6.1 商用自检清单全部勾选**

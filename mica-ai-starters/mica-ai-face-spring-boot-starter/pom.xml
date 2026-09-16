@@ -7,8 +7,8 @@
 
     <parent>
         <groupId>net.dreamlu</groupId>
-        <artifactId>mica-ai</artifactId>
-        <version>1.0.0</version>
+        <artifactId>mica-ai-starters</artifactId>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>mica-ai-face-spring-boot-starter</artifactId>

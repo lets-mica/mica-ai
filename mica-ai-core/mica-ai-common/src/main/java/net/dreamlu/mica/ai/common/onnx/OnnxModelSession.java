@@ -8,6 +8,7 @@ import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
 import java.io.ByteArrayOutputStream;
@@ -45,7 +46,7 @@ public class OnnxModelSession {
 		this.sourcePath = path;
 		if (path == null || path.isEmpty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED, "模型路径为空: " + name);
+				ErrorCode.MODEL_LOAD_FAILED, "模型路径为空: " + name);
 		}
 		this.session = createSession(path, options, name);
 	}
@@ -62,7 +63,7 @@ public class OnnxModelSession {
 			return environment.createSession(path, options);
 		} catch (OrtException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED,
+				ErrorCode.MODEL_LOAD_FAILED,
 				"加载 " + name + " 模型失败: " + path, e);
 		}
 	}
@@ -86,19 +87,19 @@ public class OnnxModelSession {
 		}
 		if (cl == null) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED,
+				ErrorCode.MODEL_LOAD_FAILED,
 				"无法获取 ClassLoader 以加载资源: " + resourcePath);
 		}
 		try (InputStream in = cl.getResourceAsStream(resourcePath)) {
 			if (in == null) {
 				throw new MicaAiException(
-					MicaAiException.ErrorCode.NOT_FOUND,
+					ErrorCode.NOT_FOUND,
 					"classpath 资源未找到: " + resourcePath);
 			}
 			return readAllBytes(in);
 		} catch (IOException e) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.MODEL_LOAD_FAILED,
+				ErrorCode.MODEL_LOAD_FAILED,
 				"读取 classpath 资源失败: " + resourcePath, e);
 		}
 	}

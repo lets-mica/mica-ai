@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
 @Data
@@ -30,11 +31,11 @@ public class FiletypeConfig {
 
     public void validate() {
         if (modelVersion == null || modelVersion.isEmpty()) {
-            throw new MicaAiException(MicaAiException.ErrorCode.ILLEGAL_ARGUMENT,
+            throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
                 "modelVersion must not be null or empty");
         }
         if (predictionMode == null) {
-            throw new MicaAiException(MicaAiException.ErrorCode.ILLEGAL_ARGUMENT,
+            throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
                 "predictionMode must not be null");
         }
     }

@@ -41,11 +41,25 @@ mica:
     # ============================================================
     #  📄 Filetype —— Google Magika standard_v3_3（Apache-2.0）
     #  路径留空走 classpath: mica-ai/models/filetype/standard_v3_3/*
-    #  也可直接给绝对路径指向 model-tools/filetype/model/out/{model.onnx,config.min.json,content_types_kb.min.json}
+    #  也可直接给绝对路径指向 model-tools/filetype/models/{model.onnx,config.min.json,content_types_kb.min.json}
     # ============================================================
     filetype:
       model-version: standard_v3_3
       prediction-mode: HIGH_CONFIDENCE
+      device: cpu
+    # ============================================================
+    #  🚗 Plate —— HyperLPR3 v20230229（Apache-2.0）
+    #  模型路径未配置时启动失败；模型已入库，见 model-tools/plate/models/
+    # ============================================================
+    plate:
+      model-version: "20230229"
+      detection-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/y5fu_320x_sim.onnx
+      recognition-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/rpv3_mdict_160_r3.onnx
+      classification-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/litemodel_cls_96x_r1.onnx
+      detection-input-size: 320
+      detection-confidence-threshold: 0.25
+      detection-nms-threshold: 0.5
+      max-plates: 5
       device: cpu
 
 logging:

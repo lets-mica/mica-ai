@@ -3,6 +3,7 @@
  */
 package net.dreamlu.mica.ai.example;
 
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.autoconfigure.FaceAutoConfiguration;
 import net.dreamlu.mica.ai.face.model.ModelManager;

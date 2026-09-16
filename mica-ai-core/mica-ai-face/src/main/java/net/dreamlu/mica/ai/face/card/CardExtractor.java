@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.AccessLevel;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.model.FaceBox;
@@ -70,7 +71,7 @@ public class CardExtractor {
 		List<CardResult> results = extractAll(image, options, 1);
 		if (results.isEmpty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED, "未在图中找到证件卡片");
+				ErrorCode.CARD_FAILED, "未在图中找到证件卡片");
 		}
 		return results.get(0);
 	}
@@ -103,7 +104,7 @@ public class CardExtractor {
 	private List<CardResult> extractAll(Mat image, CardOptions options, int limit) {
 		if (image == null || image.empty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED, "卡片提取入参图像为空");
+				ErrorCode.CARD_FAILED, "卡片提取入参图像为空");
 		}
 		CardOptions opts = options == null ? defaults : options;
 		opts.validate();
@@ -128,7 +129,7 @@ public class CardExtractor {
 	public static Mat drawDebug(Mat image, List<CardResult> results) {
 		if (image == null || image.empty()) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED, "标注入参图像为空");
+				ErrorCode.CARD_FAILED, "标注入参图像为空");
 		}
 		Mat canvas = image.clone();
 		if (results == null || results.isEmpty()) {
@@ -666,7 +667,7 @@ public class CardExtractor {
 	private static Point[] toPoints(float[][] quad) {
 		if (quad == null || quad.length != 4) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"四边形需为 4 个点，实际: " + (quad == null ? "null" : quad.length));
 		}
 		Point[] points = new Point[4];

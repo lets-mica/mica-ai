@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
 @Data
@@ -81,66 +82,66 @@ public class CardOptions {
 	void validate() {
 		if (outputWidth < 16 || outputWidth > 8192) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"outputWidth 需在 [16, 8192]，实际: " + outputWidth);
 		}
 		if (outputHeight < 16 || outputHeight > 8192) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"outputHeight 需在 [16, 8192]，实际: " + outputHeight);
 		}
 		if (!(aspectTolerance > 0.0 && aspectTolerance <= 1.0)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"aspectTolerance 需在 (0, 1]，实际: " + aspectTolerance);
 		}
 		if (!(minAreaRatio > 0.0 && minAreaRatio < 1.0)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"minAreaRatio 需在 (0, 1)，实际: " + minAreaRatio);
 		}
 		if (borderMargin < 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED, "borderMargin 不能为负");
+				ErrorCode.CARD_FAILED, "borderMargin 不能为负");
 		}
 		if (detectMaxSide != 0 && detectMaxSide < 64) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"detectMaxSide 需为 0（不缩放）或不小于 64，实际: " + detectMaxSide);
 		}
 		if (saturationCeiling < 0 || saturationCeiling > 255) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"saturationCeiling 需在 [0, 255]，实际: " + saturationCeiling);
 		}
 		if (closeKernelSize < 3 || closeKernelSize > 199 || closeKernelSize % 2 == 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"closeKernelSize 需为 [3, 199] 内的奇数，实际: " + closeKernelSize);
 		}
 		if (rotationDegrees % 90 != 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"rotationDegrees 需为 90 的整数倍，实际: " + rotationDegrees);
 		}
 		if (!(sharpenAmount >= 1.0 && sharpenAmount <= 5.0)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"sharpenAmount 需在 [1.0, 5.0]，实际: " + sharpenAmount);
 		}
 		if (!(sharpenSigma > 0.0 && sharpenSigma <= 10.0)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"sharpenSigma 需在 (0, 10]，实际: " + sharpenSigma);
 		}
 		if (!(claheClip >= 0.0 && claheClip <= 40.0)) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED,
+				ErrorCode.CARD_FAILED,
 				"claheClip 需在 [0, 40]，实际: " + claheClip);
 		}
 		if (minCardSize < 0) {
 			throw new MicaAiException(
-				MicaAiException.ErrorCode.CARD_FAILED, "minCardSize 不能为负");
+				ErrorCode.CARD_FAILED, "minCardSize 不能为负");
 		}
 	}
 }

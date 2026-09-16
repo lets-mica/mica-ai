@@ -8,18 +8,11 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
-# 模型与训练产物（占空间，全部忽略）
+# 下载 / 解压的中间产物（各能力子目录下的 model/ 缓存目录）
 model/
 output/
 checkpoints/
 logs/
-*.onnx
-*.bin
-*.safetensors
-*.pth
-*.pt
-*.tar
-*.tar.gz
 
 # 数据
 data/*.csv
