@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2024-2026 mica-ai
  */
-package net.dreamlu.mica.ai.filetype;
+package net.dreamlu.mica.ai.filetype.detection;
 
 import ai.onnxruntime.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +14,9 @@ import net.dreamlu.mica.ai.common.onnx.OrtDevice;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
+import net.dreamlu.mica.ai.filetype.config.FiletypeConfig;
 import net.dreamlu.mica.ai.filetype.config.ModelConfig;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 import net.dreamlu.mica.ai.filetype.feature.FeaturesExtractor;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeInfo;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;

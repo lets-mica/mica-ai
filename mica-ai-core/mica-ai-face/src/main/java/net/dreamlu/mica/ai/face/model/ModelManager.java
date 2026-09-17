@@ -12,7 +12,6 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.face.config.ModelConfig;
 
-import javax.annotation.PreDestroy;
 import java.util.Objects;
 
 /**
@@ -23,7 +22,7 @@ import java.util.Objects;
  */
 @Slf4j
 @Getter
-public class ModelManager {
+public class ModelManager implements AutoCloseable {
 
 	private final OrtEnvironment environment;
 	private final OrtSessionOptions onnxOptions;
@@ -66,8 +65,8 @@ public class ModelManager {
 		return liveness != null ? liveness.getSession() : null;
 	}
 
-	@PreDestroy
-	public void destroy() {
+	@Override
+	public void close() throws Exception {
 		if (detection != null) {
 			detection.close();
 		}

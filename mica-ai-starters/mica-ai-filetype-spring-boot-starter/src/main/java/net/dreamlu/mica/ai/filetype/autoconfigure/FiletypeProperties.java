@@ -6,7 +6,7 @@ package net.dreamlu.mica.ai.filetype.autoconfigure;
 import lombok.Getter;
 import lombok.Setter;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
-import net.dreamlu.mica.ai.filetype.PredictionMode;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

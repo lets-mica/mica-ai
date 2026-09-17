@@ -4,8 +4,8 @@
 package net.dreamlu.mica.ai.filetype.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.filetype.FiletypeConfig;
-import net.dreamlu.mica.ai.filetype.FiletypeDetector;
+import net.dreamlu.mica.ai.filetype.config.FiletypeConfig;
+import net.dreamlu.mica.ai.filetype.detection.FiletypeDetector;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "mica.ai.filetype", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FiletypeAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public FiletypeDetector filetypeDetector(FiletypeProperties properties) {
 		FiletypeConfig config = FiletypeConfig.builder()

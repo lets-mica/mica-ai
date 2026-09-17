@@ -6,7 +6,7 @@ package net.dreamlu.mica.ai.filetype.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.dreamlu.mica.ai.filetype.PredictionMode;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 
 @Data
 @NoArgsConstructor

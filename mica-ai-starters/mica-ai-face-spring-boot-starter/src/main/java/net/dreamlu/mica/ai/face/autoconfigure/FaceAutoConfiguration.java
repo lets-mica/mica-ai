@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnClass(FaceDetector.class)
 public class FaceAutoConfiguration implements InitializingBean {
 
-	@Bean(destroyMethod = "destroy")
+	@Bean
 	@ConditionalOnMissingBean
 	public ModelManager modelManager(FaceProperties properties) {
 		FaceProperties.Model model = properties.getModel();

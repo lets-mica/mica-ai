@@ -3,7 +3,7 @@
  */
 package net.dreamlu.mica.ai.filetype.postprocess;
 
-import net.dreamlu.mica.ai.filetype.PredictionMode;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
 import net.dreamlu.mica.ai.filetype.config.ModelConfig;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;

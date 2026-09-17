@@ -13,7 +13,7 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OrtDevice;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
-import net.dreamlu.mica.ai.plate.PlateConfig;
+import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import net.dreamlu.mica.ai.plate.alignment.PlateAligner;
 import net.dreamlu.mica.ai.plate.detection.PlateDetector;
 import net.dreamlu.mica.ai.plate.model.PlateResult;

@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
-import net.dreamlu.mica.ai.plate.PlateConfig;
+import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import net.dreamlu.mica.ai.plate.util.PlateImageUtils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -23,7 +23,6 @@ import org.opencv.imgproc.Imgproc;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**

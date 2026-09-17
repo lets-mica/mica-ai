@@ -4,7 +4,7 @@
 package net.dreamlu.mica.ai.plate.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.plate.PlateConfig;
+import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import net.dreamlu.mica.ai.plate.pipeline.PlatePipeline;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "mica.ai.plate", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class PlateAutoConfiguration {
 
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public PlatePipeline platePipeline(PlateProperties properties) {
 		PlateConfig config = PlateConfig.builder()

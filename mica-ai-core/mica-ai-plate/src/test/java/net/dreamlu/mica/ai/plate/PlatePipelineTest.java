@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.plate;
 
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
+import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import net.dreamlu.mica.ai.plate.model.PlateResult;
 import net.dreamlu.mica.ai.plate.pipeline.PlatePipeline;
 import nu.pattern.OpenCV;

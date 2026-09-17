@@ -3,6 +3,9 @@
  */
 package net.dreamlu.mica.ai.filetype;
 
+import net.dreamlu.mica.ai.filetype.config.FiletypeConfig;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
+import net.dreamlu.mica.ai.filetype.detection.FiletypeDetector;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;
 import net.dreamlu.mica.ai.filetype.model.FiletypeResult;
 import org.junit.jupiter.api.Test;

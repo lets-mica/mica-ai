@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2024-2026 mica-ai
  */
-package net.dreamlu.mica.ai.plate;
+package net.dreamlu.mica.ai.plate.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

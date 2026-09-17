@@ -13,7 +13,7 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.plate.util.PlateImageUtils;
-import net.dreamlu.mica.ai.plate.PlateConfig;
+import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;

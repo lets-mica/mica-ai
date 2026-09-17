@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import net.dreamlu.mica.ai.filetype.FiletypeDetector;
+import net.dreamlu.mica.ai.filetype.detection.FiletypeDetector;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeInfo;
 import net.dreamlu.mica.ai.filetype.model.FiletypeResult;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
