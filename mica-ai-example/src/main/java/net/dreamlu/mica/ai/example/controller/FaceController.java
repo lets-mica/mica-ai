@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.model.FaceBox;
+import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
+import net.dreamlu.mica.ai.face.model.LivenessResult;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.util.ImageUtils;
 import net.dreamlu.mica.ai.face.verification.FaceVerifier;
@@ -48,6 +50,7 @@ public class FaceController {
 	private final FaceAligner aligner;
 	private final FeatureExtractor extractor;
 	private final FaceVerifier verifier;
+	private final LivenessDetector livenessDetector;
 
 	@Operation(summary = "人脸检测", description = "仅做检测：返回每张人脸的 bbox + 关键点 + score")
 	@ApiResponses(value = {
@@ -72,6 +75,41 @@ public class FaceController {
 			img.release();
 			Files.deleteIfExists(tmp);
 		}
+	}
+
+	@Operation(summary = "活体检测", description = "检测人脸后逐个做 MiniFASNetV2 活体判断，返回 liveScore / isLive / attackType")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "检测成功",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = Map.class))),
+		@ApiResponse(responseCode = "400", description = "图片读取失败", content = @Content),
+		@ApiResponse(responseCode = "500", description = "推理异常", content = @Content)
+	})
+	@PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public List<Map<String, Object>> liveness(
+		@Parameter(description = "待检测图片（支持 jpg/png/webp）", required = true,
+			content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+				schema = @Schema(type = "string", format = "binary")))
+		@RequestParam("file") MultipartFile file) throws IOException {
+		Path tmp = save(file);
+		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
+		try {
+			final Mat work = img;
+			List<FaceBox> boxes = detector.detect(work);
+			return boxes.stream().map(box -> livenessOne(work, box)).collect(Collectors.toList());
+		} finally {
+			img.release();
+			Files.deleteIfExists(tmp);
+		}
+	}
+
+	private Map<String, Object> livenessOne(Mat img, FaceBox box) {
+		LivenessResult result = livenessDetector.check(img, box);
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("liveScore", result.getLiveScore());
+		m.put("isLive", result.isLive());
+		m.put("attackType", result.getAttackType());
+		return m;
 	}
 
 	@Operation(summary = "人脸特征提取", description = "检测 + 对齐 + 提取 embedding，返回 128 维向量预览与 L2 范数")

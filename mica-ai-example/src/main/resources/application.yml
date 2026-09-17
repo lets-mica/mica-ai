@@ -28,7 +28,7 @@ mica:
         threshold: 0.9
         nms-threshold: 0.3
       liveness:
-        enabled: false
+        enabled: true
         threshold: 0.85
         crop-scale: 2.7
       verify:
