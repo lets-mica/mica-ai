@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 public class OrtSessionOptions {
 
 	@Builder.Default
-	private Device device = Device.CPU;
+	private OrtDevice device = OrtDevice.CPU;
 
 	@Builder.Default
 	private int cudaDeviceId = 0;
@@ -34,27 +34,10 @@ public class OrtSessionOptions {
 	private int interOpNumThreads = 0;
 
 	@Builder.Default
-	private GraphOptimizationLevel graphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+	private OrtGraphOptimizationLevel graphOptimizationLevel = OrtGraphOptimizationLevel.ENABLE_ALL;
 
 	@Builder.Default
-	private ExecutionMode executionMode = ExecutionMode.ORT_PARALLEL;
-
-	public enum Device {
-		CPU,
-		GPU
-	}
-
-	public enum GraphOptimizationLevel {
-		ORT_DISABLE_ALL,
-		ORT_ENABLE_BASIC,
-		ORT_ENABLE_EXTENDED,
-		ORT_ENABLE_ALL
-	}
-
-	public enum ExecutionMode {
-		ORT_SEQUENTIAL,
-		ORT_PARALLEL
-	}
+	private OrtExecutionMode executionMode = OrtExecutionMode.PARALLEL;
 
 	public static OrtSessionOptions defaults() {
 		return OrtSessionOptions.builder().build();

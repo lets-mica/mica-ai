@@ -29,23 +29,14 @@ import net.dreamlu.mica.ai.face.verification.FaceVerifier;
 import net.dreamlu.mica.ai.face.verification.VerifyResult;
 import org.opencv.core.Mat;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 人脸注册 / 1:N 识别 / 1:1 比对（人证核验）/ 健康检查端点。
@@ -261,7 +252,7 @@ public class FaceRecognitionController {
 		r.put("detectionLoaded", modelManager.getDetectionSession() != null);
 		r.put("recognitionLoaded", modelManager.getRecognitionSession() != null);
 		r.put("livenessLoaded", modelManager.getLivenessSession() != null);
-		r.put("device", properties.getDevice());
+		r.put("onnxOptions", properties.getOnnx());
 		return r;
 	}
 

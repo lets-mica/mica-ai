@@ -13,7 +13,6 @@ import net.dreamlu.mica.ai.face.config.ModelConfig;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
 import net.dreamlu.mica.ai.face.model.ModelManager;
-import net.dreamlu.mica.ai.face.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.verification.FaceVerifier;
 import nu.pattern.OpenCV;
@@ -48,55 +47,9 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.detectionThreshold(properties.getDetection().getThreshold())
 			.nmsThreshold(properties.getDetection().getNmsThreshold())
 			.verifyThreshold(properties.getVerify().getThreshold())
-			.onnx(buildOnnxOptions(properties))
+			.onnx(properties.getOnnx())
 			.build();
 		return ModelManager.create(config);
-	}
-
-	private OrtSessionOptions buildOnnxOptions(FaceProperties properties) {
-		FaceProperties.Onnx o = properties.getOnnx();
-		String dev = (o.getDevice() == null || o.getDevice().trim().isEmpty())
-			? properties.getDevice() : o.getDevice();
-		return OrtSessionOptions.builder()
-			.device(parseDevice(dev))
-			.cudaDeviceId(o.getCudaDeviceId())
-			.intraOpNumThreads(o.getIntraOpNumThreads())
-			.interOpNumThreads(o.getInterOpNumThreads())
-			.graphOptimizationLevel(parseLevel(o.getGraphOptimizationLevel()))
-			.executionMode(parseMode(o.getExecutionMode()))
-			.build();
-	}
-
-	private static OrtSessionOptions.Device parseDevice(String s) {
-		return "gpu".equalsIgnoreCase(s) ? OrtSessionOptions.Device.GPU : OrtSessionOptions.Device.CPU;
-	}
-
-	private static OrtSessionOptions.GraphOptimizationLevel parseLevel(String s) {
-		if (s == null) {
-			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_ALL;
-		}
-		String key = s.trim().toUpperCase();
-		if ("ORT_DISABLE_ALL".equals(key)) {
-			return OrtSessionOptions.GraphOptimizationLevel.ORT_DISABLE_ALL;
-		}
-		if ("ORT_ENABLE_BASIC".equals(key)) {
-			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_BASIC;
-		}
-		if ("ORT_ENABLE_EXTENDED".equals(key)) {
-			return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_EXTENDED;
-		}
-		return OrtSessionOptions.GraphOptimizationLevel.ORT_ENABLE_ALL;
-	}
-
-	private static OrtSessionOptions.ExecutionMode parseMode(String s) {
-		if (s == null) {
-			return OrtSessionOptions.ExecutionMode.ORT_PARALLEL;
-		}
-		String key = s.trim().toUpperCase();
-		if ("ORT_SEQUENTIAL".equals(key)) {
-			return OrtSessionOptions.ExecutionMode.ORT_SEQUENTIAL;
-		}
-		return OrtSessionOptions.ExecutionMode.ORT_PARALLEL;
 	}
 
 	@Bean

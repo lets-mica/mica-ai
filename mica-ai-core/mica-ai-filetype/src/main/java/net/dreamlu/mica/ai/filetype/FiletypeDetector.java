@@ -3,18 +3,15 @@
  */
 package net.dreamlu.mica.ai.filetype;
 
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtProvider;
-import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
-import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtDevice;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
 import net.dreamlu.mica.ai.filetype.config.ModelConfig;
@@ -32,11 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 文件类型识别引擎（Google Magika {@code standard_v3_3} 的 Java 复刻）。
@@ -270,8 +263,8 @@ public class FiletypeDetector implements AutoCloseable {
 		}
 	}
 
-	private static OrtSession.SessionOptions buildSessionOptions(OnnxOptions options) {
-		OnnxOptions opts = options != null ? options : OnnxOptions.defaults();
+	private static OrtSession.SessionOptions buildSessionOptions(OrtSessionOptions options) {
+		OrtSessionOptions opts = options != null ? options : OrtSessionOptions.defaults();
 		OrtSession.SessionOptions so = new OrtSession.SessionOptions();
 		try {
 			if (opts.getIntraOpNumThreads() > 0) {
@@ -285,7 +278,8 @@ public class FiletypeDetector implements AutoCloseable {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
 		}
-		if (opts.isGpu()) {
+		OrtDevice device = opts.getDevice();
+		if (OrtDevice.GPU == device) {
 			try {
 				if (OrtEnvironment.getAvailableProviders().contains(OrtProvider.CUDA)) {
 					so.addCUDA(opts.getCudaDeviceId());

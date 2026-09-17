@@ -53,7 +53,7 @@ public class OrtSessionFactory {
 				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
 		}
 
-		if (options.getDevice() == OrtSessionOptions.Device.GPU) {
+		if (options.getDevice() == OrtDevice.GPU) {
 			applyCuda(so, options.getCudaDeviceId());
 		}
 		return so;
@@ -73,31 +73,31 @@ public class OrtSessionFactory {
 		}
 	}
 
-	private static OptLevel mapLevel(OrtSessionOptions.GraphOptimizationLevel level) {
+	private static OptLevel mapLevel(OrtGraphOptimizationLevel level) {
 		if (level == null) {
 			return OptLevel.ALL_OPT;
 		}
 		switch (level) {
-			case ORT_DISABLE_ALL:
+			case DISABLE_ALL:
 				return OptLevel.NO_OPT;
-			case ORT_ENABLE_BASIC:
+			case ENABLE_BASIC:
 				return OptLevel.BASIC_OPT;
-			case ORT_ENABLE_EXTENDED:
+			case ENABLE_EXTENDED:
 				return OptLevel.EXTENDED_OPT;
-			case ORT_ENABLE_ALL:
+			case ENABLE_ALL:
 			default:
 				return OptLevel.ALL_OPT;
 		}
 	}
 
-	private static ExecutionMode mapMode(OrtSessionOptions.ExecutionMode mode) {
+	private static ExecutionMode mapMode(OrtExecutionMode mode) {
 		if (mode == null) {
 			return ExecutionMode.PARALLEL;
 		}
 		switch (mode) {
-			case ORT_SEQUENTIAL:
+			case SEQUENTIAL:
 				return ExecutionMode.SEQUENTIAL;
-			case ORT_PARALLEL:
+			case PARALLEL:
 			default:
 				return ExecutionMode.PARALLEL;
 		}

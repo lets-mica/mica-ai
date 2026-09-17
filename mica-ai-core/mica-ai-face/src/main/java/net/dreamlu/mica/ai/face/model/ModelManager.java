@@ -8,12 +8,11 @@ import ai.onnxruntime.OrtSession;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.face.config.ModelConfig;
-import net.dreamlu.mica.ai.face.onnx.OrtSessionFactory;
-import net.dreamlu.mica.ai.face.onnx.OrtSessionOptions;
 
 import javax.annotation.PreDestroy;
-
 import java.util.Objects;
 
 /**

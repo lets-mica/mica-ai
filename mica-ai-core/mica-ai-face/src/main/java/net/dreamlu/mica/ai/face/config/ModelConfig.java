@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.dreamlu.mica.ai.face.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 /**
  * 模型加载配置。

@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 @Data
 @Builder
@@ -46,7 +46,7 @@ public class PlateConfig {
     private int maxPlates = 5;
 
     @Builder.Default
-    private OnnxOptions onnx = OnnxOptions.defaults();
+	private OrtSessionOptions onnx = OrtSessionOptions.defaults();
 
     public void validate() {
         if (modelVersion == null || modelVersion.isEmpty()) {

@@ -5,7 +5,9 @@ package net.dreamlu.mica.ai.face.autoconfigure;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * mica-ai-face 配置属性，对应 {@code mica.ai.face} 前缀。
@@ -21,8 +23,8 @@ public class FaceProperties {
 	private Verify verify = new Verify();
 	private Avatar avatar = new Avatar();
 	private Card card = new Card();
-	private String device = "cpu";
-	private Onnx onnx = new Onnx();
+	@NestedConfigurationProperty
+	private OrtSessionOptions onnx = new OrtSessionOptions();
 
 	@Getter
 	@Setter
@@ -75,17 +77,6 @@ public class FaceProperties {
 		private double tileThreshold = 0.60;
 		private int minFaceSize = 40;
 		private int maxFaces = 0;
-	}
-
-	@Getter
-	@Setter
-	public static class Onnx {
-		private String device;
-		private int cudaDeviceId = 0;
-		private int intraOpNumThreads = 0;
-		private int interOpNumThreads = 0;
-		private String graphOptimizationLevel = "ORT_ENABLE_ALL";
-		private String executionMode = "ORT_PARALLEL";
 	}
 
 	@Getter

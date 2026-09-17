@@ -4,10 +4,8 @@
 package net.dreamlu.mica.ai.filetype.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
 import net.dreamlu.mica.ai.filetype.FiletypeConfig;
 import net.dreamlu.mica.ai.filetype.FiletypeDetector;
-import net.dreamlu.mica.ai.filetype.PredictionMode;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,21 +34,10 @@ public class FiletypeAutoConfiguration {
 			.modelPath(properties.getModelPath())
 			.configPath(properties.getConfigPath())
 			.contentTypesPath(properties.getContentTypesPath())
-			.predictionMode(parseMode(properties.getPredictionMode()))
-			.onnx(OnnxOptions.builder()
-				.intraOpNumThreads(properties.getOnnx().getIntraOpNumThreads())
-				.interOpNumThreads(properties.getOnnx().getInterOpNumThreads())
-				.gpu("gpu".equalsIgnoreCase(properties.getDevice()))
-				.cudaDeviceId(properties.getOnnx().getCudaDeviceId())
-				.build())
+			.predictionMode(properties.getPredictionMode())
+			.onnx(properties.getOnnx())
 			.build();
 		return FiletypeDetector.create(config);
 	}
 
-	private static PredictionMode parseMode(String s) {
-		if (s == null || s.trim().isEmpty()) {
-			return PredictionMode.HIGH_CONFIDENCE;
-		}
-		return PredictionMode.valueOf(s.trim().toUpperCase());
-	}
 }

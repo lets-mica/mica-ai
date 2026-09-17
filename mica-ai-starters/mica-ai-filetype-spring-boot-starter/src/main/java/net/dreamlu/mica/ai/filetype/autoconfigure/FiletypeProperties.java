@@ -5,7 +5,10 @@ package net.dreamlu.mica.ai.filetype.autoconfigure;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.filetype.PredictionMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * mica-ai-filetype 配置属性，对应 {@code mica.ai.filetype} 前缀。
@@ -20,15 +23,8 @@ public class FiletypeProperties {
 	private String modelPath;
 	private String configPath;
 	private String contentTypesPath;
-	private String predictionMode = "HIGH_CONFIDENCE";
-	private String device = "cpu";
-	private Onnx onnx = new Onnx();
+	private PredictionMode predictionMode = PredictionMode.HIGH_CONFIDENCE;
+	@NestedConfigurationProperty
+	private OrtSessionOptions onnx = new OrtSessionOptions();
 
-	@Getter
-	@Setter
-	public static class Onnx {
-		private int intraOpNumThreads = 0;
-		private int interOpNumThreads = 0;
-		private int cudaDeviceId = 0;
-	}
 }

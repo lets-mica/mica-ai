@@ -3,6 +3,8 @@
  */
 package net.dreamlu.mica.ai.common.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,10 +14,8 @@ import java.io.InputStream;
  *
  * @author L.cm
  */
-public final class IOUtil {
-
-	private IOUtil() {
-	}
+@UtilityClass
+public class IOUtil {
 
 	public static byte[] readAllBytes(InputStream in) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(64, in.available()));
