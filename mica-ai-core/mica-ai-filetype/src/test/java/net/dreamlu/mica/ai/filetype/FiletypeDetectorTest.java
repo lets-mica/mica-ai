@@ -85,10 +85,11 @@ class FiletypeDetectorTest {
 
 	@Test
 	void detectBytes_plainText() {
-		byte[] text = ("This is a long enough plain text to give the detector enough "
+		String chunk = "This is a long enough plain text to give the detector enough "
 			+ "features to confidently call it a text file. We are essentially writing "
 			+ "lorem ipsum style content so that the feature extractor gets a reasonable "
-			+ "block of bytes to look at.").repeat(4).getBytes(StandardCharsets.UTF_8);
+			+ "block of bytes to look at.";
+		byte[] text = repeat(chunk, 4).getBytes(StandardCharsets.UTF_8);
 		try (FiletypeDetector detector = newDetector()) {
 			FiletypeResult result = detector.detectBytes(text);
 			assertThat(result.isText()).isTrue();
@@ -128,7 +129,7 @@ class FiletypeDetectorTest {
 	@Test
 	void detectPath_regularFile(@TempDir Path tempDir) throws IOException {
 		Path file = tempDir.resolve("hello.txt");
-		String content = "Hello, mica-ai-filetype! This is a sample text file. ".repeat(8);
+		String content = repeat("Hello, mica-ai-filetype! This is a sample text file. ", 8);
 		Files.write(file, content.getBytes(StandardCharsets.UTF_8));
 
 		try (FiletypeDetector detector = newDetector()) {
@@ -147,7 +148,7 @@ class FiletypeDetectorTest {
 
 	@Test
 	void highConfidenceMode_fallsBackToTxtWhenBelowThreshold() {
-		byte[] json = ("{\"items\":[" + "1,2,3,4,5,6,7,8,9,0,".repeat(8) + "]}").getBytes(StandardCharsets.UTF_8);
+		byte[] json = ("{\"items\":[" + repeat("1,2,3,4,5,6,7,8,9,0,", 8) + "]}").getBytes(StandardCharsets.UTF_8);
 		try (FiletypeDetector detector = newDetector(PredictionMode.HIGH_CONFIDENCE)) {
 			FiletypeResult result = detector.detectBytes(json);
 			assertThat(result.getModelLabel()).isIn("json", "txt");
@@ -166,5 +167,13 @@ class FiletypeDetectorTest {
 			FiletypeResult result = detector.detectBytes(png);
 			assertThat(result.getOutputLabel()).isEqualTo("png");
 		}
+	}
+
+	private static String repeat(String s, int count) {
+		StringBuilder sb = new StringBuilder(s.length() * count);
+		for (int i = 0; i < count; i++) {
+			sb.append(s);
+		}
+		return sb.toString();
 	}
 }
