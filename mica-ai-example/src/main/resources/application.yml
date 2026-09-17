@@ -57,6 +57,19 @@ mica:
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5
       max-plates: 5
+    # ============================================================
+    #  📐 Layout —— PP-DocLayoutV3（Apache-2.0）
+    #  ⚠️ enabled=false：模型 125MB，超出「<50MB 入库」约定，入库方式待决策，
+    #  新克隆的仓库里没有 model.onnx，开启会导致启动失败（模型路径未配置/不存在即 fail-fast）。
+    #  本地已有模型时：enabled 置 true，或按需用 -Dmica.ai.layout.enabled=true 覆盖。
+    # ============================================================
+    layout:
+      enabled: false
+      model-version: v3
+      model-path: model-tools/layout/models/model.onnx
+      max-side-length: 800
+      score-threshold: 0.4
+      max-detections: 100
 
 logging:
   level:

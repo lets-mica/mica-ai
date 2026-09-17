@@ -20,5 +20,6 @@
         <module>mica-ai-face</module>
         <module>mica-ai-filetype</module>
         <module>mica-ai-plate</module>
+        <module>mica-ai-layout</module>
     </modules>
 </project>

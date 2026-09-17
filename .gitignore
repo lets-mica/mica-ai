@@ -74,3 +74,8 @@ gen_code
 *.tflite
 !models/*.tar
 !model-tools/*/models/**
+
+# ⚠️ PP-DocLayoutV3 model.onnx = 125MB，超出「<50MB 入库」约定，
+# 入库方式（Git LFS / 下载脚本）待 owner 决策，暂不提交。
+# 决策后删除下面这行（或改为 LFS 跟踪）即可恢复入库。
+model-tools/layout/models/model.onnx

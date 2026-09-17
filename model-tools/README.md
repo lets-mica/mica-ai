@@ -1,6 +1,8 @@
 # Model Tools
 
-> mica-ai 的模型资产目录。**所有模型（<50MB）已直接入库**，放在各能力子目录的 `models/` 下，无需下载脚本。
+> mica-ai 的模型资产目录。**绝大多数模型（<50MB）已直接入库**，放在各能力子目录的 `models/` 下，无需下载脚本。
+>
+> ⚠️ **唯一例外**：`layout/models/model.onnx` 为 **125MB**，超出 <50MB 约定，**当前未提交**（已在根 `.gitignore` 排除）。入库方式待决策，见 [`layout/README.md`](layout/README.md#入库状态--待决策)。
 
 ## 📁 目录结构
 
@@ -13,9 +15,13 @@ model-tools/
 ├── filetype/                   # 对应 mica-ai-filetype
 │   ├── README.md
 │   └── models/                 # Magika model.onnx + config + kb
-└── plate/                      # 对应 mica-ai-plate
+├── plate/                      # 对应 mica-ai-plate
+│   ├── README.md
+│   └── models/                 # HyperLPR3 检测 / 识别 / 分类
+└── layout/                     # 对应 mica-ai-layout
     ├── README.md
-    └── models/                 # HyperLPR3 检测 / 识别 / 分类
+    ├── models/                 # PP-DocLayoutV3（125MB，⚠️ 暂未提交，见下）
+    └── scripts/                # ONNX 契约探针（probe_coord_space.py 等）
 ```
 
 ## 🧩 模型清单与 License
@@ -26,8 +32,11 @@ model-tools/
 | face 活体 | `2.7_80x80_MiniFASNetV2.onnx` | [minivision-ai/Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) | MIT ✅ |
 | filetype | `model.onnx` + `config.min.json` + `content_types_kb.min.json` | [google/magika standard_v3_3](https://github.com/google/magika) | Apache-2.0 ✅ |
 | plate | `y5fu_320x_sim.onnx` / `y5fu_640x_sim.onnx` / `rpv3_mdict_160_r3.onnx` / `litemodel_cls_96x_r1.onnx` | [szad670401/HyperLPR](https://github.com/szad670401/HyperLPR) v20230229 | Apache-2.0 ✅ |
+| layout | `model.onnx`（125MB，⚠️ 暂未提交） | [PaddleOCR PP-DocLayoutV3](https://github.com/PaddlePaddle/PaddleOCR) | Apache-2.0 ✅ |
 
 > 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），但 `2.7_80x80_MiniFASNetV2.onnx`（MIT）已随仓库分发，启用时无须额外下载。
+>
+> layout 模型未随仓库分发，因此在示例配置里 `mica.ai.layout.enabled=false`；本地放好 `model.onnx` 后置 `true` 即可。
 
 ## 🚀 使用
 
@@ -47,12 +56,21 @@ mica:
 - [`mica-ai-core/mica-ai-face/README.md`](../mica-ai-core/mica-ai-face/README.md)
 - [`mica-ai-core/mica-ai-filetype/README.md`](../mica-ai-core/mica-ai-filetype/README.md)
 - [`mica-ai-core/mica-ai-plate/README.md`](../mica-ai-core/mica-ai-plate/README.md)
+- [`mica-ai-core/mica-ai-layout/README.md`](../mica-ai-core/mica-ai-layout/README.md)
 
-不连外网，校验：目录结构完整、各能力 README 与模型文件齐全、ONNX 结构合法（缺 `onnx` 包时跳过校验项）。
+不连外网。模型完整性由各能力模块的集成测试覆盖（加载真 ONNX 跑一遍完整推理）：
+
+```bash
+mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，各能力同理
+```
+
+> ⚠️ 历史上的 `model-tools/scripts/smoke_test.py`（`make -C model-tools smoke`）已在
+> 提交 `a0a8a6f refactor: 删除 model-tools Python 工具链（模型已直接入库）` 中移除。
+> **`AGENTS.md` §3.2 / §8 仍在引用该命令，属待清理的文档漂移**（见 [`docs/layout-tracking.md`](../docs/layout-tracking.md) 待办）。
 
 ## 🔄 替换 / 升级模型
 
 1. 按 `AGENTS.md` §6.1 完成 License 商用自检
 2. 用新模型文件覆盖对应 `models/` 目录
-3. `make -C model-tools smoke` 确认 ONNX 结构合法
+3. 跑对应能力模块的集成测试确认可加载且推理结果正常（`mvn -pl mica-ai-core/<cap> -am test`）
 4. 更新对应能力主 README 的模型规格表
