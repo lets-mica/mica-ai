@@ -8,11 +8,11 @@ OpenCV Zoo 人脸模型（Apache-2.0，可商用），**已直接入库**，无�
 |------|------|
 | `face_detection_yunet_2023mar.onnx` | YuNet 人脸检测（320×320 RGB → 框 + 5 关键点） |
 | `face_recognition_sface_2021dec.onnx` | SFace 人脸特征（112×112 RGB → **128d** L2 归一化向量） |
-
-> 活体（`2.7_80x80_MiniFASNetV2.onnx`，MIT）当前**不在仓库内**，按需自行下载并放入 `models/`，启用前请按 `AGENTS.md` §6.1 自查 License。
+| `2.7_80x80_MiniFASNetV2.onnx` | MiniFASNetV2 静态活体检测（80×80 RGB → 真人/攻击二分类） |
 
 - 来源：<https://github.com/opencv/opencv_zoo>（`models/face_detection_yunet` / `models/face_recognition_sface`）
-- License：Apache License 2.0，**可商用** ✅
+- 活体来源：<https://github.com/minivision-ai/Silent-Face-Anti-Spoofing>（`2.7_80x80_MiniFASNetV2`）
+- License：Apache License 2.0，**可商用** ✅（活体模型为 MIT，**可商用** ✅）
 
 ## 使用
 
