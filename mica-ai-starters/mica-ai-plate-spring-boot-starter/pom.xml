@@ -13,7 +13,7 @@
 
     <artifactId>mica-ai-plate-spring-boot-starter</artifactId>
     <name>mica-ai-plate-spring-boot-starter</name>
-    <description>Spring Boot 2.7 auto-configuration for mica-ai-plate.</description>
+    <description>Spring Boot auto-configuration for mica-ai-plate.</description>
 
 
     <dependencies>

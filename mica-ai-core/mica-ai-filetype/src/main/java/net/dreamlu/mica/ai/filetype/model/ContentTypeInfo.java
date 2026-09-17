@@ -33,7 +33,4 @@ public class ContentTypeInfo {
     @JsonProperty("is_text")
     private boolean text;
 
-    public boolean isText() {
-        return text;
-    }
 }

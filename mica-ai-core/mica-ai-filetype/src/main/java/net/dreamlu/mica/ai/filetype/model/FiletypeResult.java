@@ -20,7 +20,4 @@ public class FiletypeResult {
     private PredictionMode mode;
     private boolean text;
 
-    public boolean isText() {
-        return text;
-    }
 }

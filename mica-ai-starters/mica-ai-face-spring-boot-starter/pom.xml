@@ -13,7 +13,7 @@
 
     <artifactId>mica-ai-face-spring-boot-starter</artifactId>
     <name>mica-ai-face-spring-boot-starter</name>
-    <description>Spring Boot 2.7 auto-configuration for mica-ai-face.</description>
+    <description>Spring Boot auto-configuration for mica-ai-face.</description>
 
     <dependencies>
         <dependency>

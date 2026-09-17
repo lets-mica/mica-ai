@@ -3,15 +3,12 @@
  */
 package net.dreamlu.mica.ai.filetype.model;
 
-public final class ContentTypeLabel {
+public interface ContentTypeLabel {
 
-    public static final String UNKNOWN = "unknown";
-    public static final String TXT = "txt";
-    public static final String EMPTY = "empty";
-    public static final String DIRECTORY = "directory";
-    public static final String SYMLINK = "symlink";
-    public static final String UNDEFINED = "undefined";
-
-    private ContentTypeLabel() {
-    }
+    String UNKNOWN = "unknown";
+    String TXT = "txt";
+    String EMPTY = "empty";
+    String DIRECTORY = "directory";
+    String SYMLINK = "symlink";
+    String UNDEFINED = "undefined";
 }
