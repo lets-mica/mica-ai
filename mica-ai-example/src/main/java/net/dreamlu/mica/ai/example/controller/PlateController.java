@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.plate.model.PlateResult;
 import net.dreamlu.mica.ai.plate.pipeline.PlatePipeline;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,7 +38,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "mica.ai.plate", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class PlateController {
-
 	private final PlatePipeline pipeline;
 
 	@Operation(summary = "上传图片识别车牌", description = "检测车牌 + 透视校正 + CRNN 识别 + 颜色分类，返回车牌号 / 类型 / 置信度 / 框 / 关键点")
@@ -55,7 +55,7 @@ public class PlateController {
 				schema = @Schema(type = "string", format = "binary")))
 		@RequestPart("file") MultipartFile file) throws IOException {
 		try (InputStream in = file.getInputStream()) {
-			return view(pipeline.recognizeBytes(in.readAllBytes()));
+			return view(pipeline.recognizeBytes(IOUtil.readAllBytes(in)));
 		}
 	}
 

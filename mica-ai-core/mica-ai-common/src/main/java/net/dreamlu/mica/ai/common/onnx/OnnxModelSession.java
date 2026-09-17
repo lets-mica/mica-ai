@@ -12,8 +12,10 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 /**
@@ -60,7 +62,8 @@ public class OnnxModelSession {
 				return environment.createSession(bytes, options);
 			}
 			log.info("加载 {} 模型: {}", name, path);
-			return environment.createSession(path, options);
+			String absolutePath = Paths.get(path).toFile().getAbsolutePath();
+			return environment.createSession(absolutePath, options);
 		} catch (OrtException e) {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED,

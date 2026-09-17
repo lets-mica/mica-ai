@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 人脸检测 + 识别 REST 端点。
@@ -66,7 +67,7 @@ public class FaceController {
 		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
 		try {
 			List<FaceBox> boxes = detector.detect(img);
-			return boxes.stream().map(FaceController::boxView).toList();
+			return boxes.stream().map(FaceController::boxView).collect(Collectors.toList());
 		} finally {
 			img.release();
 			Files.deleteIfExists(tmp);
@@ -92,7 +93,7 @@ public class FaceController {
 		try {
 			final Mat work = img;
 			List<FaceBox> boxes = detector.detect(work);
-			return boxes.stream().map(box -> extractOne(work, box)).toList();
+			return boxes.stream().map(box -> extractOne(work, box)).collect(Collectors.toList());
 		} finally {
 			img.release();
 			Files.deleteIfExists(tmp);
