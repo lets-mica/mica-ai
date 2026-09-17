@@ -14,15 +14,6 @@
 
 ---
 
-## 设计原则
-
-- **零 Spring 依赖** — 核心模块不引入任何 `spring-*` 类，可在任何 Java 8+ 项目中独立使用
-- **Builder 模式** — 所有引擎均通过 Builder 风格的 Config 类构造，链式调用清晰
-- **AutoCloseable** — 所有引擎实现 `AutoCloseable`，支持 try-with-resources 自动释放 ONNX 资源
-- **JDK 8 兼容** — 不使用 `var` / text block / records / sealed 等 JDK 9+ 语法
-
----
-
 ## 使用入口
 
 ```java

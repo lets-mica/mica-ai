@@ -224,18 +224,7 @@ mica-ai/
 
 ---
 
-## 🎨 设计原则
-
-- 🎯 **零 Spring 依赖** — 核心模块纯 Java，可在任何 Java 8+ 项目中独立使用
-- 🧱 **Builder 模式** — 所有引擎通过 `XxxConfig.builder()` 链式构造，类型安全、IDE 友好
-- 🪶 **轻量 API** — 引擎实现 `AutoCloseable` / `@PreDestroy`，`try-with-resources` 一行管理资源
-- ⚡ **纯 ONNX Runtime** — 零 PyTorch / 零 PaddlePaddle / 零 Python 进程，JVM 内全栈推理
-- 🌏 **国内友好** — 模型工具链默认走 ModelScope，国内下载速度拉满
-- 🧪 **Bit-exact 优先** — 优先 CPU 一致性测试，需要 GPU 时换 `onnxruntime_gpu` 即可
-
----
-
-## 🛠️ 环境要求
+## 🛠️ 环境和依赖
 
 | 组件 | 版本 | 说明 |
 |------|------|------|
