@@ -44,7 +44,7 @@
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <onnxruntime.version>1.18.0</onnxruntime.version>
         <opencv.version>4.9.0-0</opencv.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.19</slf4j.version>
         <lombok.version>1.18.48</lombok.version>
         <spring-boot.version>2.7.18</spring-boot.version>
         <springdoc.version>1.7.0</springdoc.version>
