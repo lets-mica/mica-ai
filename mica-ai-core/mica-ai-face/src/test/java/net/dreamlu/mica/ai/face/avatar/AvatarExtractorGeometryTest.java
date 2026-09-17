@@ -41,4 +41,24 @@ class AvatarExtractorGeometryTest {
 			assertThat(back[1]).isCloseTo(p[1], EPS_F);
 		}
 	}
+
+	/**
+	 * 窗口边长只能由「检测框长边 × faceScale」决定，与自动摆正走了哪个基数角无关。
+	 *
+	 * <p>回归背景：若把摆正后重检出来的框当作窗口基准，同一张脸的头像大小会随朝向漂移
+	 * （实测横躺身份证 1.6 系数下边长 132 → 156，多出来的部分会框到卡面文字）。
+	 */
+	@Test
+	void windowSideIsIndependentOfCardinalRotation() {
+		FaceBox box = new FaceBox(100f, 100f, 200f, 220f, 0.9f, null);
+		AvatarOptions opts = AvatarOptions.defaults();
+		int side = AvatarExtractor.windowAffine(box, opts).side();
+		assertThat(side).isEqualTo(192);
+		for (int deg : new int[]{90, 180, 270}) {
+			FaceBox rotated = AvatarExtractor.rotateBox(box, deg, 1000, 800);
+			assertThat(AvatarExtractor.windowAffine(rotated, opts).side())
+				.as("rot %d", deg)
+				.isEqualTo(side);
+		}
+	}
 }

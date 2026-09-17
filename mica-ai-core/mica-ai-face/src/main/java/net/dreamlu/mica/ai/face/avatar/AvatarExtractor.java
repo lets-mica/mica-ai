@@ -29,7 +29,24 @@ public class AvatarExtractor {
 
 	private static final int[] CARDINAL = {0, 90, 180, 270};
 	private static final double ORIENT_MARGIN = 0.03;
-	private static final double ORIENT_CROP_FACTOR = 1.6;
+	/**
+	 * 朝向投票裁剪区的<b>半边长</b>倍数：裁剪区边长 = 人脸框长边 × 2 × 该值。
+	 *
+	 * <p>投票只关心「哪个角度更像正立人脸」，裁剪区越小背景干扰越少。取值依据（YuNet 2023mar，
+	 * 身份证横躺 90° 与正立人像两图实测）：收紧到 1.0 后正确角的决策优势从 +0.103 升到 +0.087~0.118，
+	 * 旋转 90/180/270 后的干扰项得分同步下降；再收到 0.8 以下，正确角置信度反而掉到 0.76~0.79。
+	 * 下限为 0.71（裁剪区边长须大于人脸框对角线，否则旋转后人脸会被裁掉，投票失去意义）。
+	 */
+	private static final double ORIENT_CROP_RADIUS = 1.0;
+	/**
+	 * 关键点重检裁剪区的<b>半边长</b>倍数，仅供 {@link #refineLandmarks} 使用。
+	 *
+	 * <p>重检的关键点要喂给 {@code deRotate} 做精修，对关键点精度敏感。实测（同一张身份证照片）：
+	 * 半径 1.6 时重检眼线倾角 -1.43°、产出头像残留倾角 0.0°；收到 1.0 时人脸在 640 输入里被放大到
+	 * 50%，YuNet 关键点出现系统性纵向偏移（测得 -5.02°），deRotate 反而往头像里注入 4.9° 倾斜。
+	 * 故此处保持宽松，与投票半径分离。
+	 */
+	private static final double REFINE_CROP_RADIUS = 1.6;
 	private static final float ORIENT_THRESHOLD = 0.3f;
 
 	private final FaceDetector detector;
@@ -150,6 +167,10 @@ public class AvatarExtractor {
 				rotated = rotateImage(image, rotation);
 				work = rotated;
 				workBox = rotateBox(box, rotation, image.cols(), image.rows());
+				// YuNet 的 bbox 头能容忍平面旋转、关键点头不能：对横躺的人脸，
+				// 初次检测会给出「眼睛水平」的幻觉关键点，直接旋转沿用会让 deRotate 反向旋转。
+				// 图已摆正，重检一次只换关键点，几何仍沿用旋转后的原框。
+				workBox = withLandmarks(workBox, refineLandmarks(work, workBox));
 			}
 
 			Window window = windowAffine(workBox, opts);
@@ -177,26 +198,12 @@ public class AvatarExtractor {
 	}
 
 	private int chooseOrientation(Mat image, FaceBox box, AvatarOptions opts) {
-		double l = Math.max(box.getX2() - box.getX1(), box.getY2() - box.getY1());
-		if (l <= 1) {
-			return 0;
-		}
-		int w = image.cols();
-		int h = image.rows();
-		double half = l * ORIENT_CROP_FACTOR;
-		double cx = (box.getX1() + box.getX2()) / 2.0;
-		double cy = (box.getY1() + box.getY2()) / 2.0;
-		int x1 = (int) Math.max(0, Math.floor(cx - half));
-		int y1 = (int) Math.max(0, Math.floor(cy - half));
-		int x2 = (int) Math.min(w, Math.ceil(cx + half));
-		int y2 = (int) Math.min(h, Math.ceil(cy + half));
-		int cw = x2 - x1;
-		int ch = y2 - y1;
-		if (cw < 16 || ch < 16) {
+		Rect roi = cropAround(image, box, ORIENT_CROP_RADIUS);
+		if (roi == null) {
 			return 0;
 		}
 
-		Mat crop = new Mat(image, new Rect(x1, y1, cw, ch));
+		Mat crop = new Mat(image, roi);
 		try {
 			float baseScore = -1f;
 			float bestScore = -1f;
@@ -206,7 +213,7 @@ public class AvatarExtractor {
 				try {
 					candidate = deg == 0 ? crop : rotateImage(crop, deg);
 					List<FaceBox> found = detector.detect(candidate, ORIENT_THRESHOLD);
-					float top = found.isEmpty() ? -1f : found.get(0).getScore();
+					float top = topScore(found);
 					if (deg == 0) {
 						baseScore = top;
 					}
@@ -230,6 +237,105 @@ public class AvatarExtractor {
 		} finally {
 			crop.release();
 		}
+	}
+
+	/**
+	 * 在已按基数角摆正的图上重新检测，取回与真实朝向一致的关键点。
+	 *
+	 * <p>旋转前的关键点若来自「横躺人脸」的检测，其眼睛连线是模型幻觉出的水平方向，
+	 * 旋转后会让 {@code deRotate} 把已经摆正的人脸再次转横。
+	 *
+	 * <p><b>只取关键点、不取几何</b>：横躺检测的框偏紧，重检框的长边可比它大 ~20%，
+	 * 若拿重检框当窗口基准，同一张脸的头像大小会随朝向漂移（实测 1.6 系数下边长 132 → 156）。
+	 *
+	 * @return 摆正后图上的 5 个关键点；重检失败或检测无关键点时返回 {@code null}
+	 */
+	private float[][] refineLandmarks(Mat work, FaceBox box) {
+		Rect roi = cropAround(work, box, REFINE_CROP_RADIUS);
+		if (roi == null) {
+			return null;
+		}
+		double l = Math.max(box.getX2() - box.getX1(), box.getY2() - box.getY1());
+		double ccx = (box.getX1() + box.getX2()) / 2.0;
+		double ccy = (box.getY1() + box.getY2()) / 2.0;
+		Mat crop = new Mat(work, roi);
+		try {
+			List<FaceBox> found = detector.detect(crop, ORIENT_THRESHOLD);
+			FaceBox best = null;
+			float bestScore = -1f;
+			for (FaceBox b : found) {
+				// 同一个人脸，重检框应与旋转框大致同位，避免误取背景中的其它人脸
+				double bcx = (b.getX1() + b.getX2()) / 2.0 + roi.x;
+				double bcy = (b.getY1() + b.getY2()) / 2.0 + roi.y;
+				if (Math.abs(bcx - ccx) > l || Math.abs(bcy - ccy) > l) {
+					continue;
+				}
+				if (b.getScore() > bestScore) {
+					bestScore = b.getScore();
+					best = b;
+				}
+			}
+			return best == null ? null : offsetLandmarks(best.getLandmarks(), roi.x, roi.y);
+		} finally {
+			crop.release();
+		}
+	}
+
+	/**
+	 * 按人脸框外扩 {@code radius} 倍取检测裁剪区（裁剪区边长 = 2 × radius × 人脸框长边），
+	 * 超出图像边界时回收。
+	 *
+	 * @return 有效裁剪区，人脸框退化或裁剪区过小时返回 {@code null}
+	 */
+	private static Rect cropAround(Mat image, FaceBox box, double radius) {
+		double l = Math.max(box.getX2() - box.getX1(), box.getY2() - box.getY1());
+		if (l <= 1) {
+			return null;
+		}
+		double half = l * radius;
+		double cx = (box.getX1() + box.getX2()) / 2.0;
+		double cy = (box.getY1() + box.getY2()) / 2.0;
+		int x1 = (int) Math.max(0, Math.floor(cx - half));
+		int y1 = (int) Math.max(0, Math.floor(cy - half));
+		int x2 = (int) Math.min(image.cols(), Math.ceil(cx + half));
+		int y2 = (int) Math.min(image.rows(), Math.ceil(cy + half));
+		int cw = x2 - x1;
+		int ch = y2 - y1;
+		if (cw < 16 || ch < 16) {
+			return null;
+		}
+		return new Rect(x1, y1, cw, ch);
+	}
+
+	private static float topScore(List<FaceBox> boxes) {
+		float top = -1f;
+		for (FaceBox b : boxes) {
+			top = Math.max(top, b.getScore());
+		}
+		return top;
+	}
+
+	private static float[][] offsetLandmarks(float[][] lm, int dx, int dy) {
+		if (lm == null) {
+			return null;
+		}
+		float[][] out = new float[lm.length][2];
+		for (int i = 0; i < lm.length; i++) {
+			out[i][0] = lm[i][0] + dx;
+			out[i][1] = lm[i][1] + dy;
+		}
+		return out;
+	}
+
+	/**
+	 * 用给定关键点替换框上的关键点。
+	 *
+	 * <p>{@code lm} 为 {@code null} 表示关键点不可信：宁可只保留基数角矫正（少矫几度），
+	 * 也不让幻觉出的眼线把已摆正的人脸再次转横 90°。
+	 */
+	private static FaceBox withLandmarks(FaceBox box, float[][] lm) {
+		return new FaceBox(box.getX1(), box.getY1(), box.getX2(), box.getY2(),
+			box.getScore(), lm);
 	}
 
 	static Mat rotateImage(Mat src, int degrees) {
