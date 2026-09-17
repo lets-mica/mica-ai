@@ -5,7 +5,7 @@
 ### 让 Java 工程师也能玩转主流 AI 模型 —— **零 Python · 零 PyTorch · 纯 ONNX Runtime**
 
 [![Java](https://img.shields.io/badge/JDK-8%2B-orange?style=flat-square&logo=openjdk)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.x-brightgreen?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.x~4.x-brightgreen?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX%20Runtime-1.18.0-blue?style=flat-square&logo=onnx)](https://onnxruntime.ai/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.9.0-red?style=flat-square&logo=opencv)](https://github.com/openpnp/openpnp-vision)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
@@ -51,41 +51,37 @@
 ### 整体架构
 
 ```
-                        ┌─────────────────────────────────────┐
-                        │           Spring Boot App           │
-                        └──────────────┬──────────────────────┘
-                                       │ @Autowired
-                                       ▼
+                    ┌─────────────────────────────────────┐
+                    │           Spring Boot App           │
+                    └──────────────┬──────────────────────┘
+                                   │ @Autowired / 一行 YAML
+                                   ▼
+        ┌──────────────────────────────────────────────────────┐
+        │                    mica-ai-starters                  │
+        │  face-starter 🎭   filetype-starter 📄  plate-starter 🚗│
+        └──────────────────────────┬───────────────────────────┘
+                                   │
+                                   ▼
+        ┌──────────────────────────────────────────────────────┐
+        │                     mica-ai-core                     │
+        │   mica-ai-face        mica-ai-filetype  mica-ai-plate│
+        │   YuNet + SFace 🎭    Magika 214 类 📄  HyperLPR3 🚗  │
+        │   + 活体 MiniFASNet   + mime / group   + 车牌号 / 颜色│
+        │   + 头像 / 证件卡片                                  │
+        └──────────────────────────┬───────────────────────────┘
+                                   │
+                                   ▼
                           ┌──────────────────────┐
-                          │     mica-ai-face     │
-                          │  人脸识别 🎭         │
-                          │  YuNet + SFace       │
-                          │  + 活体 MiniFASNet   │
-                          │  + 头像 / 证件卡片   │
+                          │    mica-ai-common    │
+                          │  ONNX 通用基础设施    │
+                          │  + 统一异常          │
                           └──────────────────────┘
-                                       │
-                                       ▼
-                          ┌──────────────────────┐    ┌──────────────────────┐
-                          │   mica-ai-filetype   │    │     mica-ai-plate    │
-                          │  文件类型 📄         │    │  中国车牌 🚗          │
-                          │  Magika 214 类       │    │  HyperLPR3           │
-                          └──────────────────────┘    └──────────────────────┘
-                                       │                        │
-                                       └────────────┬───────────┘
-                                                    ▼
-                                       ┌──────────────────────┐
-                                       │    mica-ai-common    │
-                                       │  ONNX 通用基础设施    │
-                                       │  + 统一异常          │
-                                       └──────────────────────┘
 ```
 
-> 📦 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库只保留人脸 + 文件类型识别 + 中国车牌模块：
->
+> 🔌 零 Spring 场景可直接依赖 `mica-ai-core` 各模块，Starter 仅是 Bean 注入的便捷封装；`mica-ai-example` 提供完整集成示例。
+
 > - OCR：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr) — PaddleOCR / PP-OCRv4 的 Java 推理
-> - 语音（ASR / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
->
-> 📌 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），未配置路径时跳过加载；商业落地前请按 `AGENTS.md` §6.1 自查模型许可（当前所有依赖模型均已确认可商用）。
+> - 语音（ASR / TTS / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
 
 ---
 
@@ -223,8 +219,7 @@ mica-ai/
 └── model-tools/                    # 模型资产（直接入库，均 <50MB）
     ├── face/models/                #   YuNet + SFace + MiniFASNetV2
     ├── filetype/models/            #   Magika standard_v3_3
-    ├── plate/models/               #   HyperLPR3 v20230229
-    └── scripts/smoke_test.py       #   离线冒烟：校验目录与 ONNX 完整性
+    └── plate/models/               #   HyperLPR3 v20230229
 ```
 
 ---
