@@ -32,7 +32,6 @@ mica:
       config-path: classpath:mica-ai/models/filetype/standard_v3_3/config.min.json
       content-types-path: classpath:mica-ai/models/filetype/standard_v3_3/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE # HIGH_CONFIDENCE / MEDIUM_CONFIDENCE / BEST_GUESS
-      device: cpu                      # cpu / gpu
       onnx:
         intra-op-num-threads: 0        # 0 = ORT 自适应
         inter-op-num-threads: 0
@@ -47,7 +46,6 @@ mica:
 | `mica.ai.filetype.config-path` | String | classpath | `config.min.json` 路径 |
 | `mica.ai.filetype.content-types-path` | String | classpath | `content_types_kb.min.json` 路径 |
 | `mica.ai.filetype.prediction-mode` | String | `HIGH_CONFIDENCE` | 三种预测模式 |
-| `mica.ai.filetype.device` | String | `cpu` | `cpu` / `gpu`（GPU 需 `onnxruntime_gpu`） |
 | `mica.ai.filetype.onnx.intra-op-num-threads` | int | `0` | ONNX 内部线程 |
 | `mica.ai.filetype.onnx.inter-op-num-threads` | int | `0` | ONNX 交互线程 |
 | `mica.ai.filetype.onnx.cuda-device-id` | int | `0` | CUDA 设备 id |

@@ -35,7 +35,6 @@ mica:
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5
       max-plates: 5
-      device: cpu                                            # cpu / gpu（GPU 需 onnxruntime_gpu）
       onnx:
         intra-op-num-threads: 0                              # 0 = ORT 默认
         inter-op-num-threads: 0
@@ -51,7 +50,6 @@ mica:
 | `detection-confidence-threshold` | `0.25` | 检测置信度阈值 |
 | `detection-nms-threshold` | `0.5` | NMS IoU 阈值 |
 | `max-plates` | `5` | 单图最多返回车牌数 |
-| `device` | `cpu` | `cpu` / `gpu` |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 

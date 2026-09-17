@@ -33,7 +33,6 @@ mica:
         crop-scale: 2.7
       verify:
         threshold: 0.35
-      device: cpu
     # ============================================================
     #  📄 Filetype —— Google Magika standard_v3_3（Apache-2.0）
     #  路径留空走 classpath: mica-ai/models/filetype/standard_v3_3/*
@@ -45,7 +44,6 @@ mica:
       config-path: model-tools/filetype/models/config.min.json
       content-types-path: model-tools/filetype/models/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE
-      device: cpu
     # ============================================================
     #  🚗 Plate —— HyperLPR3 v20230229（Apache-2.0）
     #  模型路径未配置时启动失败；模型已入库，见 model-tools/plate/models/
@@ -59,7 +57,6 @@ mica:
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5
       max-plates: 5
-      device: cpu
 
 logging:
   level:

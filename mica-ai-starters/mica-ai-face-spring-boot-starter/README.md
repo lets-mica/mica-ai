@@ -27,7 +27,6 @@ mica:
   ai:
     face:
       enabled: true                       # 总开关，默认 true
-      device: cpu                         # cpu / gpu（GPU 需 onnxruntime_gpu）
       detection:
         model-path: classpath:models/face_detection_yunet_2023mar.onnx   # 必填
         threshold: 0.9                    # 检测置信度阈值
@@ -53,7 +52,6 @@ mica:
 | 配置 | 默认 | 说明 |
 |------|------|------|
 | `mica.ai.face.enabled` | `true` | 总开关 |
-| `mica.ai.face.device` | `cpu` | `cpu` / `gpu` |
 | `mica.ai.face.detection.model-path` | — | YuNet 路径（必填，支持 `classpath:`） |
 | `mica.ai.face.detection.threshold` | `0.6` | 检测置信度阈值 |
 | `mica.ai.face.detection.nms-threshold` | `0.3` | NMS IoU 阈值 |
