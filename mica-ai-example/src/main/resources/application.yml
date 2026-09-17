@@ -9,10 +9,6 @@ spring:
       enabled: true
       max-file-size: 50MB
       max-request-size: 100MB
-    encoding:
-      force: true
-      enabled: true
-      charset: UTF-8
 
 mica:
   ai:
@@ -23,11 +19,11 @@ mica:
     face:
       model:
         detection:
-          path: classpath:models/face_detection_yunet_2023mar.onnx
+          path: ../model-tools/face/models/face_detection_yunet_2023mar.onnx
         recognition:
-          path: classpath:models/face_recognition_sface_2021dec.onnx
+          path: ../model-tools/face/models/face_recognition_sface_2021dec.onnx
         liveness:
-          path: classpath:models/2.7_80x80_MiniFASNetV2.onnx
+          path: ../model-tools/face/models/2.7_80x80_MiniFASNetV2.onnx
       detection:
         threshold: 0.9
         nms-threshold: 0.3
@@ -45,6 +41,9 @@ mica:
     # ============================================================
     filetype:
       model-version: standard_v3_3
+      model-path: ../model-tools/filetype/models/model.onnx
+      config-path: ../model-tools/filetype/models/config.min.json
+      content-types-path: ../model-tools/filetype/models/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE
       device: cpu
     # ============================================================
@@ -53,9 +52,9 @@ mica:
     # ============================================================
     plate:
       model-version: "20230229"
-      detection-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/y5fu_320x_sim.onnx
-      recognition-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/rpv3_mdict_160_r3.onnx
-      classification-model-path: E:/codes/ai/mica-ai/model-tools/plate/models/litemodel_cls_96x_r1.onnx
+      detection-model-path: ../model-tools/plate/models/y5fu_320x_sim.onnx
+      recognition-model-path: ../model-tools/plate/models/rpv3_mdict_160_r3.onnx
+      classification-model-path: ../model-tools/plate/models/litemodel_cls_96x_r1.onnx
       detection-input-size: 320
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5

@@ -15,6 +15,8 @@ import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +54,7 @@ public class ContentTypeRegistry {
 				return load(bytes);
 			}
 			log.info("加载 content types 知识库: {}", path);
-			try (InputStream in = new FileInputStream(path)) {
+			try (InputStream in = Files.newInputStream(Paths.get(path))) {
 				return load(in);
 			}
 		} catch (IOException e) {
@@ -128,7 +130,7 @@ public class ContentTypeRegistry {
 		info.setMimeType(OCTET_STREAM);
 		info.setGroup(GROUP_UNKNOWN);
 		info.setDescription(ContentTypeLabel.UNKNOWN);
-		info.setExtensions(Collections.<String>emptyList());
+		info.setExtensions(Collections.emptyList());
 		info.setText(false);
 		return info;
 	}

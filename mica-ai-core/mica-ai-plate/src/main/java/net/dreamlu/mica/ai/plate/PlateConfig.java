@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
+import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
 
 @Data
 @Builder
@@ -59,29 +60,6 @@ public class PlateConfig {
         if (maxPlates <= 0) {
             throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
                 "maxPlates 必须为正数");
-        }
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class OnnxOptions {
-
-        @Builder.Default
-        private int intraOpNumThreads = 0;
-
-        @Builder.Default
-        private int interOpNumThreads = 0;
-
-        @Builder.Default
-        private boolean gpu = false;
-
-        @Builder.Default
-        private int cudaDeviceId = 0;
-
-        public static OnnxOptions defaults() {
-            return OnnxOptions.builder().build();
         }
     }
 }

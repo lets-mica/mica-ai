@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.plate.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
 import net.dreamlu.mica.ai.plate.PlateConfig;
 import net.dreamlu.mica.ai.plate.pipeline.PlatePipeline;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,7 +39,7 @@ public class PlateAutoConfiguration {
             .detectionConfidenceThreshold(properties.getDetectionConfidenceThreshold())
             .detectionNmsThreshold(properties.getDetectionNmsThreshold())
             .maxPlates(properties.getMaxPlates())
-            .onnx(PlateConfig.OnnxOptions.builder()
+            .onnx(OnnxOptions.builder()
                 .intraOpNumThreads(properties.getOnnx().getIntraOpNumThreads())
                 .interOpNumThreads(properties.getOnnx().getInterOpNumThreads())
                 .gpu("gpu".equalsIgnoreCase(properties.getDevice()))

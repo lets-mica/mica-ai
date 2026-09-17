@@ -10,8 +10,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
+import net.dreamlu.mica.ai.common.util.IOUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
@@ -96,22 +96,12 @@ public class OnnxModelSession {
 					ErrorCode.NOT_FOUND,
 					"classpath 资源未找到: " + resourcePath);
 			}
-			return readAllBytes(in);
+			return IOUtil.readAllBytes(in);
 		} catch (IOException e) {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED,
 				"读取 classpath 资源失败: " + resourcePath, e);
 		}
-	}
-
-	private static byte[] readAllBytes(InputStream in) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(64, in.available()));
-		byte[] buf = new byte[8192];
-		int n;
-		while ((n = in.read(buf)) != -1) {
-			out.write(buf, 0, n);
-		}
-		return out.toByteArray();
 	}
 
 	public void close() {

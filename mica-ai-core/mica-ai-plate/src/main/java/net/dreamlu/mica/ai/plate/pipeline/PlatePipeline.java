@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
+import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
 import net.dreamlu.mica.ai.plate.PlateConfig;
 import net.dreamlu.mica.ai.plate.alignment.PlateAligner;
 import net.dreamlu.mica.ai.plate.detection.PlateDetector;
@@ -71,7 +72,7 @@ public class PlatePipeline implements AutoCloseable {
         return new PlatePipeline(PlateConfig.builder().build());
     }
 
-    private static OrtSession.SessionOptions buildSessionOptions(PlateConfig.OnnxOptions onnx) {
+    private static OrtSession.SessionOptions buildSessionOptions(OnnxOptions onnx) {
         OrtSession.SessionOptions so = new OrtSession.SessionOptions();
         try {
             if (onnx != null) {

@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
+import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
+import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
 import net.dreamlu.mica.ai.filetype.config.ModelConfig;
 import net.dreamlu.mica.ai.filetype.feature.FeaturesExtractor;
@@ -22,7 +24,6 @@ import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;
 import net.dreamlu.mica.ai.filetype.model.FiletypeResult;
 import net.dreamlu.mica.ai.filetype.postprocess.PredictionPostProcessor;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -55,9 +56,6 @@ import java.util.Objects;
 public class FiletypeDetector implements AutoCloseable {
 
 	private static final String DEFAULT_MODEL_VERSION = "standard_v3_3";
-	private static final String MODEL_RESOURCE = "mica-ai/models/filetype/%s/model.onnx";
-	private static final String CONFIG_RESOURCE = "mica-ai/models/filetype/%s/config.min.json";
-	private static final String KB_RESOURCE = "mica-ai/models/filetype/%s/content_types_kb.min.json";
 
 	private final OrtEnvironment environment;
 	private final OnnxModelSession modelSession;
@@ -79,11 +77,11 @@ public class FiletypeDetector implements AutoCloseable {
 		this.environment = OrtEnvironment.getEnvironment();
 		this.sessionOptions = buildSessionOptions(config.getOnnx());
 		this.modelSession = new OnnxModelSession(
-			environment, resolveResource(config.getModelPath(), MODEL_RESOURCE, version),
+			environment, config.resolveModelPath(),
 			sessionOptions, "filetype");
-		this.modelConfig = loadModelConfig(resolveResource(config.getConfigPath(), CONFIG_RESOURCE, version));
+		this.modelConfig = loadModelConfig(config.resolveConfigPath());
 		this.contentTypeRegistry = ContentTypeRegistry.load(
-			resolveResource(config.getContentTypesPath(), KB_RESOURCE, version));
+			config.resolveContentTypesPath());
 		this.postProcessor = new PredictionPostProcessor(modelConfig, contentTypeRegistry, predictionMode);
 		this.inputName = modelSession.getSession().getInputNames().iterator().next();
 		log.info("mica-ai-filetype 初始化完成: version={} labels={} features={}",
@@ -147,7 +145,7 @@ public class FiletypeDetector implements AutoCloseable {
 	public FiletypeResult detectStream(InputStream stream) {
 		Objects.requireNonNull(stream, "InputStream must not be null");
 		try {
-			return detectBytes(readAll(stream));
+			return detectBytes(IOUtil.readAllBytes(stream));
 		} catch (IOException e) {
 			throw new MicaAiException(
 				ErrorCode.INFERENCE_FAILED, "读取输入流失败", e);
@@ -256,13 +254,6 @@ public class FiletypeDetector implements AutoCloseable {
 		return version == null || version.isEmpty() ? DEFAULT_MODEL_VERSION : version;
 	}
 
-	private static String resolveResource(String explicit, String resourceTemplate, String version) {
-		if (explicit != null && !explicit.isEmpty()) {
-			return explicit;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX + String.format(resourceTemplate, version);
-	}
-
 	private static ModelConfig loadModelConfig(String path) {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -279,8 +270,8 @@ public class FiletypeDetector implements AutoCloseable {
 		}
 	}
 
-	private static OrtSession.SessionOptions buildSessionOptions(FiletypeConfig.OnnxOptions options) {
-		FiletypeConfig.OnnxOptions opts = options != null ? options : FiletypeConfig.OnnxOptions.defaults();
+	private static OrtSession.SessionOptions buildSessionOptions(OnnxOptions options) {
+		OnnxOptions opts = options != null ? options : OnnxOptions.defaults();
 		OrtSession.SessionOptions so = new OrtSession.SessionOptions();
 		try {
 			if (opts.getIntraOpNumThreads() > 0) {
@@ -306,16 +297,6 @@ public class FiletypeDetector implements AutoCloseable {
 			}
 		}
 		return so;
-	}
-
-	private static byte[] readAll(InputStream in) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(64, in.available()));
-		byte[] buf = new byte[8192];
-		int n;
-		while ((n = in.read(buf)) != -1) {
-			out.write(buf, 0, n);
-		}
-		return out.toByteArray();
 	}
 
 	@Override

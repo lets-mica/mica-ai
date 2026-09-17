@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.filetype.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.onnx.OnnxOptions;
 import net.dreamlu.mica.ai.filetype.FiletypeConfig;
 import net.dreamlu.mica.ai.filetype.FiletypeDetector;
 import net.dreamlu.mica.ai.filetype.PredictionMode;
@@ -36,7 +37,7 @@ public class FiletypeAutoConfiguration {
 			.configPath(properties.getConfigPath())
 			.contentTypesPath(properties.getContentTypesPath())
 			.predictionMode(parseMode(properties.getPredictionMode()))
-			.onnx(FiletypeConfig.OnnxOptions.builder()
+			.onnx(OnnxOptions.builder()
 				.intraOpNumThreads(properties.getOnnx().getIntraOpNumThreads())
 				.interOpNumThreads(properties.getOnnx().getInterOpNumThreads())
 				.gpu("gpu".equalsIgnoreCase(properties.getDevice()))
