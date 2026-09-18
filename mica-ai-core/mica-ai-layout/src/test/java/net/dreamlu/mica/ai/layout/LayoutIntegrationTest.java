@@ -116,9 +116,18 @@ class LayoutIntegrationTest {
 			assertThat(b[3]).isLessThanOrEqualTo(imageH);
 			assertThat(b[2]).isGreaterThan(b[0]);
 			assertThat(b[3]).isGreaterThan(b[1]);
-			assertThat(r.getReadingOrder()).isGreaterThanOrEqualTo(0);
+			// 对齐 PaddleX：跳过类为 -1（不占号），其余从 1 起
+			if (r.getLabel().isSkipOrder()) {
+				assertThat(r.getReadingOrder())
+					.as("跳过类 %s 不应参与阅读顺序编号", r.getLabelCode())
+					.isEqualTo(LayoutResult.NO_READING_ORDER);
+			} else {
+				assertThat(r.getReadingOrder()).isGreaterThanOrEqualTo(1);
+			}
 		});
-		assertThat(out).extracting(LayoutResult::getReadingOrder).doesNotHaveDuplicates();
+		// 参与编号的区域必须连续且不重复（PaddleX 的 1..N）
+		assertThat(out).filteredOn(r -> r.getReadingOrder() > 0)
+			.extracting(LayoutResult::getReadingOrder).doesNotHaveDuplicates();
 	}
 
 	@Test
@@ -155,14 +164,17 @@ class LayoutIntegrationTest {
 	}
 
 	/**
-	 * 可选：用外部真实文档图核对 {@code letterboxScale != 1} 的分支（demo.png 是 800×800 正方形，
-	 * 缩放比恒为 1，覆盖不到非等比反算）。通过系统属性 {@code mica.ai.layout.test.image}
+	 * 真实文档图回归（阈值标定的落地断言）。通过系统属性 {@code mica.ai.layout.test.image}
 	 * 指定图片路径；未指定时跳过，因此不会让 CI 依赖外部资源。
 	 *
 	 * <pre>
 	 * sh mvnc.sh -o -pl mica-ai-core/mica-ai-layout test \
 	 *     -Dmica.ai.layout.test.image=E:/tmp/layout_demo.jpg
 	 * </pre>
+	 *
+	 * <p>为什么需要它：{@code demo.png} 只有 1 个区域、分数 0.437 勉强过阈值，
+	 * 且是 800×800 正方形（letterbox 缩放比恒为 1）⇒ 覆盖不到真实文档的多区域、
+	 * 非等比反算、分数长尾三种情况。标定结论见 {@code LayoutConfig#getScoreRatio()}。
 	 */
 	@Test
 	void externalDocumentImageShouldDetectMultipleRegions() throws Exception {
@@ -179,7 +191,45 @@ class LayoutIntegrationTest {
 		}
 		assertThat(out.size()).as("真实文档图应检出多个版面区域").isGreaterThan(3);
 		assertThat(out.get(0).getScore()).isGreaterThan(0.8f);
-		assertThat(out).extracting(LayoutResult::getReadingOrder).doesNotHaveDuplicates();
+		// 真实文档图上应当同时出现「参与编号」与「跳过编号」两类区域
+		assertThat(out).anyMatch(r -> r.getReadingOrder() > 0);
+		assertThat(out).filteredOn(r -> r.getReadingOrder() > 0)
+			.extracting(LayoutResult::getReadingOrder).doesNotHaveDuplicates();
+	}
+
+	/**
+	 * 真实文档图上的相对阈值回归：开启 {@code scoreRatio} 后，参与编号的区域
+	 * 必须连续 1..N（无空洞）—— 这是「丢弃长尾误检」的直接可观测后果。
+	 *
+	 * <p>标定依据（官方 demo 1654×2339 实测）：真实内容区分数 0.69–0.94，
+	 * 长尾误检 0.518 / 0.437；{@code scoreRatio=0.6} 时阈值 0.567，
+	 * 恰好切在分数悬崖处，保留 12 个区域且编号连续。
+	 */
+	@Test
+	void scoreRatioShouldProduceContiguousReadingOrder() throws Exception {
+		String path = System.getProperty("mica.ai.layout.test.image");
+		org.junit.jupiter.api.Assumptions.assumeTrue(
+			path != null && Files.exists(Paths.get(path)),
+			"未提供 mica.ai.layout.test.image，跳过相对阈值回归");
+		LayoutConfig config = LayoutConfig.builder()
+			.modelPath(modelPath.toString())
+			.scoreRatio(0.6f)
+			.build();
+		try (LayoutPipeline calibrated = LayoutPipeline.create(config)) {
+			List<LayoutResult> out = calibrated.detectBytes(Files.readAllBytes(Paths.get(path)));
+			List<Integer> ordered = new java.util.ArrayList<>();
+			for (LayoutResult r : out) {
+				if (r.getReadingOrder() > 0) {
+					ordered.add(r.getReadingOrder());
+				}
+			}
+			java.util.Collections.sort(ordered);
+			System.out.println("=== scoreRatio=0.6 参与编号区域: " + ordered + " ===");
+			assertThat(ordered).as("阅读顺序编号必须从 1 开始连续无空洞").isNotEmpty();
+			for (int i = 0; i < ordered.size(); i++) {
+				assertThat(ordered.get(i)).isEqualTo(i + 1);
+			}
+		}
 	}
 
 	private static byte[] readResource(String name) throws Exception {

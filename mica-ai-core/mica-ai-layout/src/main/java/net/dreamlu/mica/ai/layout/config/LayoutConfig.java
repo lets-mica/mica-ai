@@ -26,6 +26,7 @@ import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * PP-DocLayoutV2 / V3 版面分析配置（模型路径、letterbox 尺寸、阈值、NMS 等）。
@@ -61,6 +62,18 @@ public class LayoutConfig {
 	private float scoreThreshold = 0.4f;
 
 	/**
+	 * 相对阈值系数（相对 top1 分数的下限），0 表示不启用。
+	 *
+	 * <p>启用后有效阈值为 {@code max(scoreThreshold, top1Score * scoreRatio)}，
+	 * 用于抑制「同一页内分数悬崖下方的长尾误检」。实测（官方 demo 1654×2339）：
+	 * 真实内容区分数 0.69–0.94，而 0.4370 / 0.5182 是跨页长条误检；
+	 * 同时单列裁剪图整体分数仅 ~0.31–0.37，纯绝对阈值无法同时兼顾两者。
+	 * 取 {@code 0.6} 时四种缩放 / 裁剪变体均能完整保留真实内容并丢弃长尾。
+	 */
+	@Builder.Default
+	private float scoreRatio = 0f;
+
+	/**
 	 * per-class 阈值；null 表示全部走 scoreThreshold
 	 */
 	@Builder.Default
@@ -86,6 +99,18 @@ public class LayoutConfig {
 
 	@Builder.Default
 	private int maxDetections = 100;
+
+	/**
+	 * 不参与阅读顺序编号的标签名单，默认对齐 PaddleX
+	 * {@code LayoutAnalysisProcess.SKIP_ORDER_LABELS}（11 类）。
+	 *
+	 * <p>语义同 PaddleX：名单内的区域 {@code readingOrder} 固定为
+	 * {@link net.dreamlu.mica.ai.layout.model.LayoutResult#NO_READING_ORDER}，
+	 * 且**不占用编号**；其余区域从 1 开始连续编号。
+	 * 传空集合表示「所有类别都参与编号」。
+	 */
+	@Builder.Default
+	private Set<LayoutLabel> skipOrderLabels = LayoutLabel.defaultSkipOrderLabels();
 
 	@Builder.Default
 	private float[] mean = new float[]{0.8286f, 0.8281f, 0.8282f};
@@ -113,6 +138,10 @@ public class LayoutConfig {
 		if (scoreThreshold < 0f || scoreThreshold > 1f) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
 				"scoreThreshold 必须在 [0,1]");
+		}
+		if (scoreRatio < 0f || scoreRatio > 1f) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"scoreRatio 必须在 [0,1]");
 		}
 		if (maxDetections <= 0) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
@@ -154,6 +183,16 @@ public class LayoutConfig {
 	public float thresholdFor(int classIndex) {
 		Float v = classScoreThresholds == null ? null : classScoreThresholds.get(classIndex);
 		return v == null ? scoreThreshold : v;
+	}
+
+	/**
+	 * 判断某标签是否不参与阅读顺序编号。
+	 *
+	 * @param label 版面标签；为 {@code null} 时参与编号
+	 * @return 在 {@link #skipOrderLabels} 名单内返回 {@code true}
+	 */
+	public boolean isSkipOrderLabel(LayoutLabel label) {
+		return label != null && skipOrderLabels != null && skipOrderLabels.contains(label);
 	}
 
 	/**

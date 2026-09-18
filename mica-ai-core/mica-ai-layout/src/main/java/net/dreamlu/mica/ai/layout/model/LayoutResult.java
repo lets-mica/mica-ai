@@ -26,9 +26,12 @@ import java.util.List;
  * 单个版面区域的推理结果。
  *
  * <p>{@code boundingBox} 为原图坐标系下的 {@code [x1, y1, x2, y2]}
- * （已反 letterbox、已过滤、已 clip）；{@code score} 为该类的置信度；
- * {@code readingOrder} 由模型输出第 7 列（order 键）升序解码，0 = 最先读，
- * {@link #READING_ORDER_NONE} 表示模型未给出该列。
+ * （已反 letterbox、已过滤、已 clip）；{@code score} 为该类的置信度。
+ *
+ * <p>{@code readingOrder} 对齐 PaddleX {@code order} 字段语义：
+ * <b>从 1 开始</b>顺序编号，且 {@link LayoutLabel#isSkipOrder() 跳过类}
+ * （页眉页脚 / 图片 / 表格 / 图标题等 11 类）**不占用编号**、固定为
+ * {@link #NO_READING_ORDER}。
  */
 @Data
 @NoArgsConstructor
@@ -53,7 +56,16 @@ public class LayoutResult {
 	}
 
 	/**
-	 * 阅读顺序缺失时 readingOrder 字段的占位值。
+	 * 「无阅读顺序」占位值（对齐 PaddleX {@code order = None}）。
+	 *
+	 * <p>两种情况取该值，调用方**无需区分**（都是「该项不属于线性阅读序列」）：
+	 * <ul>
+	 *   <li>标签在 {@code skipOrderLabels} 名单内（页眉页脚 / 图片 / 表格 / 图标题等）</li>
+	 *   <li>模型未输出 order 列（V2 模型，或导出形态变化）</li>
+	 * </ul>
+	 *
+	 * <p>区分方式：{@code LayoutResult.getLabel().isSkipOrder()} 为真即属第一种；
+	 * 整张图所有项都为该值则说明是第二种。
 	 */
-	public static final int READING_ORDER_NONE = -1;
+	public static final int NO_READING_ORDER = -1;
 }

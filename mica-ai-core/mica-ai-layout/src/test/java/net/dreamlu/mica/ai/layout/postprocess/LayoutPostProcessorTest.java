@@ -129,12 +129,13 @@ class LayoutPostProcessorTest {
 		float[][] boxes = new float[][]{
 			box(LayoutLabel.PARAGRAPH_TITLE, 0.9f, 0f, 0f, 100f, 50f, 30f),
 			box(LayoutLabel.TEXT, 0.85f, 0f, 100f, 100f, 150f, 10f),
-			box(LayoutLabel.TABLE, 0.8f, 0f, 200f, 100f, 250f, 20f)
+			box(LayoutLabel.CONTENT, 0.8f, 0f, 200f, 100f, 250f, 20f)
 		};
 		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
-		// 输出按 score 降序：[PARAGRAPH_TITLE, TEXT, TABLE]
+		// 输出按 score 降序：[PARAGRAPH_TITLE, TEXT, CONTENT]
+		// order 键 TEXT(10) < CONTENT(20) < PARAGRAPH_TITLE(30) ⇒ 1-based 编号 1/2/3
 		assertThat(out).extracting(LayoutResult::getReadingOrder)
-			.containsExactly(2, 0, 1);
+			.containsExactly(3, 1, 2);
 	}
 
 	@Test
@@ -142,15 +143,48 @@ class LayoutPostProcessorTest {
 		LayoutPostProcessor pp = new LayoutPostProcessor(LayoutConfig.builder().build());
 		float[][] boxes = new float[][]{
 			box(LayoutLabel.TEXT, 0.6f, 0f, 0f, 100f, 50f, 5f),
-			box(LayoutLabel.TABLE, 0.9f, 0f, 100f, 100f, 150f, 5f)
+			box(LayoutLabel.CONTENT, 0.9f, 0f, 100f, 100f, 150f, 5f)
 		};
 		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
-		// 输出按 score 降序 [TABLE, TEXT]；order 键相同 ⇒ 高分先读 ⇒ rank 0 / 1
-		assertThat(out).extracting(LayoutResult::getReadingOrder).containsExactly(0, 1);
+		// 输出按 score 降序 [CONTENT, TEXT]；order 键相同 ⇒ 高分先读 ⇒ 1 / 2
+		assertThat(out).extracting(LayoutResult::getReadingOrder).containsExactly(1, 2);
 	}
 
 	@Test
-	void shouldReturnNoneReadingOrderWhenOrderColumnMissing() {
+	void shouldSkipOrderLabelsWithoutConsumingIndex() {
+		LayoutPostProcessor pp = new LayoutPostProcessor(LayoutConfig.builder().build());
+		float[][] boxes = new float[][]{
+			box(LayoutLabel.DOC_TITLE, 0.9f, 0f, 0f, 400f, 50f, 1f),
+			box(LayoutLabel.TABLE, 0.85f, 0f, 100f, 400f, 300f, 2f),
+			box(LayoutLabel.TEXT, 0.8f, 0f, 350f, 400f, 450f, 3f),
+			box(LayoutLabel.IMAGE, 0.75f, 0f, 500f, 400f, 700f, 4f),
+			box(LayoutLabel.CONTENT, 0.7f, 0f, 750f, 400f, 850f, 5f)
+		};
+		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 1000);
+		// TABLE / IMAGE 在 PaddleX SKIP_ORDER_LABELS 内 ⇒ 不占号，固定 -1
+		// DOC_TITLE / TEXT / CONTENT 依次得 1 / 2 / 3
+		assertThat(out).extracting(LayoutResult::getReadingOrder)
+			.containsExactly(1, LayoutResult.NO_READING_ORDER, 2,
+				LayoutResult.NO_READING_ORDER, 3);
+	}
+
+	@Test
+	void shouldTreatAllLabelsAsOrderedWhenSkipListEmpty() {
+		LayoutConfig config = LayoutConfig.builder()
+			.skipOrderLabels(java.util.Collections.<LayoutLabel>emptySet())
+			.build();
+		LayoutPostProcessor pp = new LayoutPostProcessor(config);
+		float[][] boxes = new float[][]{
+			box(LayoutLabel.TABLE, 0.9f, 0f, 0f, 400f, 300f, 1f),
+			box(LayoutLabel.TEXT, 0.8f, 0f, 350f, 400f, 450f, 2f)
+		};
+		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
+		// 空名单 ⇒ 全部参与编号
+		assertThat(out).extracting(LayoutResult::getReadingOrder).containsExactly(1, 2);
+	}
+
+	@Test
+	void shouldDegradeToScoreOrderWhenOrderColumnMissing() {
 		LayoutPostProcessor pp = new LayoutPostProcessor(LayoutConfig.builder().build());
 		float[][] boxes = new float[][]{
 			{LayoutLabel.TEXT.getIndex(), 0.9f, 0f, 0f, 100f, 50f},
@@ -158,8 +192,9 @@ class LayoutPostProcessorTest {
 		};
 		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
 		assertThat(out).hasSize(2);
+		// 缺 order 列 ⇒ 退化为按 score 降序的 1-based rank；TABLE 仍是跳过类 ⇒ -1
 		assertThat(out).extracting(LayoutResult::getReadingOrder)
-			.containsOnly(LayoutResult.READING_ORDER_NONE);
+			.containsExactly(1, LayoutResult.NO_READING_ORDER);
 	}
 
 	@Test
@@ -187,6 +222,54 @@ class LayoutPostProcessorTest {
 		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
 		assertThat(out).hasSize(1);
 		assertThat(Arrays.toString(out.get(0).getBoundingBox())).isEqualTo("[0, 0, 100, 100]");
+	}
+
+	@Test
+	void shouldApplyRelativeFloorAgainstTop1Score() {
+		LayoutConfig config = LayoutConfig.builder()
+			.scoreThreshold(0.2f)
+			.scoreRatio(0.6f)
+			.build();
+		LayoutPostProcessor pp = new LayoutPostProcessor(config);
+		// top1 = 0.90 ⇒ 相对下限 0.54；0.50 应被丢弃、0.60 应保留
+		float[][] boxes = new float[][]{
+			box(LayoutLabel.TEXT, 0.90f, 0f, 0f, 100f, 50f, 1f),
+			box(LayoutLabel.TEXT, 0.60f, 0f, 100f, 100f, 150f, 2f),
+			box(LayoutLabel.TEXT, 0.50f, 0f, 200f, 100f, 250f, 3f)
+		};
+		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
+		assertThat(out).extracting(LayoutResult::getScore).containsExactly(0.90f, 0.60f);
+	}
+
+	@Test
+	void shouldNotApplyRelativeFloorWhenDisabled() {
+		LayoutConfig config = LayoutConfig.builder()
+			.scoreThreshold(0.2f)
+			.scoreRatio(0f)
+			.build();
+		LayoutPostProcessor pp = new LayoutPostProcessor(config);
+		float[][] boxes = new float[][]{
+			box(LayoutLabel.TEXT, 0.90f, 0f, 0f, 100f, 50f, 1f),
+			box(LayoutLabel.TEXT, 0.50f, 0f, 200f, 100f, 250f, 3f)
+		};
+		// scoreRatio=0 ⇒ 只走绝对阈值 0.2，低分框保留
+		assertThat(pp.postProcess(boxes, 1d, 0, 0, 500, 500)).hasSize(2);
+	}
+
+	@Test
+	void shouldLetAbsoluteThresholdWinOverRelativeFloor() {
+		LayoutConfig config = LayoutConfig.builder()
+			.scoreThreshold(0.8f)
+			.scoreRatio(0.5f)
+			.build();
+		LayoutPostProcessor pp = new LayoutPostProcessor(config);
+		// top1=0.9 ⇒ 相对下限 0.45，但绝对阈值 0.8 更高 ⇒ 取 0.8
+		float[][] boxes = new float[][]{
+			box(LayoutLabel.TEXT, 0.90f, 0f, 0f, 100f, 50f, 1f),
+			box(LayoutLabel.TEXT, 0.70f, 0f, 100f, 100f, 150f, 2f)
+		};
+		List<LayoutResult> out = pp.postProcess(boxes, 1d, 0, 0, 500, 500);
+		assertThat(out).extracting(LayoutResult::getScore).containsExactly(0.90f);
 	}
 
 	@Test

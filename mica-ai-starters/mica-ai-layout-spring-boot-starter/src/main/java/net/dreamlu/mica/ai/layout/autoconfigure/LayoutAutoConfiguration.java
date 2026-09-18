@@ -16,7 +16,10 @@
 package net.dreamlu.mica.ai.layout.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.common.exception.ErrorCode;
+import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.layout.config.LayoutConfig;
+import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 import net.dreamlu.mica.ai.layout.pipeline.LayoutPipeline;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,6 +27,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * mica-ai-layout Spring Boot 自动装配（基于 mica-auto）。
@@ -49,15 +56,43 @@ public class LayoutAutoConfiguration {
 			.modelPath(properties.getModelPath())
 			.maxSideLength(properties.getMaxSideLength())
 			.scoreThreshold(properties.getScoreThreshold())
+			.scoreRatio(properties.getScoreRatio())
 			.classScoreThresholds(properties.getClassScoreThresholds())
 			.layoutNms(properties.isLayoutNms())
 			.nmsThreshold(properties.getNmsThreshold())
 			.nmsDiffClassThreshold(properties.getNmsDiffClassThreshold())
 			.maxDetections(properties.getMaxDetections())
+			.skipOrderLabels(resolveSkipOrderLabels(properties.getSkipOrderLabels()))
 			.mean(properties.getMean())
 			.std(properties.getStd())
 			.onnx(properties.getOnnx())
 			.build();
 		return LayoutPipeline.create(config);
+	}
+
+	/**
+	 * 把配置里的标签 code 列表解析为 {@link LayoutLabel} 集合。
+	 *
+	 * <p>未配置（{@code null}）时使用 PaddleX 默认名单；显式配置空列表表示
+	 * 「所有类别都参与阅读顺序编号」。遇到未识别的 code 直接 fail-fast，
+	 * 避免拼错的标签名静默失效。
+	 *
+	 * @param codes 配置的标签 code 列表；{@code null} 表示走默认名单
+	 * @return 解析后的标签集合
+	 */
+	static Set<LayoutLabel> resolveSkipOrderLabels(List<String> codes) {
+		if (codes == null) {
+			return LayoutLabel.defaultSkipOrderLabels();
+		}
+		Set<LayoutLabel> set = new LinkedHashSet<>(codes.size());
+		for (String code : codes) {
+			LayoutLabel label = LayoutLabel.of(code);
+			if (label == null) {
+				throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+					"mica.ai.layout.skip-order-labels 含未识别的标签 code: " + code);
+			}
+			set.add(label);
+		}
+		return set;
 	}
 }

@@ -40,7 +40,8 @@ import java.util.List;
  *   <li>per-class 阈值过滤（{@link LayoutConfig#thresholdFor(int)}）</li>
  *   <li>NMS：同类 IoU &gt; {@code nmsThreshold}、异类 IoU &gt; {@code nmsDiffClassThreshold} 才互斥</li>
  *   <li>整页 {@code image} 伪框过滤（面积占比超 0.82 / 0.93 的整页图丢弃）</li>
- *   <li>{@code maxDetections} 截断 + reading order rank 解码</li>
+ *   <li>{@code maxDetections} 截断 + reading order 编号（跳过类不占号，见
+ *       {@link #decodeReadingOrder(java.util.List)}）</li>
  * </ol>
  */
 public class LayoutPostProcessor {
@@ -72,7 +73,7 @@ public class LayoutPostProcessor {
 	 * 把模型原始输出后处理为 {@link LayoutResult} 列表。
 	 *
 	 * <p>处理链路：反 letterbox → per-class 阈值 → NMS → 整页 {@code image} 伪框过滤 →
-	 * {@code maxDetections} 截断 → reading order rank。
+	 * {@code maxDetections} 截断 → reading order 编号。
 	 *
 	 * @param boxes          模型原始输出 {@code [N, 7]}，letterbox 画布坐标
 	 * @param letterboxScale letterbox 缩放比（= 输入边长 / 原图边长）
@@ -80,7 +81,8 @@ public class LayoutPostProcessor {
 	 * @param padTop         letterbox 上补边
 	 * @param origW          原图宽
 	 * @param origH          原图高
-	 * @return 按 {@code LayoutResult#getReadingOrder()} 升序排列的版面区域列表
+	 * @return 按 score 降序排列的版面区域列表；每项的 {@code readingOrder} 为对齐 PaddleX 的
+	 *         1-based 顺序编号（跳过类为 {@link LayoutResult#NO_READING_ORDER}）
 	 */
 	public List<LayoutResult> postProcess(float[][] boxes, double letterboxScale,
 										  int padLeft, int padTop,
@@ -89,9 +91,21 @@ public class LayoutPostProcessor {
 			return LayoutResult.emptyList();
 		}
 		double scale = letterboxScale > 0 ? letterboxScale : 1d;
+		float top1Score = 0f;
+		if (config.getScoreRatio() > 0f) {
+			for (float[] row : boxes) {
+				if (row != null && row.length >= MIN_COLUMNS) {
+					float s = row[COL_SCORE];
+					if (!Float.isNaN(s) && s > top1Score) {
+						top1Score = s;
+					}
+				}
+			}
+		}
+		float relativeFloor = top1Score * config.getScoreRatio();
 		List<RawBox> raws = new ArrayList<>(boxes.length);
 		for (int i = 0; i < boxes.length; i++) {
-			RawBox raw = toRawBox(boxes[i], i, scale, padLeft, padTop, origW, origH);
+			RawBox raw = toRawBox(boxes[i], i, scale, padLeft, padTop, origW, origH, relativeFloor);
 			if (raw != null) {
 				raws.add(raw);
 			}
@@ -128,7 +142,8 @@ public class LayoutPostProcessor {
 	}
 
 	private RawBox toRawBox(float[] row, int index, double scale,
-							int padLeft, int padTop, int origW, int origH) {
+							int padLeft, int padTop, int origW, int origH,
+							float relativeFloor) {
 		if (row == null || row.length < MIN_COLUMNS) {
 			return null;
 		}
@@ -141,7 +156,11 @@ public class LayoutPostProcessor {
 			return null;
 		}
 		float score = row[COL_SCORE];
-		if (Float.isNaN(score) || score < config.thresholdFor(clsId)) {
+		if (Float.isNaN(score)) {
+			return null;
+		}
+		float threshold = Math.max(config.thresholdFor(clsId), relativeFloor);
+		if (score < threshold) {
 			return null;
 		}
 		int x1 = toOrig(row[COL_X1], padLeft, scale, origW);
@@ -224,39 +243,65 @@ public class LayoutPostProcessor {
 	}
 
 	/**
-	 * 阅读顺序 rank：按模型第 7 列（order 键）升序，键相同则 score 高者先读。
-	 * 对齐 PaddleX {@code np.argsort(boxes[:, 6])}；rank 0 = 最先读。
-	 * 模型未输出该列时全部返回 {@link LayoutResult#READING_ORDER_NONE}。
+	 * 阅读顺序编号，对齐 PaddleX {@code LayoutAnalysisProcess.update_order_index}：
+	 * <ol>
+	 *   <li>按模型第 7 列（order 键）升序排列；
+	 *       键相同时按 score 降序（模型输出本身已按 score 降序，故这等价于「保持原序」）</li>
+	 *   <li>遍历时遇到 {@link LayoutConfig#isSkipOrderLabel 跳过类} 的区域
+	 *       **不占用编号**，其值固定为 {@link LayoutResult#NO_READING_ORDER}</li>
+	 *   <li>其余区域从 **1** 开始连续编号（PaddleX 的 {@code order_index} 初值为 1）</li>
+	 * </ol>
+	 *
+	 * <p>⚠️ 并列 order 键的次序与 PaddleX **不保证逐值一致**：PaddleX 用的是
+	 * {@code np.argsort(boxes[:, 6])}，其默认实现是 quicksort（非稳定排序），
+	 * 并列键的次序属实现细节。本模块显式定义为「同键按 score 降序、再按原始下标」，
+	 * 是确定性的、可复现的；单看 order 键的升序关系与 PaddleX 一致。
+	 *
+	 * <p>模型未输出该列（{@code row.length < 7}）时退化为「按 score 降序的 1-based 编号」，
+	 * 跳过类的处理不变。
+	 *
+	 * @param boxList 已按 score 降序、已过滤截断的候选框
+	 * @return 与 {@code boxList} 同序的阅读顺序编号数组
 	 */
-	static int[] decodeReadingOrder(List<RawBox> boxList) {
+	int[] decodeReadingOrder(List<RawBox> boxList) {
 		int size = boxList.size();
 		int[] rank = new int[size];
-		for (RawBox raw : boxList) {
-			if (Float.isNaN(raw.orderKey) || Float.isInfinite(raw.orderKey)) {
-				Arrays.fill(rank, LayoutResult.READING_ORDER_NONE);
-				return rank;
-			}
-		}
 		final List<RawBox> list = boxList;
 		Integer[] idx = new Integer[size];
 		for (int i = 0; i < size; i++) {
 			idx[i] = i;
 		}
-		Arrays.sort(idx, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
-				RawBox ra = list.get(a);
-				RawBox rb = list.get(b);
-				int byOrder = Float.compare(ra.orderKey, rb.orderKey);
-				if (byOrder != 0) {
-					return byOrder;
-				}
-				int byScore = Float.compare(rb.score, ra.score);
-				return byScore != 0 ? byScore : Integer.compare(a, b);
+		boolean hasOrderColumn = true;
+		for (RawBox raw : boxList) {
+			if (Float.isNaN(raw.orderKey) || Float.isInfinite(raw.orderKey)) {
+				hasOrderColumn = false;
+				break;
 			}
-		});
+		}
+		if (hasOrderColumn) {
+			Arrays.sort(idx, new Comparator<Integer>() {
+				@Override
+				public int compare(Integer a, Integer b) {
+					RawBox ra = list.get(a);
+					RawBox rb = list.get(b);
+					int byOrder = Float.compare(ra.orderKey, rb.orderKey);
+					if (byOrder != 0) {
+						return byOrder;
+					}
+					int byScore = Float.compare(rb.score, ra.score);
+					return byScore != 0 ? byScore : Integer.compare(a, b);
+				}
+			});
+		}
+		int orderIndex = 1;
 		for (int pos = 0; pos < size; pos++) {
-			rank[idx[pos]] = pos;
+			int target = idx[pos];
+			if (config.isSkipOrderLabel(list.get(target).label)) {
+				rank[target] = LayoutResult.NO_READING_ORDER;
+				continue;
+			}
+			rank[target] = orderIndex;
+			orderIndex++;
 		}
 		return rank;
 	}

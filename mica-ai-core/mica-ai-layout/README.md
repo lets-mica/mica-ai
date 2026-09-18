@@ -183,6 +183,7 @@ public class DemoController {
 | `model-path` | `classpath:mica-ai/models/layout/v3/model.onnx` | 模型路径，必填，支持 `classpath:` |
 | `max-side-length` | `800` | letterbox 方形边长；**必须等于模型输入边长**，不一致启动即抛 `MicaAiException` |
 | `score-threshold` | `0.4` | 全局置信度阈值 |
+| `score-ratio` | `0`（关闭） | **相对阈值系数**：有效阈值 = `max(score-threshold, top1 × score-ratio)`。`0.6` 为实测推荐值，见下方「阈值标定」 |
 | `class-score-thresholds` | 空 | per-class 阈值覆盖；key=classId, value=threshold |
 | `layout-nms` | `true` | 是否启用 NMS（导出的 ONNX 未内置 NMS） |
 | `nms-threshold` | `0.6` | 同类框 IoU 阈值 |
@@ -203,9 +204,68 @@ public class DemoController {
 | `score` | `float` | 置信度（模型直接输出，无需再 softmax） |
 | `index` | `int` | 模型输出行号（300 个 query 中的下标） |
 | `order` | `int` | 按 score 降序过滤后的返回序号，从 0 起 |
-| `readingOrder` | `int` | **V3 专属**：按 `fetch_name_0` 第 7 列（order 键）升序解码的阅读顺序 rank，0 = 最先读；模型未输出该列时为 `-1` |
+| `readingOrder` | `int` | **V3 专属**：对齐 PaddleX `order` 字段的阅读顺序编号，**从 1 开始**且连续；跳过类（见下）与「模型未输出该列」时为 `-1` |
 
-## 4. License
+#### 阅读顺序与跳过类（`SKIP_ORDER_LABELS`）
+
+对齐 PaddleX `LayoutAnalysisProcess.update_order_index`，**11 类标签不参与编号**且不占用序号：
+
+```
+figure_title, vision_footnote, image, chart, table,
+header, header_image, footer, footer_image, footnote, aside_text
+```
+
+- 名单内的区域 `readingOrder = -1`（对应 PaddleX 的 `order = None`），其余区域从 **1** 开始连续编号
+- 名单可用 `mica.ai.layout.skip-order-labels` 整体覆盖；配空列表表示所有类别都参与编号
+- 需要与 PaddleX 的 `order` 字段**逐值一致**时，保持默认名单即可
+
+> ⚠️ **并列 order 键的次序与 PaddleX 不保证逐值一致**：PaddleX 用 `np.argsort(boxes[:, 6])`，
+> 其默认实现为 quicksort（**非稳定排序**，已实测 numpy 2.2.6），并列键顺序属实现细节。
+> 本模块明确定义为「同键按 score 降序、再按原始下标」，确定性可复现；
+> 两者在 **order 键的升序关系**上一致，仅并列键内部的相对次序可能不同。
+
+## 4. 阈值标定
+
+> 数据来源：官方 demo 文档 1654×2339，脚本 [`model-tools/layout/scripts/calibrate_thresholds.py`](../../model-tools/layout/scripts/calibrate_thresholds.py)
+
+### 4.1 为什么需要 `score-ratio`
+
+PP-DocLayoutV3 的分数分布存在**悬崖**：真实内容区集中在 0.69–0.94，随后直接跌到 0.518 / 0.437 的长尾。
+单看长尾分数（0.437）会以为「阈值 0.4 刚好合适」，但实测暴露出两个反向问题：
+
+| 输入 | top1 | 真实内容最低分 | 0.4 阈值的结果 |
+|------|------|--------------|---------------|
+| 整页 1654×2339 | 0.9449 | 0.6938 | 保留 14 个区域，**含 2 个长尾误检**（其中 0.437 那个是跨整页高度 0→2337 的长条，标签却是 `text`） |
+| 右半列裁剪 | 0.3653 | 0.3113 | **全部低于 0.4 ⇒ 返回 0 个区域** |
+| 上半裁剪 | 0.9468 | 0.7074 | 保留 6 个区域 |
+| 1.5× 放大 | 0.9458 | 0.7346 | 保留 15 个区域，**含 3 个长尾误检** |
+
+即：**绝对阈值无法同时兼顾「整页要收紧」与「窄图要放宽」** —— 同一张图换个裁剪方式，合适的阈值就变了。
+
+### 4.2 相对阈值的表现
+
+`score-ratio` 启用后有效阈值为 `max(score-threshold, top1 × score-ratio)`，随 top1 自适应：
+
+| `score-ratio` | 整页 | 右半列裁剪 | 上半裁剪 | 1.5× 放大 |
+|--------------|------|-----------|---------|----------|
+| 0.5 | 13/15 | 6/6 ✅ | 6/6 ✅ | 12/15 |
+| **0.6（推荐）** | **12/15 ✅** | **6/6 ✅** | **6/6 ✅** | **12/15 ✅** |
+| 0.7 | 12/15 | 6/6 ✅ | 6/6 ✅ | 12/15 ✅ |
+
+`0.6` 在四种变体下都能完整保留真实内容，同时丢掉长尾误检。整页场景下表为**保留 12 个区域、编号连续 1..12**
+（`LayoutIntegrationTest#scoreRatioShouldProduceContiguousReadingOrder` 对此做了回归断言）。
+
+> ⚠️ 默认值为 `0`（关闭）以保持向后兼容；建议在真实业务文档上调一遍后显式打开。
+
+### 4.3 已知上游行为（非本模块 bug）
+
+- **跨页长条 `text`/`doc_title` 误检不会被「整页伪框」规则拦掉**：已核对 PaddleX 源码，
+  该规则（面积占比 > 0.82 横 / 0.93 竖）**只作用于 `image` 标签**，其它类一律保留 ⇒ 属于上游行为。
+  本模块保持与之一致，不擅自扩大过滤范围；要靠 `score-ratio` 或 per-class 阈值来抑制。
+- **合成图 / 程序绘制的纯色块文档表现差**：模型对硬边缘色块会大量输出 `image` 碎片。
+  标定与验收**必须用真实文档图**（`demo.png` 是 800×800 合成图，只有 1 个区域、分数 0.437 勉强过阈值）。
+
+## 5. License
 
 - 代码：Apache License 2.0
 - 模型：PP-DocLayoutV2 / V3（Apache License 2.0），**可商用** ✅

@@ -69,6 +69,10 @@ mica:
       model-path: model-tools/layout/models/model.onnx
       max-side-length: 800
       score-threshold: 0.4
+      # 相对阈值：有效阈值 = max(score-threshold, top1 × score-ratio)。
+      # 0.6 可抑制同页分数悬崖下方的长尾误检，同时兼容单列裁剪图（整体分数偏低）的场景。
+      # 设为 0 表示不启用（只走绝对阈值）。
+      score-ratio: 0.6
       max-detections: 100
 
 logging:

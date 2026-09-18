@@ -70,10 +70,19 @@ mica:
 
 | 脚本 | 用途 |
 |------|------|
+| `calibrate_thresholds.py` | **标定**：在真实文档图上扫描 `scoreThreshold`，输出分数分布 / 阈值扫描表 / 含阅读顺序的完整明细，用于选阈值（结论见模块 README「4. 阈值标定」） |
 | `probe_coord_space.py` | **核心**：固定 `image` 张量、只改 `im_shape`/`scale_factor`，定位输出坐标空间（结论：`输出坐标 = 原图坐标 / scale_factor`）；自带判定结论输出 |
 | `probe_real_onnx.py` | 打印 ONNX 输入 / 输出元信息（名字、shape、dtype），换模型或怀疑导出约定变化时先跑 |
 | `probe_real_image.py` / `probe_real_image2.py` / `probe_order.py` | ⚠️ 早期探查脚本，**已被 `probe_coord_space.py` 取代**，仅留作过程记录。`probe_real_image.py` 里 `cxcywh` 解码假设是**错的**（col2-5 实为 `x1y1x2y2`），勿照抄 |
 
-运行前提：WSL / Linux 下已装 `onnxruntime`、`numpy`、`Pillow`；模型路径默认取同级 `../models/model.onnx`
-（可用环境变量 `LAYOUT_ONNX` 覆盖，仅 `probe_coord_space.py` 支持）。demo 图缓存到 `~/.cache/mica-ai-layout/`
-（WSL 的 `/tmp` 是 tmpfs，不要放中间产物）。
+`demo_doc.jpg` 是标定用的真实文档图（1654×2339，双栏版式）：`calibrate_thresholds.py` 默认读它，
+也可作为集成测试的外部图输入：
+
+```bash
+sh mvnc.sh -o -pl mica-ai-core/mica-ai-layout test \
+    -Dmica.ai.layout.test.image=model-tools/layout/scripts/demo_doc.jpg
+```
+
+运行前提：WSL / Linux 下已装 `onnxruntime`、`numpy`、`Pillow`、`opencv-python`；模型路径默认取同级
+`../models/model.onnx`（可用环境变量 `LAYOUT_ONNX` 覆盖，`probe_coord_space.py` / `calibrate_thresholds.py` 均支持）。
+demo 图缓存到 `~/.cache/mica-ai-layout/`（WSL 的 `/tmp` 是 tmpfs，不要放中间产物）。

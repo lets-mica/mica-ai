@@ -44,10 +44,14 @@ mica:
       model-path: model-tools/layout/models/model.onnx       # 必填，支持 classpath:
       max-side-length: 800                                   # letterbox 方形边长，必须等于模型输入边长
       score-threshold: 0.4
+      score-ratio: 0.6                                       # 相对阈值：max(score-threshold, top1 × 该值)；0=关闭
       layout-nms: true
       nms-threshold: 0.6                                     # 同类 IoU
       nms-diff-class-threshold: 0.98                         # 异类 IoU（0.98 ⇒ 类间几乎不互斥）
       max-detections: 100
+      skip-order-labels:                                     # 不参与阅读顺序编号的标签（可选，缺省=PaddleX 11 类）
+        - figure_title
+        - image
       class-score-thresholds:                                # per-class 阈值覆盖（可选）
         14: 0.5                                              # image 类更严
         21: 0.5                                              # table 类更严
@@ -65,11 +69,13 @@ mica:
 | `model-path` | `classpath:mica-ai/models/layout/v3/model.onnx` | 模型路径，**必填**，支持 `classpath:` |
 | `max-side-length` | `800` | letterbox 方形边长；**必须等于模型输入边长**，不一致启动即抛 `MicaAiException` |
 | `score-threshold` | `0.4` | 全局置信度阈值 |
+| `score-ratio` | `0`（关闭） | **相对阈值系数**：有效阈值 = `max(score-threshold, top1 × score-ratio)`。实测 `0.6` 可抑制同页长尾误检，同时兼容单列裁剪图（详见模块 README「阈值标定」） |
 | `class-score-thresholds` | 空 | per-class 阈值覆盖；key=classId, value=threshold |
 | `layout-nms` | `true` | 是否启用 NMS（导出的 ONNX 未内置 NMS） |
 | `nms-threshold` | `0.6` | 同类框 IoU 阈值 |
 | `nms-diff-class-threshold` | `0.98` | 异类框 IoU 阈值（0.98 ⇒ 类间几乎不互斥，允许版面区域嵌套） |
 | `max-detections` | `100` | 单图最多返回版面区域数 |
+| `skip-order-labels` | PaddleX 11 类名单 | 不参与阅读顺序编号的标签 code；配空列表表示所有类别都参与编号。未识别的 code 启动即抛异常 |
 | `mean` / `std` | `[0.8286,0.8281,0.8282]` / `[0.1889,0.1889,0.1889]` | 归一化参数（**非专家不要改**，与训练时保持一致） |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
@@ -125,7 +131,7 @@ public class DocumentService {
 | `score` | `float` | 置信度（模型直接输出，无需再 softmax） |
 | `index` | `int` | 模型输出行号（300 个 query 中的下标） |
 | `order` | `int` | 按 score 降序过滤后的返回序号，从 0 起 |
-| `readingOrder` | `int` | **V3 专属**：按 `fetch_name_0` 第 7 列（order 键）升序解码的阅读顺序 rank，0 = 最先读 |
+| `readingOrder` | `int` | **V3 专属**：对齐 PaddleX `order` 的阅读顺序编号，**从 1 开始**且连续；跳过类（11 类）与「模型未输出该列」时为 `-1` |
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 跟踪 PP-DocLayoutV3 版面分析模块的落地进度、I/O 决策与待办事项。
 > 这份文档**只在落地期间使用**，模块稳定后会并入主 README。
-> **最后更新**：2026-09-18（模型分发方式**已决策：暂不入库、不随仓库分发**，理由见第 5 节风险表与 7.2；`AGENTS.md` 三处文档漂移已清理，见 7.4）
+> **最后更新**：2026-09-18（**第二轮收尾完成**：① `SKIP_ORDER_LABELS` 对齐 —— 11 类跳过名单 + `readingOrder` 改为 PaddleX 的 1-based 连续语义；② 阈值标定 —— 新增 `calibrate_thresholds.py` 与 `scoreRatio` 相对阈值，实测 0.6 为推荐值。另：模型分发方式**已决策：暂不入库、不随仓库分发**，理由见第 5 节风险表与 7.2；`AGENTS.md` 三处文档漂移已清理，见 7.4）
 
 ## 1. 任务来源
 
@@ -108,10 +108,10 @@ if boxes.shape[1] == 7:
   ⇒ col[6] **不是** query 索引、也**不是** order 矩阵下标，它本身就是排序键；
 - `fetch_name_2` 三个维度切片里非零区呈块状（如 slice0 非零行 72–124、列 28–76），不符合锦标赛矩阵形态。
 
-**Java 落地**：`LayoutPostProcessor.decodeReadingOrder()` 按 col[6] 升序给 rank（同键则 score 高者先读，
-因为模型输出已按 score 降序、`argsort` 对并列键本就按原序稳定取）；col 缺失时全部返回 `-1`。
-未实现 PaddleX 的 `SKIP_ORDER_LABELS`（某些标签不参与编号）—— 本模块 rank 是「全体返回框的相对顺序」，
-如需与 PaddleX 的 `order` 字段逐值一致需补该名单。
+**Java 落地**：`LayoutPostProcessor.decodeReadingOrder()` 按 col[6] 升序编号（同键则 score 高者先读，
+因为模型输出已按 score 降序、`argsort` 对并列键本就按原序稳定取）。
+**`SKIP_ORDER_LABELS` 已对齐**（2026-09-18）：名单内 11 类不参与编号且不占号，其余从 **1** 开始连续编号；
+col 缺失时退化为「按 score 降序的 1-based 编号」。详见模块 README「阅读顺序与跳过类」。
 
 ### 实测数据（官方 demo 图 1654×2339，喂 `scale_factor = 1/r`）
 
@@ -215,7 +215,8 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 | 新克隆仓库的 `mvn test` 行为 | 模型未分发 ⇒ layout 集成测试会**整体跳过**（`Assumptions`），构建仍绿 | ✅ 已按此设计：`LayoutIntegrationTest` 在模型缺失时跳过并在报告里给出提示，不掩盖真实回归 |
 | `mica-ai-example` 的 layout 示例缺失 | 有配置无端点，示例不完整 | ⚠️ 待办：① 补 `LayoutController`（对齐 `PlateController` 风格）；② 因模型未分发，yml 暂置 `mica.ai.layout.enabled=false`，本地有模型时改 `true` |
 | 3 个早期探针脚本冗余（`probe_real_image.py` / `probe_real_image2.py` / `probe_order.py`） | 维护成本；其中 `probe_real_image.py` 的 `cxcywh` 解码假设是**错的** | 已在 `model-tools/layout/README.md` 标注「已被 `probe_coord_space.py` 取代，勿照抄」，死路径 `/tmp/...` 也已修为仓库相对路径；是否删除待定（`probe_coord_space.py` + `probe_real_onnx.py` 保留） |
-| `LayoutPostProcessor` 未实现 PaddleX 的 `SKIP_ORDER_LABELS` | 少数标签（如 `figure_title`/`image`）在 PaddleX 侧不参与编号，本模块 rank 是全体返回框的相对顺序 | 语义已在模块 README 说明；如要与 PaddleX `order` 逐值一致需补名单 |
+| ~~`LayoutPostProcessor` 未实现 PaddleX 的 `SKIP_ORDER_LABELS`~~ | ~~少数标签在 PaddleX 侧不参与编号，本模块 rank 是全体返回框的相对顺序~~ | ✅ **已对齐（2026-09-18）**：`LayoutConfig.skipOrderLabels` 默认取 PaddleX 11 类名单；名单内 `readingOrder = -1` 且不占号，其余从 1 起连续编号；`LayoutLabel.isSkipOrder()` + Starter 的 `mica.ai.layout.skip-order-labels` 可覆盖 |
+| **绝对阈值 `scoreThreshold=0.4` 无法同时兼顾不同输入尺度** | 整页图会漏进长尾误检；单列裁剪图（整体分数 ~0.31–0.37）会被整页丢光 | ✅ **已加 `scoreRatio` 相对阈值（2026-09-18）**：有效阈值 = `max(scoreThreshold, top1 × scoreRatio)`，实测 0.6 在整页 / 单列裁剪 / 上半裁剪 / 1.5× 放大四种变体下均完整保留真实内容；默认 0（关闭）保持向后兼容。标定数据见模块 README「4. 阈值标定」 |
 | `demo.png` 是合成图（仅 1 个区域、分数 0.437 勉强过阈值） | 集成测试覆盖度弱 | 已加可选外部文档图用例（`-Dmica.ai.layout.test.image=...`）；官方 demo 图版权不明，未入库 |
 
 ## 6. 实施完后需要复核的事（状态）
@@ -232,9 +233,12 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 
 - ~~**仓库体积策略**（125MB 模型）~~ ✅ **已决策（2026-09-18）：暂不入库、不随仓库分发**（平台硬限同时否决「入库」与「LFS」，理由见第 5 节风险表）；若后续想降低上手门槛，再考虑 GitHub Release 资产 + 拉取脚本
 - ~~**`AGENTS.md` 三处漂移**~~ ✅ **已清理（2026-09-18）**：smoke 引用全删、License 表补 layout / plate、§6.2 加 125MB 例外；全仓 `make -C model-tools smoke` 残留引用（根 README / `model-tools/README.md` / face README / filetype README）同步清零
-- `SKIP_ORDER_LABELS` 对齐
-- `mica-ai-example` 补 `LayoutController`（对齐 `PlateController` 风格）；`mica.ai.layout.enabled` **保持 `false`**（模型不随仓库分发，见 7.2）
-- 在真实文档集上标定 `scoreThreshold` / per-class 阈值（当前 0.4 沿用官方 `draw_threshold`）
+- ~~`SKIP_ORDER_LABELS` 对齐~~ ✅ **已完成（2026-09-18）**：默认 11 类名单 + 可配置 `skipOrderLabels`，
+  `readingOrder` 改为 PaddleX 语义（1-based 连续、跳过类为 -1）；单测新增 4 例，集成测试断言同步更新
+- `mica-ai-example` 补 `LayoutController`（对齐 `PlateController` 风格）✅ 已完成（`8ba8b94`）；`mica.ai.layout.enabled` **保持 `false`**（模型不随仓库分发，见 7.2）
+- ~~在真实文档集上标定 `scoreThreshold` / per-class 阈值~~ ✅ **已完成（2026-09-18）**：新增 `calibrate_thresholds.py`
+  + 新增 `scoreRatio` 相对阈值（实测 0.6 为推荐值）+ 集成测试固化「编号连续」回归。
+  仍待办：**在更多真实业务文档上**复核 0.6 这个系数，以及 `demo.png` 之外的 per-class 阈值
 - 评估删除 3 个早期探针脚本（`probe_real_image.py` / `probe_real_image2.py` / `probe_order.py`），只保留 `probe_coord_space.py` + `probe_real_onnx.py`
 
 ## 7. 提交与分发状态（2026-09-18）
