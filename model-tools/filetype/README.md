@@ -32,5 +32,5 @@ mica:
 
 1. 按 `AGENTS.md` §6.1 完成 License 商用自检
 2. 覆盖 `models/` 下的三件套
-3. `make -C model-tools smoke` 确认 ONNX 结构合法
+3. 跑 filetype 模块集成测试确认可加载且推理正常：`mvn -pl mica-ai-core/mica-ai-filetype -am test`
 4. 更新 `mica-ai-core/mica-ai-filetype/README.md` 的模型规格表

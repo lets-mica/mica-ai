@@ -1,6 +1,6 @@
 # layout 模型目录
 
-[PP-DocLayoutV3](https://github.com/PaddlePaddle/PaddleOCR)（Apache-2.0，可商用）文档版面分析模型。PaddleX `PP-DocLayoutV3_infer` 经 paddle2onnx 2.1.0 转换 + constant folding 得到 125MB `model.onnx`，**本地已就绪但暂未提交仓库**（见下方「入库状态」）。
+[PP-DocLayoutV3](https://github.com/PaddlePaddle/PaddleOCR)（Apache-2.0，可商用）文档版面分析模型。PaddleX `PP-DocLayoutV3_infer` 经 paddle2onnx 2.1.0 转换 + constant folding 得到 125MB `model.onnx`，**不随仓库分发**（见下方「分发状态」）。
 
 ## 模型清单（`models/`）
 
@@ -12,22 +12,45 @@
 - License：Apache License 2.0，**可商用** ✅
 - 转换误差：V3 相对 Paddle 原版 **1.57%**（V2 为 14.8%，不可生产）
 
-### 入库状态（⚠️ 待决策）
+### 分发状态（已决策：暂不入库）
 
-`model.onnx` **125 MB**，超出 AGENTS.md §6.2 的「<50MB 入库」约定，**当前未提交**，
-已在根 `.gitignore` 显式排除（`model-tools/layout/models/model.onnx`）以防误提交。
+`model.onnx` **125 MB**（130,502,049 bytes），超出 AGENTS.md §6.2 的「单文件 <50MB」约定，
+**不随仓库分发**，已在根 `.gitignore` 显式排除（`model-tools/layout/models/model.onnx`）以防误提交。
 
-三个可选方案，待 owner 决定：
+**为什么不是 Git LFS**（2026-09-18 核实平台配额后否决）：
 
-| 方案 | 说明 |
+| 平台 | 单文件限制 | 125MB 的结果 |
+|------|-----------|-------------|
+| GitHub | >100 MB **硬阻断整个 push**（>50 MB 仅警告） | ❌ 直接 reject |
+| Gitee 社区版（个人） | 单文件 ≤50 MB；单仓库 500MB | ❌ 直接 reject |
+| Gitee LFS | 免费版**无 LFS 配额**（企业版标准版起才有 1GB） | ❌ 三远端方案在 Gitee 断裂 |
+| GitCode | 新建仓库默认 10 MB，需在仓库设置放宽至 100 MB | ⚠️ 需改配置 |
+
+即：`git push` 上不去、LFS 也上不去。GitHub 官方对大文件的建议做法是走 Release 资产，
+本项目暂不采用（引入外部托管依赖），先维持「不入库 + 自行获取」。
+
+**本地获取方式**（按推荐顺序）：
+
+1. 从项目协作者处取 `model.onnx`（当前唯一副本在开发机上，见下方 ⚠️）
+2. 自行转换（Linux / WSL，Windows 的 paddle2onnx wheel 缺 `common.dll`）：
+   - 从 ModelScope / AIStudio 下载 PaddleX `PP-DocLayoutV3_infer`（`model.pdmodel` + `model.pdiparams`）
+   - `paddle2onnx` 2.1.0 转换 + constant folding → `model.onnx`（3 输入 3 输出，见模块 README 的 I/O 表）
+3. 放好后自检：`mvn -pl mica-ai-core/mica-ai-layout -am test`（集成测试会加载真模型跑完整链路）
+
+> ⚠️ **`model-tools/layout/models/model.onnx` 是未跟踪文件，删除即不可恢复**（无 git 历史）。
+> 本地副本指纹（供同一副本的完整性校验）：
+> `sha256 = 45bf71750b00739a41fc209f132eb104a4d6b5bb29483c9078164d8b87cf28ba`
+
+> 自行转换的产物**不保证**与此指纹一致（paddle2onnx 版本 / constant folding 差异都会改变
+> 二进制），但应与模块 README 的 I/O 契约一致；不一致时先跑 `scripts/probe_real_onnx.py` 比对。
+
+**为「模型不随仓库分发」做的配套**（避免新克隆仓库踩坑）：
+
+| 位置 | 表现 |
 |------|------|
-| Git LFS | `.gitattributes` 加 `*.onnx filter=lfs`，克隆者需装 LFS |
-| 下载脚本 | 恢复 `scripts/download_model.py`（ModelScope/BOS），README 补 sha256 |
-| 维持入库 | 打破 <50MB 约定，从 `.gitignore` 移除排除行 |
-
-> 决策后：更新本文件 + `model-tools/README.md` + `.gitignore`，并跑一次
-> `mica-ai-core/mica-ai-layout` 的 `LayoutIntegrationTest` 确认真模型可加载。
-> 注意 `LayoutIntegrationTest` 在模型缺失时会**跳过**而非失败（用 `Assumptions`）。
+| `LayoutIntegrationTest` | 模型缺失时用 `Assumptions` **整类跳过**（不失败），并在报告里给出提示 |
+| `mica-ai-example/application.yml` | `mica.ai.layout.enabled: false` + 注释；本地有模型后改 `true` |
+| 根 `.gitignore` | 显式排除该文件（写在 `!model-tools/*/models/**` 之后，靠「后匹配者胜」覆盖白名单） |
 
 ## 使用
 

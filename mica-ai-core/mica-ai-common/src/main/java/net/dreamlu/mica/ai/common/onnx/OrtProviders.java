@@ -1,0 +1,115 @@
+/*
+ * Copyright (c) 2024-2026 mica-ai
+ */
+package net.dreamlu.mica.ai.common.onnx;
+
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtProvider;
+import ai.onnxruntime.OrtSession;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * ONNX Runtime 执行提供器（Execution Provider）自动选择与注册。
+ *
+ * <ul>
+ *   <li>{@code device = CPU} → 强制 CPU，跨平台 bit-exact</li>
+ *   <li>{@code device = GPU} → 按 CoreML (macOS) &gt; CUDA &gt; CPU 自动选择最佳加速器</li>
+ * </ul>
+ *
+ * <p>注册失败仅 warn，回退到 CPU，{@link OrtSession.SessionOptions} 仍可继续创建。
+ */
+@Slf4j
+@UtilityClass
+public class OrtProviders {
+
+	private static final String CPU = "CPUExecutionProvider";
+	private static final String CUDA = "CUDAExecutionProvider";
+	private static final String CORE_ML = "CoreMLExecutionProvider";
+
+	@FunctionalInterface
+	private interface EpRegistrar {
+		void register(OrtSession.SessionOptions opts, int deviceId) throws OrtException;
+	}
+
+	private static final Map<String, EpRegistrar> REGISTRARS;
+
+	static {
+		Map<String, EpRegistrar> map = new LinkedHashMap<>();
+		map.put(CUDA, (opts, deviceId) -> opts.addCUDA(deviceId));
+		try {
+			OrtSession.SessionOptions.class.getMethod("addCoreML");
+			map.put(CORE_ML, (opts, deviceId) -> opts.addCoreML());
+		} catch (NoSuchMethodException ignored) {
+			// 当前 ONNX Runtime 版本无 addCoreML，跳过注册
+		}
+		REGISTRARS = Collections.unmodifiableMap(map);
+	}
+
+	/**
+	 * 解析当前运行时可用的 ONNX Runtime provider 名称（不注册）。
+	 *
+	 * @param preferCpu true 强制 CPU；false 按 CoreML &gt; CUDA 自动选
+	 * @return provider 名称数组，首个元素为最终选择
+	 */
+	public static String[] resolve(boolean preferCpu) {
+		if (preferCpu) {
+			log.info("mica-ai: ONNX Runtime provider forced to {}", CPU);
+			return new String[]{CPU};
+		}
+		List<String> available;
+		try {
+			EnumSet<OrtProvider> set = OrtEnvironment.getAvailableProviders();
+			available = new ArrayList<>(set == null ? 0 : set.size());
+			if (set != null) {
+				for (OrtProvider p : set) {
+					available.add(p.getName());
+				}
+			}
+		} catch (Exception e) {
+			log.warn("mica-ai: 无法枚举 ONNX Runtime providers，回退 CPU: {}", e.getMessage());
+			return new String[]{CPU};
+		}
+		for (String preferred : new String[]{CORE_ML, CUDA}) {
+			if (available.contains(preferred) && REGISTRARS.containsKey(preferred)) {
+				log.info("mica-ai: ONNX Runtime provider auto-selected: {}", preferred);
+				return new String[]{preferred};
+			}
+		}
+		log.info("mica-ai: ONNX Runtime provider fallback to {}", CPU);
+		return new String[]{CPU};
+	}
+
+	/**
+	 * 把 {@code providers[0]} 解析到的加速器注册到 {@link OrtSession.SessionOptions}。
+	 * 注册失败仅 warn，不抛异常。
+	 *
+	 * @param providers   {@link #resolve(boolean)} 返回的 provider 名数组
+	 * @param opts        待配置的 SessionOptions
+	 * @param deviceId    GPU device id（CUDA 专用，CoreML 忽略）
+	 */
+	public static void apply(String[] providers, OrtSession.SessionOptions opts, int deviceId) {
+		if (providers == null || providers.length == 0) {
+			return;
+		}
+		String name = providers[0];
+		EpRegistrar registrar = REGISTRARS.get(name);
+		if (registrar == null) {
+			return;
+		}
+		try {
+			registrar.register(opts, deviceId);
+			log.info("mica-ai: 已注册 ONNX Runtime provider: {} (deviceId={})", name, deviceId);
+		} catch (OrtException e) {
+			log.warn("mica-ai: 注册 {} 失败，回退 CPU: {}", name, e.getMessage());
+		}
+	}
+}

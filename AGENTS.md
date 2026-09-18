@@ -7,7 +7,7 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含。
 
@@ -28,21 +28,26 @@ mica-ai/
 ├── mica-ai-common/                 # ONNX 通用基础设施（OnnxModelSession / OrtSessionFactory / 统一异常）
 ├── mica-ai-core/                   # 核心引擎（零 Spring，纯 Java 8）
 │   ├── mica-ai-face/               # 🎭 OpenCV Zoo（人脸检测 + 128d 向量 + 活体 + 头像 + 卡片，Apache-2.0）
-│   └── mica-ai-filetype/           # 📄 Google Magika（214 类文件类型识别，Apache-2.0）
+│   ├── mica-ai-filetype/           # 📄 Google Magika（214 类文件类型识别，Apache-2.0）
+│   ├── mica-ai-plate/              # 🚗 HyperLPR3（中国车牌检测 + 识别 + 判型，Apache-2.0）
+│   └── mica-ai-layout/             # 📐 PP-DocLayoutV3（文档版面分析 + 阅读顺序，Apache-2.0）
 ├── mica-ai-starters/               # Spring Boot Starter（自动注入 Bean）
 │   ├── mica-ai-face-spring-boot-starter/
-│   └── mica-ai-filetype-spring-boot-starter/
+│   ├── mica-ai-filetype-spring-boot-starter/
+│   ├── mica-ai-plate-spring-boot-starter/
+│   └── mica-ai-layout-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
-└── model-tools/                    # 模型资产（直接入库，均 <50MB）
+├── docs/                           # 落地跟踪文档（模块稳定后并入 README）
+└── model-tools/                    # 模型资产（随仓库分发，单文件上限见 §6.2）
     ├── face/models/                #   YuNet + SFace（Apache-2.0）
     ├── filetype/models/            #   Magika standard_v3_3（Apache-2.0）
     ├── plate/models/               #   HyperLPR3 v20230229（Apache-2.0）
-    └── scripts/smoke_test.py       #   离线冒烟：校验目录与 ONNX 完整性
+    └── layout/models/              #   PP-DocLayoutV3（Apache-2.0，⚠️ 125MB 不随仓库分发）
 ```
 
 > **重要**：
-> - `mica-ai-core/mica-ai-face/README.md` 是 face 能力的"模型规格 / 核心组件 / I/O 格式"事实来源
-> - `mica-ai-core/mica-ai-filetype/README.md` 是 filetype 能力的事实来源
+> - `mica-ai-core/mica-ai-<cap>/README.md` 是各能力"模型规格 / 核心组件 / I/O 格式"的事实来源
+>   （`face` / `filetype` / `plate` / `layout` 各一份）
 >
 > Agent 在对应能力内做修改前**先读**对应 README。
 
@@ -60,13 +65,22 @@ mvn -pl mica-ai-core/mica-ai-face -am test    # 仅测 face
 
 JDK：**8+**（推荐 Temurin / Azul Zulu 8/11/17；源码兼容到 JDK 17）。Surefire 已配 `-Djdk.net.URLClassPath.disableClassPathURLCheck=true` + `forkCount=0`，规避 Windows 跨盘符 fork 问题。
 
-### 3.2 模型工具链（Python）
+### 3.2 模型资产
+
+模型已直接入库（各能力子目录 `models/`），**无需下载 / 转换脚本**；替换模型时直接覆盖对应文件。
+
+模型完整性由**各能力模块的集成测试**覆盖（加载真 ONNX 跑一遍完整推理，兼作 I/O 契约回归）：
 
 ```bash
-make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性，不连外网）
+mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能力同理
 ```
 
-> 模型已直接入库（各能力子目录 `models/`，均 <50MB），无需下载 / 转换脚本；替换模型时直接覆盖对应文件。
+> ⚠️ 历史上的 `make -C model-tools smoke` / `model-tools/scripts/smoke_test.py` 已在提交
+> `a0a8a6f refactor: 删除 model-tools Python 工具链（模型已直接入库）` 中删除。
+> **该命令不存在，不要再去找，也不要再写进任何文档。**
+>
+> 例外：`model-tools/layout/models/model.onnx`（125MB）**不随仓库分发**，其
+> `LayoutIntegrationTest` 在模型缺失时用 `Assumptions` 整类跳过，不阻塞新克隆仓库的 `mvn test`。
 
 ---
 
@@ -116,6 +130,8 @@ make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性�
   | `mica-ai-face` 检测 / 特征 | YuNet + SFace（OpenCV Zoo） | Apache 2.0 | ✅ |
   | `mica-ai-face` 活体 | MiniFASNetV2（minivision Silent-Face-Anti-Spoofing） | MIT | ✅ |
   | `mica-ai-filetype` 检测 | Google Magika `standard_v3_3`（model.onnx + config.min.json + content_types_kb.min.json） | Apache 2.0 | ✅ |
+  | `mica-ai-plate` 检测 / 识别 / 判型 | HyperLPR3 v20230229（`y5fu_*` 检测 + `rpv3_mdict_*` 识别 + `litemodel_cls_*` 判型） | Apache 2.0 | ✅ |
+  | `mica-ai-layout` 版面检测 | PP-DocLayoutV3（PaddleOCR，paddle2onnx 转换产物） | Apache 2.0 | ✅ |
 
 - **禁止**：
   - 直接搬运 GPL / AGPL / LGPL 模型权重并以"商用"名义打包
@@ -130,10 +146,11 @@ make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性�
 ### 6.2 其它硬性约束
 
 - **不要创建无意义文件**：没有用户显式要求时，不要新建 `*.md`、空目录、占位脚本。
-- **不要**提交 `model/` / `output/` / `*.bin` / `target/` 等产物；`.gitignore` 已配置。**例外**：`model-tools/<cap>/models/` 下的入库模型（均 <50MB）按 owner 要求随仓库分发。
+- **不要**提交 `model/` / `output/` / `*.bin` / `target/` 等产物；`.gitignore` 已配置。**例外**：`model-tools/<cap>/models/` 下的入库模型按 owner 要求随仓库分发，**单文件须 <50MB**。
+- **超出 50MB 的模型不入库**：当前唯一例外是 `model-tools/layout/models/model.onnx`（125MB，PP-DocLayoutV3），已在根 `.gitignore` 显式排除。新增超限模型沿用同一套配套措施：对应模块的集成测试在文件缺失时整类跳过、example 里该能力 `enabled: false`、模块 README 记录获取方式。**不要**擅自引入 Git LFS。
 - **不要**在 Java 端引 `torch*` / `paddle*` / `python*` 依赖，破坏「零 Python 进程」原则。
 - **不要**直接修改 `pom.xml` 中 `mica-auto` 插件配置（它负责生成 `@AutoConfiguration.imports`）。
-- **不要**把训练数据 commit 到仓库；**推理模型**仅在 `model-tools/<cap>/models/`（均 <50MB）随仓库分发，其它位置禁止。
+- **不要**把训练数据 commit 到仓库；**推理模型**仅在 `model-tools/<cap>/models/`（单文件 <50MB，超限者不入库）随仓库分发，其它位置禁止。
 - **不要**主动 commit / push / merge 任何东西；改动完等用户确认。
 - **不要**引入与「商业可用」冲突的依赖（含 GPL 类 Java 库）；如有疑虑，宁可不加。
 
@@ -146,7 +163,7 @@ make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性�
 | 场景 | 必读 | 标准动作 |
 |------|------|---------|
 | 新增一个 ONNX 输入节点 | `mica-ai-face/.../FaceDetector.java` 或 `FeatureExtractor.java` 或 `LivenessDetector.java` | 在检测器 / 提取器 / 活体类的推理段加常量 → 更新 mica-ai-face/README.md「I/O 格式」 |
-| 替换底层模型 | `model-tools/<cap>/models/` | 先按 §6.1 自检 License → 覆盖模型文件 → 跑 `make -C model-tools smoke` → 更新对应 README 模型规格表 |
+| 替换底层模型 | `model-tools/<cap>/models/` | 先按 §6.1 自检 License → 覆盖模型文件 → 跑对应能力模块的集成测试（`mvn -pl mica-ai-core/<cap> -am test`）确认可加载且输出合理 → 更新对应 README 模型规格表 |
 | 新增 Spring Boot 配置项 | Starter `FaceProperties.java` / `FiletypeProperties.java` + 对应 `*AutoConfiguration.java` | 用 `mica-auto` 生成 import → 跑 `mvn install` → 子 README 加示例 |
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调整 `intraOpNumThreads` / `interOpNumThreads` / `device` (cpu/gpu) |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
@@ -156,9 +173,9 @@ make -C model-tools smoke       # 离线冒烟（校验目录与 ONNX 完整性�
 ## 8. 验证清单（改完跑一遍）
 
 - [ ] `mvn -DskipTests install` 通过
-- [ ] `mvn test` 通过（14 个用例：face 12 + example 2）
-- [ ] `make -C model-tools smoke` 通过
-- [ ] 替换了模型：`smoke` 的 ONNX 结构校验通过，产物可被 Java 端加载
+- [ ] `mvn test` 全绿（face / filetype / plate / layout / example 五个模块）
+- [ ] 替换了模型：对应能力模块的**集成测试**通过（加载真 ONNX 跑一遍完整推理）
+- [ ] 新增能力：模块 README + Starter + `model-tools/<cap>/README.md` 三处齐全，且能力清单（根 README / 本文件 §1 §2 §6.1）同步
 - [ ] 改了 Starter：在 `application.yml` 加示例，且至少 1 个 `@Autowired` 使用点
 - [ ] 改了 README：标题层级、代码块语言、链接自检
 - [ ] 新增/替换模型：**§6.1 商用自检清单全部勾选**

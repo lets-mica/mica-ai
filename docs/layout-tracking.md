@@ -2,7 +2,7 @@
 
 > 跟踪 PP-DocLayoutV3 版面分析模块的落地进度、I/O 决策与待办事项。
 > 这份文档**只在落地期间使用**，模块稳定后会并入主 README。
-> **最后更新**：2026-09-17（真 ONNX 已入库；I/O 形状与**输出坐标空间**均已用 onnxruntime Python 实测闭环，见 2.1）
+> **最后更新**：2026-09-18（模型分发方式**已决策：暂不入库、不随仓库分发**，理由见第 5 节风险表与 7.2；`AGENTS.md` 三处文档漂移已清理，见 7.4）
 
 ## 1. 任务来源
 
@@ -183,10 +183,11 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 - [x] 11. 同步 starter `LayoutProperties`、`LayoutAutoConfiguration`
 - [x] 12. 重写 `LayoutIntegrationTest`（真模型 + `OpenCV.loadShared()` + 可选外部文档图）
 - [x] 13. 更新 `mica-ai-layout/README.md` 与 `model-tools/layout/README.md`
-- [x] 14. `mvn test`（layout 25 用例全绿）+ 全量 install
+- [x] 14. `mvn test`（layout 26 用例全绿，含 1 个按设计跳过的可选外部图用例）+ 全量 install
 - [x] 15. **修 Java 端 BGR/RGB 双转换 bug**（见下）
 - [x] 16. **修 letterbox 张量形状 bug**（见下）
 - [x] 17. 删除 `scripts/build_fake_layout_onnx.py`（会覆盖真模型，且真模型测试已取代 fake 测试）
+- [x] 18. 提交（不含 125MB 模型）+ 推送三远端，详见第 7 节
 
 ### 4.1 落地时发现并修掉的两个真 bug
 
@@ -207,24 +208,83 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 | 模型固有 3.7% 越界框（x2 超出原图宽） | 输出坐标非法 | ✅ 反算后已 clip 到 `[0,w]x[0,h]`；越界量与 `scale_factor` 无关，是模型自身行为 |
 | ~~`fetch_name_2` order 索引语义不明~~ | ~~readingOrder 可能错误~~ | ✅ 已闭环：col[6] 即 order 键（PaddleX 7 列分支），`fetch_name_2` 不消费（2.2 节） |
 | Java 端 OpenCV native 加载 | 集成测试跑不起来 | ✅ 已解决：`nu.pattern.OpenCV.loadShared()`（openpnp jar 自带 4.9.0 原生库）；测试可正常解码图片 |
-| WSL `/tmp` 是 tmpfs，VM 停止即清空 | 探针脚本缓存/中间产物丢失 | ✅ 探针缓存改 `~/.cache/mica-ai-layout/`；ONNX 已入库 |
+| WSL `/tmp` 是 tmpfs，VM 停止即清空 | 探针脚本缓存/中间产物丢失 | ✅ 探针缓存已改 `~/.cache/mica-ai-layout/`；模型改放仓库内 `model-tools/layout/models/`（注意：**该文件未提交**，见 7.2） |
 | Windows paddle2onnx wheel 缺 `common.dll` | 无法在 Win 端直接转 | 走 WSL 转换路线（已验证可行） |
-| `model.onnx` 125MB 超出 AGENTS.md「入库模型 <50MB」约定 | 仓库体积（clone/push 代价） | ⚠️ **待 owner 决策**：维持入库 / 走 Git LFS / 改下载脚本。当前未 commit，改动留在工作区 |
+| `model.onnx` 125MB 超出 AGENTS.md「单文件 <50MB」约定 | 仓库体积 / 平台硬限 | ✅ **已决策（2026-09-18）：暂不入库、不随仓库分发**。核实平台配额后「维持入库」与「Git LFS」均不可行：GitHub >100MB **硬阻断整个 push**、Gitee 社区版单文件 ≤50MB、Gitee 免费版**无 LFS 配额**（企业版标准版起才有）⇒ 三远端方案在 Gitee 断裂。获取方式与 sha256 见 [`model-tools/layout/README.md`](../model-tools/layout/README.md) 的「分发状态」 |
+| ~~**`AGENTS.md` 文档漂移（3 处）**~~ | ~~① smoke 命令不存在；② §6.1 License 表未收录 layout / plate；③ §6.2「均 <50MB」与 125MB 例外冲突~~ | ✅ **已清理（2026-09-18）**：① §2 地图删 `scripts/smoke_test.py`、§3.2 改为「模型资产 + 集成测试自检」并加「该命令不存在」警告、§7 §8 的 smoke 引用改为跑对应能力集成测试；② §6.1 表补 `mica-ai-plate` / `mica-ai-layout` 两行；③ §6.2 两条 `<50MB` 表述改为「单文件须 <50MB，超限者不入库（layout 为唯一例外）」。顺带补齐 §1 / §2 里缺失的 plate / layout 模块与 starter 登记 |
+| 新克隆仓库的 `mvn test` 行为 | 模型未分发 ⇒ layout 集成测试会**整体跳过**（`Assumptions`），构建仍绿 | ✅ 已按此设计：`LayoutIntegrationTest` 在模型缺失时跳过并在报告里给出提示，不掩盖真实回归 |
+| `mica-ai-example` 的 layout 示例缺失 | 有配置无端点，示例不完整 | ⚠️ 待办：① 补 `LayoutController`（对齐 `PlateController` 风格）；② 因模型未分发，yml 暂置 `mica.ai.layout.enabled=false`，本地有模型时改 `true` |
+| 3 个早期探针脚本冗余（`probe_real_image.py` / `probe_real_image2.py` / `probe_order.py`） | 维护成本；其中 `probe_real_image.py` 的 `cxcywh` 解码假设是**错的** | 已在 `model-tools/layout/README.md` 标注「已被 `probe_coord_space.py` 取代，勿照抄」，死路径 `/tmp/...` 也已修为仓库相对路径；是否删除待定（`probe_coord_space.py` + `probe_real_onnx.py` 保留） |
 | `LayoutPostProcessor` 未实现 PaddleX 的 `SKIP_ORDER_LABELS` | 少数标签（如 `figure_title`/`image`）在 PaddleX 侧不参与编号，本模块 rank 是全体返回框的相对顺序 | 语义已在模块 README 说明；如要与 PaddleX `order` 逐值一致需补名单 |
 | `demo.png` 是合成图（仅 1 个区域、分数 0.437 勉强过阈值） | 集成测试覆盖度弱 | 已加可选外部文档图用例（`-Dmica.ai.layout.test.image=...`）；官方 demo 图版权不明，未入库 |
 
 ## 6. 实施完后需要复核的事（状态）
 
-1. ✅ `mvn -pl mica-ai-core/mica-ai-layout test` 全绿：**25 个用例**（集成 5 + 配置 8 + 后处理 13，含 1 个默认跳过的外部图用例）
-2. ✅ `mvn -DskipTests install` 全模块构建通过
+1. ✅ `mvn -pl mica-ai-core/mica-ai-layout test` 全绿：**26 个用例**（集成 5 + 配置 8 + 后处理 13，含 1 个默认跳过的外部图用例）
+2. ✅ `mvn install` 全模块构建通过：face 13 / filetype 25 / plate 2 / **layout 26（1 skipped）** / example 8
 3. ✅ 真 ONNX 端到端：官方 demo（1654×2339）**14 个区域**、top1 `text 0.945`；与 Python 参考坐标逐像素吻合（见 4.1）
 4. ✅ README 的 I/O 表格、25 类别表与代码默认值一致（坐标空间约定单列一节）
-5. ✅ `model-tools/layout/README.md` 已更新为实际文件与 125MB
+5. ✅ `model-tools/layout/README.md` 已更新为实际文件与 125MB，并补「分发状态（已决策：暂不入库）」小节（含平台配额否决依据、获取方式、sha256）
 6. ✅ NMS 后无重叠框，坐标全部落在原图范围内（集成测试 `allSatisfy` 断言）
+7. ✅ 代码已提交并推送 GitHub / Gitee / GitCode 三远端（模型除外，见第 7 节）
 
 ### 6.1 尚未做的（需 owner 决策或后续排期）
 
-- 仓库体积策略（125MB 模型）
+- ~~**仓库体积策略**（125MB 模型）~~ ✅ **已决策（2026-09-18）：暂不入库、不随仓库分发**（平台硬限同时否决「入库」与「LFS」，理由见第 5 节风险表）；若后续想降低上手门槛，再考虑 GitHub Release 资产 + 拉取脚本
+- ~~**`AGENTS.md` 三处漂移**~~ ✅ **已清理（2026-09-18）**：smoke 引用全删、License 表补 layout / plate、§6.2 加 125MB 例外；全仓 `make -C model-tools smoke` 残留引用（根 README / `model-tools/README.md` / face README / filetype README）同步清零
 - `SKIP_ORDER_LABELS` 对齐
+- `mica-ai-example` 补 `LayoutController`（对齐 `PlateController` 风格）；`mica.ai.layout.enabled` **保持 `false`**（模型不随仓库分发，见 7.2）
 - 在真实文档集上标定 `scoreThreshold` / per-class 阈值（当前 0.4 沿用官方 `draw_threshold`）
-- `mica-ai-example` 增加 layout 示例 + starter 的 `application.yml` 示例（本次未动 example 模块）
+- 评估删除 3 个早期探针脚本（`probe_real_image.py` / `probe_real_image2.py` / `probe_order.py`），只保留 `probe_coord_space.py` + `probe_real_onnx.py`
+
+## 7. 提交与分发状态（2026-09-18）
+
+### 7.1 已提交 / 已推送
+
+| 项 | 值 |
+|----|----|
+| commit | `5432a0f feat(layout): add PP-DocLayoutV3 layout analysis module and starter` |
+| 变更 | 31 files changed, 2698 insertions(+), 5 deletions(-) |
+| 推送 | ✅ GitHub `lets-mica/mica-ai` / Gitee `dreamlu/mica-ai` / GitCode `mica/mica-ai`（`d7f21df..5432a0f` master） |
+
+提交内容：`mica-ai-core/mica-ai-layout`、`mica-ai-starters/mica-ai-layout-spring-boot-starter`、
+根/各聚合 `pom.xml` 的模块与 BOM 登记、`mica-ai-example` 依赖与 yml、`model-tools/layout`（README + 探针）、
+本跟踪文档、`.gitignore`。
+
+### 7.2 不提交：125MB 模型（已决策：不随仓库分发）
+
+```gitignore
+# .gitignore（追加在 !model-tools/*/models/** 之后，靠「后匹配者胜」覆盖该白名单）
+model-tools/layout/models/model.onnx
+```
+
+- 这是**唯一**不随仓库分发的模型（其余 face / filetype / plate 模型均已入库）
+- **决策依据**（2026-09-18 核实平台配额）：「维持入库」与「Git LFS」都不可行 ——
+  GitHub >100MB **硬阻断整个 push**、Gitee 社区版单文件 ≤50MB、Gitee 免费版**无 LFS 配额**
+- 获取方式（协作者副本 / 自行 paddle2onnx 转换）与 sha256 已写入
+  [`model-tools/layout/README.md`](../model-tools/layout/README.md) 的「分发状态」小节
+- ⚠️ `model-tools/layout/models/model.onnx` 是**未跟踪**文件，删除即不可恢复（无 git 历史）
+  ⇒ 不要在仓库内对它做清理 / 重命名动作
+
+### 7.3 为「模型不随仓库分发」做的配套改动
+
+| 位置 | 改动 | 原因 |
+|------|------|------|
+| `LayoutIntegrationTest` | `@BeforeAll` 用 `Assumptions.assumeTrue` 检查模型存在，缺失则整类跳过 | 原先 `locateRepoFile()` 不做存在性校验，模型缺失会一路 NPE/抛异常 ⇒ **新克隆仓库 `mvn test` 直接失败** |
+| `locateRepoFile()` | 文件不存在时返回 `null` 而非无条件 `resolve()` | 让调用方能区分「仓库根找不到」（断言失败）与「模型缺失」（可跳过） |
+| `mica-ai-example/application.yml` | `mica.ai.layout.enabled: false` + 注释 | 模型缺失时 `LayoutPipeline.create` 会 fail-fast，示例应用启动即挂 |
+| `model-tools/README.md` / `model-tools/layout/README.md` | 标注「125MB 暂未提交」+ 方案对比 + 探针脚本取代关系 | 避免后来者以为模型已入库 |
+| 4 个早期探针脚本（`probe_real_onnx.py` / `probe_real_image.py` / `probe_real_image2.py` / `probe_order.py`） | 死路径 `/tmp/PP-DocLayoutV3/model.onnx` → 仓库相对 `../models/model.onnx`；demo 图缓存 `/tmp/layout_demo.jpg` → `~/.cache/mica-ai-layout/`；`probe_real_image.py` 加「错误假设」警告头 | 提交进去的脚本必须能跑；旧路径指向的 tmpfs 早已被清空 |
+
+### 7.4 文档漂移清理（2026-09-18）
+
+`AGENTS.md` 的三处漂移已修复（治理文件，改动经 owner 确认）：
+
+| 位置 | 原状态 | 现状态 |
+|------|--------|--------|
+| `AGENTS.md` §2 仓库地图 | 列了已删除的 `model-tools/scripts/smoke_test.py`；缺 plate / layout 模块与 starter | 删除 smoke 行，补齐 `mica-ai-plate` / `mica-ai-layout` 与两个 starter、`docs/` |
+| `AGENTS.md` §3.2 / §7 / §8 | 要求 `make -C model-tools smoke`（命令**不存在**） | 改为「模型资产 + 对应能力模块集成测试自检」，并加「该命令不存在，不要再写进任何文档」的显式警告 |
+| `AGENTS.md` §6.1 License 表 | 漏 `mica-ai-plate` / `mica-ai-layout` | 补齐两行（HyperLPR3 v20230229 / PP-DocLayoutV3，均 Apache 2.0 ✅） |
+| `AGENTS.md` §6.2 | 两处写「入库模型均 <50MB」，与 125MB 例外冲突 | 改为「单文件须 <50MB，超限者不入库」，并写明超限模型的三条配套措施、禁止擅自引入 LFS |
+| `AGENTS.md` §1 项目一句话 | 未提车牌 / 版面能力 | 补齐两项能力描述 |
+| 根 `README.md` / `model-tools/README.md` / `model-tools/face/README.md` / `model-tools/filetype/README.md` | 残留 `make -C model-tools smoke` 引用 | 全部替换为「跑对应能力模块集成测试」；全仓 `smoke` 死引用已清零 |

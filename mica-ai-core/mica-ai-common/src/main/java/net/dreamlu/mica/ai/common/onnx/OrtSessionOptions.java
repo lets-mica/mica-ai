@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * ONNX Runtime 会话基础配置（跨能力共享）。
  *
@@ -38,6 +41,15 @@ public class OrtSessionOptions {
 
 	@Builder.Default
 	private OrtExecutionMode executionMode = OrtExecutionMode.PARALLEL;
+
+	@Builder.Default
+	private boolean enableCpuMemArena = false;
+
+	@Builder.Default
+	private boolean enableMemoryPattern = false;
+
+	@Builder.Default
+	private Map<String, Long> symbolicDimensionValues = Collections.emptyMap();
 
 	public static OrtSessionOptions defaults() {
 		return OrtSessionOptions.builder().build();

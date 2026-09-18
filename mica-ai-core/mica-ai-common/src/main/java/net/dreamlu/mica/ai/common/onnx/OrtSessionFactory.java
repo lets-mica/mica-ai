@@ -3,9 +3,7 @@
  */
 package net.dreamlu.mica.ai.common.onnx;
 
-import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtProvider;
 import ai.onnxruntime.OrtSession;
 import ai.onnxruntime.OrtSession.SessionOptions.ExecutionMode;
 import ai.onnxruntime.OrtSession.SessionOptions.OptLevel;
@@ -14,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
  * 将 {@link OrtSessionOptions} 配置转换为 ONNX Runtime 原生的
@@ -48,29 +46,27 @@ public class OrtSessionFactory {
 			}
 			so.setOptimizationLevel(mapLevel(options.getGraphOptimizationLevel()));
 			so.setExecutionMode(mapMode(options.getExecutionMode()));
+			so.setCPUArenaAllocator(options.isEnableCpuMemArena());
+			so.setMemoryPatternOptimization(options.isEnableMemoryPattern());
+			Map<String, Long> symbolicDims = options.getSymbolicDimensionValues();
+			if (symbolicDims != null) {
+				for (Map.Entry<String, Long> entry : symbolicDims.entrySet()) {
+					if (entry.getKey() == null || entry.getValue() == null) {
+						continue;
+					}
+					so.setSymbolicDimensionValue(entry.getKey(), entry.getValue());
+				}
+			}
 		} catch (OrtException e) {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
 		}
 
 		if (options.getDevice() == OrtDevice.GPU) {
-			applyCuda(so, options.getCudaDeviceId());
+			String[] providers = OrtProviders.resolve(false);
+			OrtProviders.apply(providers, so, options.getCudaDeviceId());
 		}
 		return so;
-	}
-
-	private static void applyCuda(OrtSession.SessionOptions so, int deviceId) {
-		try {
-			Set<OrtProvider> providers = OrtEnvironment.getAvailableProviders();
-			if (providers == null || !providers.contains(OrtProvider.CUDA)) {
-				log.warn("mica-ai: 未检测到可用的 CUDA 执行提供器，回退到 CPU 推理");
-				return;
-			}
-			so.addCUDA(deviceId);
-			log.info("mica-ai: 已启用 CUDA 执行提供器 (deviceId={})", deviceId);
-		} catch (OrtException e) {
-			log.warn("mica-ai: 启用 CUDA 执行提供器失败，回退到 CPU 推理: {}", e.getMessage());
-		}
 	}
 
 	private static OptLevel mapLevel(OrtGraphOptimizationLevel level) {

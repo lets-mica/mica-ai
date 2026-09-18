@@ -31,7 +31,7 @@
 | PyTorch / PaddlePaddle 几百 MB 起步，包体爆炸 | **ONNX Runtime** 一个 runtime 全部搞定，CPU/GPU/CUDA 自由切换 |
 | 模型预处理、后处理各家一套，文档稀烂 | **端到端复刻 OpenCV / Magika / HyperLPR3 实现**，预处理 / 后处理 / 解码全部内置，开箱即用 |
 | 集成 Spring Boot 要写一堆 Bean 配置 | **官方 Starter**，一行 YAML 注入引擎 Bean |
-| 模型下载慢、上手要跑 Python 脚本 | **模型直接入库**（均 <50MB），克隆即用，`make -C model-tools smoke` 一键自检 |
+| 模型下载慢、上手要跑 Python 脚本 | **模型直接入库**，克隆即用，零下载 / 零转换步骤 |
 
 > 💡 **Mica AI 不是又一个 SDK，而是 Java 工程师的 AI 全家桶。**
 
