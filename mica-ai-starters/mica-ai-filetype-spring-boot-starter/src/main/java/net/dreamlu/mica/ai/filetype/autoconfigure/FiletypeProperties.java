@@ -30,12 +30,39 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(prefix = "mica.ai.filetype")
 public class FiletypeProperties {
 
+	/**
+	 * 是否启用文件类型识别（false 时不装配 FiletypeDetector Bean）。
+	 */
 	private boolean enabled = true;
+
+	/**
+	 * 模型版本（对应 classpath: mica-ai/models/filetype/{modelVersion}/ 目录名）。
+	 */
 	private String modelVersion = "standard_v3_3";
+
+	/**
+	 * Magika 模型 ONNX 路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 */
 	private String modelPath;
+
+	/**
+	 * config.min.json 路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 */
 	private String configPath;
+
+	/**
+	 * content_types_kb.min.json 知识库路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 */
 	private String contentTypesPath;
+
+	/**
+	 * 预测模式：HIGH_CONFIDENCE（默认）/ MEDIUM_CONFIDENCE / BEST_GUESS。
+	 */
 	private PredictionMode predictionMode = PredictionMode.HIGH_CONFIDENCE;
+
+	/**
+	 * ONNX Runtime 会话参数（线程数 / 设备等）。
+	 */
 	@NestedConfigurationProperty
 	private OrtSessionOptions onnx = new OrtSessionOptions();
 

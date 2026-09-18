@@ -29,18 +29,69 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(prefix = "mica.ai.plate")
 public class PlateProperties {
 
+	/**
+	 * 是否启用车牌识别（false 时不装配 PlatePipeline Bean）。
+	 */
 	private boolean enabled = true;
+
+	/**
+	 * 模型版本（对应 model-tools/plate/models/ 的版本标识，如 20230229）。
+	 */
 	private String modelVersion = "20230229";
+
+	/**
+	 * 车牌检测模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 */
 	private String detectionModelPath;
+
+	/**
+	 * 车牌字符识别（CRNN）模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 */
 	private String recognitionModelPath;
+
+	/**
+	 * 车牌颜色分类模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 */
 	private String classificationModelPath;
+
+	/**
+	 * 检测模型输入边长（320 或 640，需与模型实际输入一致）。
+	 */
 	private int detectionInputSize = 320;
+
+	/**
+	 * 识别模型输入高度（HyperLPR3 默认 48）。
+	 */
 	private int recognitionInputHeight = 48;
+
+	/**
+	 * 识别模型输入宽度（HyperLPR3 默认 160）。
+	 */
 	private int recognitionInputWidth = 160;
+
+	/**
+	 * 颜色分类模型输入边长（HyperLPR3 默认 96）。
+	 */
 	private int classificationInputSize = 96;
+
+	/**
+	 * 检测置信度阈值（0~1，低于该值的候选框丢弃）。
+	 */
 	private float detectionConfidenceThreshold = 0.25f;
+
+	/**
+	 * 检测 NMS IoU 阈值。
+	 */
 	private float detectionNmsThreshold = 0.5f;
+
+	/**
+	 * 单张图片最多识别的车牌数。
+	 */
 	private int maxPlates = 5;
+
+	/**
+	 * ONNX Runtime 会话参数（线程数 / 设备等）。
+	 */
 	@NestedConfigurationProperty
 	private OrtSessionOptions onnx = new OrtSessionOptions();
 
