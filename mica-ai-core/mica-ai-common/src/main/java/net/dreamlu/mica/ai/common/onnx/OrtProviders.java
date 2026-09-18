@@ -44,13 +44,8 @@ public class OrtProviders {
 
 	static {
 		Map<String, EpRegistrar> map = new LinkedHashMap<>();
-		map.put(CUDA, (opts, deviceId) -> opts.addCUDA(deviceId));
-		try {
-			OrtSession.SessionOptions.class.getMethod("addCoreML");
-			map.put(CORE_ML, (opts, deviceId) -> opts.addCoreML());
-		} catch (NoSuchMethodException ignored) {
-			// 当前 ONNX Runtime 版本无 addCoreML，跳过注册
-		}
+		map.put(CUDA, OrtSession.SessionOptions::addCUDA);
+		map.put(CORE_ML, (opts, deviceId) -> opts.addCoreML());
 		REGISTRARS = Collections.unmodifiableMap(map);
 	}
 
