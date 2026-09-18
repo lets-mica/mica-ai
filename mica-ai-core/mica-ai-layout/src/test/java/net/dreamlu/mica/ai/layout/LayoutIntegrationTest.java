@@ -4,6 +4,7 @@
 package net.dreamlu.mica.ai.layout;
 
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
+import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.layout.config.LayoutConfig;
 import net.dreamlu.mica.ai.layout.model.LayoutResult;
 import net.dreamlu.mica.ai.layout.pipeline.LayoutPipeline;
@@ -172,7 +173,7 @@ class LayoutIntegrationTest {
 	private static byte[] readResource(String name) throws Exception {
 		try (InputStream in = LayoutIntegrationTest.class.getResourceAsStream(name)) {
 			assertThat(in).as("测试资源必须存在: " + name).isNotNull();
-			return in.readAllBytes();
+			return IOUtil.readAllBytes(in);
 		}
 	}
 
