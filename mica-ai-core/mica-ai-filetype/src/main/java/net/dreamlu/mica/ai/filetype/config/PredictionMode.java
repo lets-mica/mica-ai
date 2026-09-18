@@ -15,6 +15,17 @@
  */
 package net.dreamlu.mica.ai.filetype.config;
 
+/**
+ * 预测模式（决定如何处理低于阈值的输出）。
+ *
+ * <ul>
+ *   <li>{@link #HIGH_CONFIDENCE}（默认）—— 按 kb {@code thresholds[label]} 与
+ *       {@code medium_confidence_threshold=0.5} 做置信度校验；不通过则按
+ *       {@code is_text} 兜底为 {@code txt} / {@code unknown}</li>
+ *   <li>{@link #MEDIUM_CONFIDENCE} —— 仅按 {@code medium_confidence_threshold=0.5} 校验</li>
+ *   <li>{@link #BEST_GUESS} —— 不做阈值校验，永远采用模型 argmax 输出</li>
+ * </ul>
+ */
 public enum PredictionMode {
     HIGH_CONFIDENCE,
     MEDIUM_CONFIDENCE,

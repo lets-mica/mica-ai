@@ -19,6 +19,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 单个车牌识别结果。
+ *
+ * <ul>
+ *   <li>{@code plateCode}：车牌号（双层牌为上下两行拼接）</li>
+ *   <li>{@code plateType}：10 类枚举，详见 {@link PlateType}</li>
+ *   <li>{@code detectionConfidence}：检测框得分（{@code obj_conf × class score}）</li>
+ *   <li>{@code recognitionConfidence}：CTC 解码字符概率均值（双层牌为两行平均）</li>
+ *   <li>{@code boundingBox}：原图坐标 {@code [x1, y1, x2, y2]}</li>
+ *   <li>{@code landmarks}：4 角点 {@code [4][2]}，顺序 左上 / 右上 / 右下 / 左下</li>
+ * </ul>
+ *
+ * <p>不可变。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

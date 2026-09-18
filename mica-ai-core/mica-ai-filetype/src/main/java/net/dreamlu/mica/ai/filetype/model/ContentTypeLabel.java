@@ -15,6 +15,18 @@
  */
 package net.dreamlu.mica.ai.filetype.model;
 
+/**
+ * 特殊 / 兜底标签常量（与官方 Magika Python 版一致）。
+ *
+ * <ul>
+ *   <li>{@link #UNKNOWN} —— 模型不在知识库 / 兜底标签</li>
+ *   <li>{@link #TXT} —— 超小文本文件兜底</li>
+ *   <li>{@link #EMPTY} —— 0 字节文件</li>
+ *   <li>{@link #DIRECTORY} —— 目录</li>
+ *   <li>{@link #SYMLINK} —— 符号链接</li>
+ *   <li>{@link #UNDEFINED} —— 特殊结果（如目录、empty）下 {@code modelLabel} 字段的值</li>
+ * </ul>
+ */
 public interface ContentTypeLabel {
 
     String UNKNOWN = "unknown";

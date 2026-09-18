@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * mica-ai-face Spring Boot 自动装配（基于 mica-auto）。
  *
- * <p>由 {@code mica-auto} 扫描本类上的 {@link Component} 注解，自动生成
+ * <p>由 {@code mica-auto} 扫描本类上的 {@code @Component} 注解，自动生成
  * {@code META-INF/spring.factories} 中的 {@code EnableAutoConfiguration} 条目。
  */
 @Slf4j
@@ -49,6 +49,12 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = "mica.ai.face", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FaceAutoConfiguration implements InitializingBean {
 
+	/**
+	 * 构造模型管理器，按配置加载各 ONNX 模型。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 模型管理器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public ModelManager modelManager(FaceProperties properties) {
@@ -65,24 +71,48 @@ public class FaceAutoConfiguration implements InitializingBean {
 		return ModelManager.create(config);
 	}
 
+	/**
+	 * 构造人脸检测器。
+	 *
+	 * @param modelManager 模型管理器
+	 * @return 人脸检测器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public FaceDetector faceDetector(ModelManager modelManager) {
 		return new FaceDetector(modelManager);
 	}
 
+	/**
+	 * 构造人脸对齐器。
+	 *
+	 * @return 人脸对齐器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public FaceAligner faceAligner() {
 		return new FaceAligner();
 	}
 
+	/**
+	 * 构造人脸特征提取器。
+	 *
+	 * @param modelManager 模型管理器
+	 * @return 特征提取器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public FeatureExtractor featureExtractor(ModelManager modelManager) {
 		return new FeatureExtractor(modelManager);
 	}
 
+	/**
+	 * 构造活体检测器，仅在 {@code mica.ai.face.liveness.enabled} 开启时装配。
+	 *
+	 * @param modelManager 模型管理器
+	 * @param properties   人脸模块配置
+	 * @return 活体检测器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = "mica.ai.face.liveness", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -92,12 +122,25 @@ public class FaceAutoConfiguration implements InitializingBean {
 			properties.getLiveness().getCropScale());
 	}
 
+	/**
+	 * 构造人脸 1:1 比对门面。
+	 *
+	 * @param modelManager 模型管理器
+	 * @return 人脸比对门面
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public FaceVerifier faceVerifier(ModelManager modelManager) {
 		return new FaceVerifier(modelManager);
 	}
 
+	/**
+	 * 构造头像提取器，默认配置来自 {@code mica.ai.face.avatar.*}。
+	 *
+	 * @param faceDetector 人脸检测器
+	 * @param properties   人脸模块配置
+	 * @return 头像提取器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public AvatarExtractor avatarExtractor(FaceDetector faceDetector, FaceProperties properties) {
@@ -120,6 +163,12 @@ public class FaceAutoConfiguration implements InitializingBean {
 		return new AvatarExtractor(faceDetector, defaults);
 	}
 
+	/**
+	 * 构造证件卡片提取器，默认配置来自 {@code mica.ai.face.card.*}。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 卡片提取器
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public CardExtractor cardExtractor(FaceProperties properties) {

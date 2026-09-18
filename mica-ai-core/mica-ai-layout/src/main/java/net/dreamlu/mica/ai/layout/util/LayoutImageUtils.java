@@ -23,12 +23,21 @@ import org.opencv.imgcodecs.Imgcodecs;
 
 /**
  * mica-ai-layout 内部图像工具，零 Spring、零 face 依赖。
+ *
+ * <p>工具类，私有构造，线程安全（无状态）。
  */
 public final class LayoutImageUtils {
 
 	private LayoutImageUtils() {
 	}
 
+	/**
+	 * 把图像字节数组解码为 BGR {@link Mat}。
+	 *
+	 * @param imageBytes 图像文件字节（png / jpg 等 OpenCV 支持的格式）
+	 * @return 解码后的 BGR Mat，调用方负责 release
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 字节为空或解码失败
+	 */
 	public static Mat byteArrayToMat(byte[] imageBytes) {
 		if (imageBytes == null || imageBytes.length == 0) {
 			throw new MicaAiException(
@@ -49,6 +58,11 @@ public final class LayoutImageUtils {
 
 	/**
 	 * 把 BGR {@link Mat} 转成 RGB + CHW float，并按 (x - mean) / std 归一化。
+	 *
+	 * @param bgr  原图 BGR Mat
+	 * @param mean 每通道均值（BGR 顺序）
+	 * @param std  每通道标准差（BGR 顺序）
+	 * @return RGB CHW 布局的归一化 float 数组
 	 */
 	public static float[] bgrHwcToRgbChwFloat(Mat bgr, float[] mean, float[] std) {
 		int h = bgr.rows();
@@ -68,6 +82,11 @@ public final class LayoutImageUtils {
 		return data;
 	}
 
+	/**
+	 * 批量释放 Mat，null 元素自动跳过。
+	 *
+	 * @param mats 待释放的 Mat 可变参数
+	 */
 	public static void releaseAll(Mat... mats) {
 		if (mats == null) {
 			return;

@@ -30,6 +30,8 @@ import java.util.Objects;
  *
  * <p>先应用 overwrite_map，再按 {@link PredictionMode} 判定是否信任模型输出；
  * 不信任时按 kb 的 is_text 信息降级为 {@code txt} / {@code unknown}。
+ *
+ * <p>线程安全：构造后所有字段均为 final，无状态变更，可作为单例 Bean 共享。
  */
 public class PredictionPostProcessor {
 
@@ -45,6 +47,13 @@ public class PredictionPostProcessor {
 		this.predictionMode = Objects.requireNonNull(predictionMode, "PredictionMode must not be null");
 	}
 
+	/**
+	 * 解析最终对外标签。
+	 *
+	 * @param dlLabel 模型直接 argmax 输出的标签
+	 * @param score   该标签的 softmax 概率
+	 * @return 经 overwrite_map + 置信度阈值后处理的标签；阈值不通过则回退 {@code txt} / {@code unknown}
+	 */
 	public String resolveOutputLabel(String dlLabel, float score) {
 		Map<String, String> overwriteMap = modelConfig.getOverwriteMap();
 		if (overwriteMap == null) {

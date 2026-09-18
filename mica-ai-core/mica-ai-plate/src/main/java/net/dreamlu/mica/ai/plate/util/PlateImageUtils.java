@@ -29,6 +29,13 @@ public final class PlateImageUtils {
     private PlateImageUtils() {
     }
 
+    /**
+     * 将图像字节数组解码为 BGR 格式的 {@link Mat}。
+     *
+     * @param imageBytes 图像文件字节（jpg/png 等）
+     * @return 解码后的 BGR 图像
+     * @throws MicaAiException 字节为空或解码失败时抛出，{@link ErrorCode#DETECTION_FAILED}
+     */
     public static Mat byteArrayToMat(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) {
             throw new MicaAiException(
@@ -47,6 +54,14 @@ public final class PlateImageUtils {
         }
     }
 
+    /**
+     * 将 BGR HWC 图像转为 RGB CHW float 数组。
+     *
+     * @param bgr    BGR 格式图像
+     * @param scale  像素缩放系数
+     * @param offset 像素偏移量
+     * @return RGB CHW 排列的 float 数组
+     */
     public static float[] bgrHwcToRgbChwFloat(Mat bgr, float scale, float offset) {
         int h = bgr.rows();
         int w = bgr.cols();
@@ -65,6 +80,14 @@ public final class PlateImageUtils {
         return data;
     }
 
+    /**
+     * 将 BGR HWC 图像转为 BGR CHW float 数组。
+     *
+     * @param bgr    BGR 格式图像
+     * @param scale  像素缩放系数
+     * @param offset 像素偏移量
+     * @return BGR CHW 排列的 float 数组
+     */
     public static float[] bgrHwcToChwFloat(Mat bgr, float scale, float offset) {
         int h = bgr.rows();
         int w = bgr.cols();
@@ -83,6 +106,11 @@ public final class PlateImageUtils {
         return data;
     }
 
+    /**
+     * 释放所有 {@link Mat} 的本地内存，忽略 null 元素。
+     *
+     * @param mats 待释放的 Mat 数组
+     */
     public static void releaseAll(Mat... mats) {
         if (mats == null) {
             return;

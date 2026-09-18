@@ -19,12 +19,17 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * HyperLPR3 字符字典（CTC blank + 67 字符）。
+ * HyperLPR3 字符字典（CTC blank + 71 token，对齐 Python 版
+ * {@code hyperlpr3/common/tokenize.py}）。
  *
- * <p>对齐 Python 版 {@code hyperlpr3/common/tokenize.py}。
+ * <p>下标 0 为 CTC blank；其余 1-9 数字、10-35 英文大写（跳过 I / O）、
+ * 36-70 为 31 个省份简称 + 学 / 警 / 使 / 领 / 港 / 澳。
+ *
+ * <p>线程安全（不可变常量列表）。
  */
 public final class PlateDictionary {
 
+    /** 字符 token 列表，下标 0 为 CTC blank */
     public static final List<String> TOKENS = Arrays.asList(
         "blank", "'", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
         "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N",
@@ -35,8 +40,14 @@ public final class PlateDictionary {
         "陕", "青", "鲁", "黑", "领", "使", "澳"
     );
 
+    /** CTC blank 在 token 列表中的下标 */
     public static final int BLANK_INDEX = 0;
 
+    /**
+     * 获取字典 token 总数。
+     *
+     * @return token 数量
+     */
     public static int size() {
         return TOKENS.size();
     }

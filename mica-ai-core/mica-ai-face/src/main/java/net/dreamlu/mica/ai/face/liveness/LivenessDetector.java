@@ -48,9 +48,13 @@ import java.util.Map;
 @Getter
 public class LivenessDetector {
 
+	/** 模型输入边长（像素）。 */
 	public static final int INPUT_SIZE = 80;
+	/** softmax 输出中纸质照片攻击（print）的下标。 */
 	public static final int INDEX_PRINT = 0;
+	/** softmax 输出中真人（live）的下标。 */
 	public static final int INDEX_LIVE = 1;
+	/** softmax 输出中屏幕翻拍攻击（replay）的下标。 */
 	public static final int INDEX_REPLAY = 2;
 
 	private static final float SCALE = 1.0f;
@@ -64,6 +68,7 @@ public class LivenessDetector {
 	/**
 	 * 构造活体检测器（默认阈值 0.85、外扩 2.7 倍）。
 	 *
+	 * @param modelManager 模型管理器（活体模型需已加载）
 	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 活体模型未加载
 	 */
 	public LivenessDetector(ModelManager modelManager) {
@@ -91,6 +96,12 @@ public class LivenessDetector {
 		this.cropScale = cropScale;
 	}
 
+	/**
+	 * 对 logits 做数值稳定的 softmax 归一化。
+	 *
+	 * @param logits 模型输出的原始 logits
+	 * @return 归一化后的概率分布（和为 1）
+	 */
 	public static float[] softmax(float[] logits) {
 		float max = Float.NEGATIVE_INFINITY;
 		for (float v : logits) {

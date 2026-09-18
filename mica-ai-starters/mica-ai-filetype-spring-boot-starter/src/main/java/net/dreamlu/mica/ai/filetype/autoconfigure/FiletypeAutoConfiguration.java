@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * mica-ai-filetype Spring Boot 自动装配（基于 mica-auto）。
  *
- * <p>由 {@code mica-auto} 扫描本类上的 {@link Component} 注解，自动生成
+ * <p>由 {@code mica-auto} 扫描本类上的 {@code @Component} 注解，自动生成
  * {@code META-INF/spring.factories} 中的 {@code EnableAutoConfiguration} 条目。
  */
 @Slf4j
@@ -38,6 +38,12 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = "mica.ai.filetype", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FiletypeAutoConfiguration {
 
+	/**
+	 * 创建文件类型检测器 Bean。
+	 *
+	 * @param properties 文件类型配置属性
+	 * @return FiletypeDetector 实例
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public FiletypeDetector filetypeDetector(FiletypeProperties properties) {

@@ -16,14 +16,20 @@
 package net.dreamlu.mica.ai.face.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
  * 活体检测结果。
+ *
+ * <ul>
+ *   <li>{@code liveScore}：真人概率，{@code [0, 1]}，与 {@code LivenessDetector.INDEX_LIVE} 对应</li>
+ *   <li>{@code isLive}：{@code liveScore > threshold} 的便捷布尔</li>
+ *   <li>{@code attackType}：{@code "real"} / {@code "print"} / {@code "replay"} / {@code "unknown"}</li>
+ * </ul>
+ *
+ * <p>不可变。
  */
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class LivenessResult {
 

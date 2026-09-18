@@ -38,8 +38,13 @@ import java.util.List;
 /**
  * 车牌字符识别（HyperLPR3 PPRCNN / CRNN + CTC）。
  *
- * <p>输入 BGR 校正后的车牌图，内部 resize 到 (recHeight × 变长 W) 再喂模型；
- * 输出 (1, 40, 6625) logits，argmax + 去重复 + 去 blank(0) 得到最终字符。
+ * <p>输入 BGR 校正后的车牌图，内部 resize 到 {@code (recHeight × 变长 W)}（W ∈ [48, 160]）
+ * 再喂模型；输出 {@code [1, 40, vocab]} logits，{@link PlateDictionary#BLANK_INDEX} 之前的
+ * argmax + 去重 + 去 blank 得到最终字符序列。
+ *
+ * <p>线程安全：内部 ONNX session 线程安全，每次推理新建 {@code OnnxTensor}；
+ * 可作为单例 Bean 共享（典型用法：由 {@link net.dreamlu.mica.ai.plate.pipeline.PlatePipeline}
+ * 持有）。
  */
 @Slf4j
 public class PlateRecognizer implements AutoCloseable {
@@ -55,6 +60,13 @@ public class PlateRecognizer implements AutoCloseable {
     @Getter
     private final int maxInputWidth;
 
+    /**
+     * 构造车牌文本识别器（CRNN）。
+     *
+     * @param environment    ONNX 运行环境
+     * @param config         车牌识别配置
+     * @param sessionOptions ONNX session 选项
+     */
     public PlateRecognizer(OrtEnvironment environment, PlateConfig config,
                            OrtSession.SessionOptions sessionOptions) {
         this.environment = environment;
@@ -65,6 +77,13 @@ public class PlateRecognizer implements AutoCloseable {
             sessionOptions, "plate-recognizer");
     }
 
+    /**
+     * 识别车牌图像中的文本（CTC 解码）。
+     *
+     * @param bgr BGR 格式车牌图像
+     * @return 识别结果（文本 + 平均置信度），图像为空时返回空结果
+     * @throws MicaAiException 推理失败时抛出，{@link ErrorCode#INFERENCE_FAILED}
+     */
     public RecognitionResult recognize(Mat bgr) {
         if (bgr == null || bgr.empty()) {
             return new RecognitionResult("", 0f);
@@ -193,10 +212,21 @@ public class PlateRecognizer implements AutoCloseable {
         }
     }
 
+    /**
+     * 车牌文本识别结果。
+     */
     public static class RecognitionResult {
+        /** 识别出的车牌文本 */
         public final String text;
+        /** 识别平均置信度 */
         public final float confidence;
 
+        /**
+         * 构造识别结果。
+         *
+         * @param text       车牌文本
+         * @param confidence 识别平均置信度
+         */
         public RecognitionResult(String text, float confidence) {
             this.text = text;
             this.confidence = confidence;

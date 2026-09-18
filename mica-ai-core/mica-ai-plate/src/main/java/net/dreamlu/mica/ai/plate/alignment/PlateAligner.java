@@ -23,8 +23,10 @@ import org.opencv.imgproc.Imgproc;
 /**
  * 车牌四点透视校正，对齐 HyperLPR3 Python 版 {@code get_rotate_crop_image}。
  *
- * <p>输入 4 个角点 (x,y)，输出按最大边距比例校正后的车牌图；若高宽比 ≥ 1.5 再旋转 90°
+ * <p>输入 4 个角点 (x,y)，输出按最大边距比例校正后的车牌图；若高宽比 &ge; 1.5 再旋转 90°
  * （双层车牌场景）。
+ *
+ * <p>工具类，私有构造，线程安全（无状态）。
  */
 public final class PlateAligner {
 

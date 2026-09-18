@@ -22,6 +22,9 @@ import lombok.NoArgsConstructor;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
+/**
+ * 证件卡片提取配置：输出尺寸、锐化、最小卡片尺寸等参数。
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -73,18 +76,40 @@ public class CardOptions {
 	@Builder.Default
 	private int minCardSize = 400;
 
+	/**
+	 * 获取默认配置实例。
+	 *
+	 * @return 默认配置
+	 */
 	public static CardOptions defaults() {
 		return CardOptions.builder().build();
 	}
 
+	/**
+	 * 按指定输出宽高构造配置。
+	 *
+	 * @param width  输出图宽度（像素）
+	 * @param height 输出图高度（像素）
+	 * @return 配置实例
+	 */
 	public static CardOptions of(int width, int height) {
 		return CardOptions.builder().outputWidth(width).outputHeight(height).build();
 	}
 
+	/**
+	 * 获取护照卡片尺寸（1476 × 1039）的配置。
+	 *
+	 * @return 配置实例
+	 */
 	public static CardOptions passport() {
 		return CardOptions.builder().outputWidth(1476).outputHeight(1039).build();
 	}
 
+	/**
+	 * 获取期望的卡片宽高比（长短边之比）。
+	 *
+	 * @return 期望宽高比
+	 */
 	public double expectedAspectRatio() {
 		double w = Math.max(outputWidth, outputHeight);
 		double h = Math.min(outputWidth, outputHeight);

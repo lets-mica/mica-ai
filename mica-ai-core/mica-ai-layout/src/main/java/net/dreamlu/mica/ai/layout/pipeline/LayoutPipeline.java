@@ -56,6 +56,9 @@ import java.util.Set;
  *         r.getLabelCode() + " " + r.getScore() + " order=" + r.getReadingOrder()));
  * }
  * }</pre>
+ *
+ * <p>线程安全：内部 detector + ONNX session 线程安全；本类自身仅含构造时冻结的不可变
+ * 字段，可作为 Spring 单例 Bean 共享。
  */
 @Slf4j
 public class LayoutPipeline implements AutoCloseable {
@@ -64,6 +67,12 @@ public class LayoutPipeline implements AutoCloseable {
 	private final LayoutConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
+	/**
+	 * 构造门面，校验配置并初始化底层检测器。
+	 *
+	 * @param config 版面分析配置
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 配置非法或模型加载失败
+	 */
 	public LayoutPipeline(LayoutConfig config) {
 		Objects.requireNonNull(config, "LayoutConfig must not be null");
 		config.validate();
@@ -77,10 +86,23 @@ public class LayoutPipeline implements AutoCloseable {
 			config.getMaxDetections());
 	}
 
+	/**
+	 * 创建 {@link LayoutPipeline} 实例。
+	 *
+	 * @param config 版面分析配置
+	 * @return 初始化完成的 pipeline
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 配置非法或模型加载失败
+	 */
 	public static LayoutPipeline create(LayoutConfig config) {
 		return new LayoutPipeline(config);
 	}
 
+	/**
+	 * 使用默认配置创建 {@link LayoutPipeline} 实例。
+	 *
+	 * @return 初始化完成的 pipeline
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
+	 */
 	public static LayoutPipeline createDefault() {
 		return new LayoutPipeline(LayoutConfig.builder().build());
 	}
@@ -112,6 +134,14 @@ public class LayoutPipeline implements AutoCloseable {
 		return so;
 	}
 
+	/**
+	 * 检测本地图像文件的版面区域。
+	 *
+	 * @param imagePath 图像文件路径
+	 * @return 按阅读顺序排列的版面区域列表；文件不存在时抛异常
+	 * @throws MicaAiException {@link ErrorCode#NOT_FOUND} 文件不存在；
+	 *                         {@link ErrorCode#INFERENCE_FAILED} 解码或推理失败
+	 */
 	public List<LayoutResult> detectPath(String imagePath) {
 		Path p = Paths.get(imagePath);
 		if (!Files.exists(p)) {
@@ -128,10 +158,24 @@ public class LayoutPipeline implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 检测图像字节数组的版面区域。
+	 *
+	 * @param imageBytes 图像文件字节（png / jpg 等）
+	 * @return 按阅读顺序排列的版面区域列表
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 解码或推理失败
+	 */
 	public List<LayoutResult> detectBytes(byte[] imageBytes) {
 		return detector.detectBytes(imageBytes);
 	}
 
+	/**
+	 * 检测 BGR {@link Mat} 图像的版面区域。
+	 *
+	 * @param bgr 原图 BGR Mat；null 或空图时返回空列表
+	 * @return 按阅读顺序排列的版面区域列表
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 推理失败
+	 */
 	public List<LayoutResult> detect(Mat bgr) {
 		if (bgr == null || bgr.empty()) {
 			return Collections.emptyList();
@@ -139,10 +183,18 @@ public class LayoutPipeline implements AutoCloseable {
 		return detector.detect(bgr);
 	}
 
+	/**
+	 * 获取当前配置。
+	 *
+	 * @return 构造时传入的 {@link LayoutConfig}
+	 */
 	public LayoutConfig getConfig() {
 		return config;
 	}
 
+	/**
+	 * 释放底层 ONNX session 与会话选项，可重复调用。
+	 */
 	@Override
 	public void close() {
 		try {

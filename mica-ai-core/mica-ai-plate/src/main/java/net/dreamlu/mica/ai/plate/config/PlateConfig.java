@@ -22,6 +22,11 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
+/**
+ * 车牌识别配置。
+ *
+ * <p>包含模型路径、输入尺寸、置信度阈值等参数，使用 Builder 构建。
+ */
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
@@ -58,6 +63,11 @@ public class PlateConfig {
     @Builder.Default
 	private OrtSessionOptions onnx = OrtSessionOptions.defaults();
 
+    /**
+     * 校验配置合法性。
+     *
+     * @throws MicaAiException 配置非法时抛出，{@link ErrorCode#ILLEGAL_ARGUMENT}
+     */
     public void validate() {
         if (modelVersion == null || modelVersion.isEmpty()) {
             throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,

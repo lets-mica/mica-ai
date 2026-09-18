@@ -16,14 +16,20 @@
 package net.dreamlu.mica.ai.face.verification;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
  * 人脸 1:1 比对结果。
+ *
+ * <ul>
+ *   <li>{@code similarity}：余弦相似度，{@code [-1, 1]}</li>
+ *   <li>{@code threshold}：比对阈值（默认 0.35，可按调用方传入覆写）</li>
+ *   <li>{@code passed}：{@code similarity >= threshold}</li>
+ * </ul>
+ *
+ * <p>不可变。
  */
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class VerifyResult {
 

@@ -55,6 +55,11 @@ public class FeatureExtractor {
 	private final OrtSession session;
 	private final OrtEnvironment env;
 
+	/**
+	 * 使用模型管理器构造特征提取器。
+	 *
+	 * @param modelManager 模型管理器，提供识别会话与环境
+	 */
 	public FeatureExtractor(ModelManager modelManager) {
 		this.session = modelManager.getRecognitionSession();
 		this.env = modelManager.getEnvironment();
@@ -104,6 +109,12 @@ public class FeatureExtractor {
 		}
 	}
 
+	/**
+	 * 对特征向量副本做 L2 归一化，不修改原数组。
+	 *
+	 * @param v 特征向量
+	 * @return 归一化后的新数组
+	 */
 	public static float[] l2NormalizeCopy(float[] v) {
 		float[] copy = v.clone();
 		l2Normalize(copy);
@@ -113,7 +124,7 @@ public class FeatureExtractor {
 	/**
 	 * 从 112×112 已对齐 BGR 人脸图提取 128d L2-归一化特征。
 	 *
-	 * @param alignedFace 由 {@link FaceAligner} 对齐后的 BGR Mat（112×112）
+	 * @param alignedFace 由 {@code FaceAligner} 对齐后的 BGR Mat（112×112）
 	 * @return 长度为 {@link #FEATURE_DIM} 的 float 数组，||v|| ≈ 1
 	 * @throws MicaAiException {@link ErrorCode#EXTRACTION_FAILED} 入参为空 / 推理失败
 	 */

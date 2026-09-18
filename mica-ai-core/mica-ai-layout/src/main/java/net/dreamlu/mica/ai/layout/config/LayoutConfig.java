@@ -27,6 +27,9 @@ import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * PP-DocLayoutV2 / V3 版面分析配置（模型路径、letterbox 尺寸、阈值、NMS 等）。
+ */
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
@@ -34,8 +37,14 @@ public class LayoutConfig {
 
 	private static final String MODEL_RESOURCE = "mica-ai/models/layout/%s/model.onnx";
 
+	/**
+	 * 自定义模型路径；为空时按 {@code modelVersion} 解析内置 classpath 路径
+	 */
 	private String modelPath;
 
+	/**
+	 * 内置模型版本（v2 / v3），默认 v3
+	 */
 	@Builder.Default
 	private String modelVersion = "v3";
 
@@ -87,6 +96,11 @@ public class LayoutConfig {
 	@Builder.Default
 	private OrtSessionOptions onnx = OrtSessionOptions.defaults();
 
+	/**
+	 * 校验配置合法性，非法时抛出 {@link MicaAiException}。
+	 *
+	 * @throws MicaAiException 任一配置项非法时抛出，错误码为 {@link ErrorCode#ILLEGAL_ARGUMENT}
+	 */
 	public void validate() {
 		if (modelVersion == null || modelVersion.isEmpty()) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
@@ -131,11 +145,22 @@ public class LayoutConfig {
 		}
 	}
 
+	/**
+	 * 获取指定类别的置信度阈值。
+	 *
+	 * @param classIndex 类别索引
+	 * @return per-class 阈值；未配置时回退到全局 {@code scoreThreshold}
+	 */
 	public float thresholdFor(int classIndex) {
 		Float v = classScoreThresholds == null ? null : classScoreThresholds.get(classIndex);
 		return v == null ? scoreThreshold : v;
 	}
 
+	/**
+	 * 解析实际使用的模型路径。
+	 *
+	 * @return 配置了 {@code modelPath} 时直接返回；否则返回内置 classpath 资源路径
+	 */
 	public String resolveModelPath() {
 		if (modelPath != null && !modelPath.isEmpty()) {
 			return modelPath;

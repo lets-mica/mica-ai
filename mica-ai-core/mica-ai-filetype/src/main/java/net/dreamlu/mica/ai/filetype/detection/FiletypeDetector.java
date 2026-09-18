@@ -58,6 +58,9 @@ import java.util.*;
  *
  * <p>处理流程与 Python 版一致：空文件 / 超小文件走规则分支，其余提取
  * beg+end 特征送入模型，argmax 后按预测模式做后处理。
+ *
+ * <p>线程安全：内部 ONNX session 线程安全，每次推理新建 {@code OnnxTensor}；
+ * 可作为单例 Bean 共享。
  */
 @Slf4j
 public class FiletypeDetector implements AutoCloseable {

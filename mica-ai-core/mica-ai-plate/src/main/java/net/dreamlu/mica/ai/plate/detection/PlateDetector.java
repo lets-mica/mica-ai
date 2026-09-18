@@ -38,10 +38,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 车牌检测器（HyperLPR3 yolov5 多任务检测，y5fu_320x / y5fu_640x）。
+ * 车牌检测器（HyperLPR3 yolov5 多任务检测，{@code y5fu_320x} / {@code y5fu_640x}）。
  *
- * <p>输出 15 维：{@code [x_center, y_center, w, h, obj_conf, 4 关键点(8 维), 2 类score]}。
- * 后处理做 xywh2xyxy + conf*class + NMS + 坐标反算（letter_box 还原）。
+ * <p>模型输出 15 维：{@code [x_center, y_center, w, h, obj_conf, 4 关键点(8 维), 2 类 score]}。
+ * 后处理做 xywh2xyxy + {@code conf × class} + NMS + 坐标反算（letterbox 还原）。
+ *
+ * <p>线程安全：内部 ONNX session 线程安全；通常由 {@link net.dreamlu.mica.ai.plate.pipeline.PlatePipeline}
+ * 单例持有。
  */
 @Slf4j
 public class PlateDetector implements AutoCloseable {
@@ -55,6 +58,13 @@ public class PlateDetector implements AutoCloseable {
     private final float nmsThreshold;
     private final float confThreshold;
 
+    /**
+     * 构造车牌检测器。
+     *
+     * @param environment    ONNX 运行环境
+     * @param config         车牌识别配置
+     * @param sessionOptions ONNX session 选项
+     */
     public PlateDetector(OrtEnvironment environment, PlateConfig config,
                          OrtSession.SessionOptions sessionOptions) {
         this.environment = environment;
@@ -66,6 +76,13 @@ public class PlateDetector implements AutoCloseable {
             sessionOptions, "plate-detector");
     }
 
+    /**
+     * 检测图像中的车牌。
+     *
+     * @param bgr BGR 格式输入图像
+     * @return 车牌检测结果列表
+     * @throws MicaAiException 推理失败时抛出，{@link ErrorCode#INFERENCE_FAILED}
+     */
     public List<Detection> detect(Mat bgr) {
         try {
             LetterBoxResult pre = letterBox(bgr, inputSize);
@@ -240,10 +257,17 @@ public class PlateDetector implements AutoCloseable {
         }
     }
 
+    /**
+     * 车牌检测结果。
+     */
     public static class Detection {
+        /** 边界框坐标 [x1, y1, x2, y2] */
         public int[] boundingBox;
+        /** 4 个角点关键点坐标 */
         public int[][] landmarks;
+        /** 检测置信度 */
         public float detectionScore;
+        /** 车牌层级：0 单层、1 双层 */
         public int layerNum;
     }
 

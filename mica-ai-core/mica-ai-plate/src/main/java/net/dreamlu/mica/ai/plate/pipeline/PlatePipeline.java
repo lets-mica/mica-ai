@@ -48,6 +48,9 @@ import java.util.*;
  * {@link PlateAligner} 透视校正 →
  * {@link PlateRecognizer} CRNN 识别（双层车牌切成上下两行各跑一次） →
  * {@link PlateClassifier} 仅在首字符无法判定颜色时调用 → 输出 {@link PlateResult}。
+ *
+ * <p>线程安全：内部 detector / recognizer / classifier 均为 stateless + ONNX session
+ * 线程安全；本类自身仅含构造时冻结的不可变字段，可作为 Spring 单例 Bean 共享。
  */
 @Slf4j
 public class PlatePipeline implements AutoCloseable {
@@ -58,6 +61,12 @@ public class PlatePipeline implements AutoCloseable {
 	@Getter
 	private final int maxPlates;
 
+	/**
+	 * 构造车牌识别 Pipeline，加载检测、识别、分类三个模型。
+	 *
+	 * @param config 车牌识别配置
+	 * @throws MicaAiException 模型路径未配置或加载失败时抛出，{@link ErrorCode#MODEL_LOAD_FAILED}
+	 */
 	public PlatePipeline(PlateConfig config) {
 		Objects.requireNonNull(config, "PlateConfig must not be null");
 		config.validate();
@@ -77,10 +86,21 @@ public class PlatePipeline implements AutoCloseable {
 			config.getModelVersion(), maxPlates);
 	}
 
+	/**
+	 * 使用指定配置创建车牌识别 Pipeline。
+	 *
+	 * @param config 车牌识别配置
+	 * @return Pipeline 实例
+	 */
 	public static PlatePipeline create(PlateConfig config) {
 		return new PlatePipeline(config);
 	}
 
+	/**
+	 * 使用默认配置创建车牌识别 Pipeline。
+	 *
+	 * @return Pipeline 实例
+	 */
 	public static PlatePipeline createDefault() {
 		return new PlatePipeline(PlateConfig.builder().build());
 	}
@@ -137,6 +157,13 @@ public class PlatePipeline implements AutoCloseable {
 		return PlateType.UNKNOWN;
 	}
 
+	/**
+	 * 识别本地图像文件中的车牌。
+	 *
+	 * @param imagePath 图像文件路径
+	 * @return 车牌识别结果列表
+	 * @throws MicaAiException 文件不存在或读取失败时抛出，{@link ErrorCode#NOT_FOUND} / {@link ErrorCode#UNKNOWN}
+	 */
 	public List<PlateResult> recognizePath(String imagePath) {
 		Path p = Paths.get(imagePath);
 		if (!Files.exists(p)) {
@@ -153,6 +180,12 @@ public class PlatePipeline implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 识别图像字节数组中的车牌。
+	 *
+	 * @param imageBytes 图像文件字节（jpg/png 等）
+	 * @return 车牌识别结果列表
+	 */
 	public List<PlateResult> recognizeBytes(byte[] imageBytes) {
 		Mat bgr = null;
 		try {
@@ -163,6 +196,12 @@ public class PlatePipeline implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 识别 BGR 图像中的车牌。
+	 *
+	 * @param bgr BGR 格式输入图像
+	 * @return 车牌识别结果列表，图像为空或未检测到车牌时返回空列表
+	 */
 	public List<PlateResult> recognize(Mat bgr) {
 		if (bgr == null || bgr.empty()) {
 			return Collections.emptyList();

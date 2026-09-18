@@ -59,17 +59,28 @@ public class LayoutPostProcessor {
 
 	private final LayoutConfig config;
 
+	/**
+	 * 构造后处理器。
+	 *
+	 * @param config 版面分析配置（阈值、NMS 等）
+	 */
 	public LayoutPostProcessor(LayoutConfig config) {
 		this.config = config;
 	}
 
 	/**
+	 * 把模型原始输出后处理为 {@link LayoutResult} 列表。
+	 *
+	 * <p>处理链路：反 letterbox → per-class 阈值 → NMS → 整页 {@code image} 伪框过滤 →
+	 * {@code maxDetections} 截断 → reading order rank。
+	 *
 	 * @param boxes          模型原始输出 {@code [N, 7]}，letterbox 画布坐标
 	 * @param letterboxScale letterbox 缩放比（= 输入边长 / 原图边长）
 	 * @param padLeft        letterbox 左补边
 	 * @param padTop         letterbox 上补边
 	 * @param origW          原图宽
 	 * @param origH          原图高
+	 * @return 按 {@code LayoutResult#getReadingOrder()} 升序排列的版面区域列表
 	 */
 	public List<LayoutResult> postProcess(float[][] boxes, double letterboxScale,
 										  int padLeft, int padTop,

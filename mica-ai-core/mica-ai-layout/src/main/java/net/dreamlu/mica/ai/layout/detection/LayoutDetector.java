@@ -66,8 +66,11 @@ import java.util.Map;
  * </ul>
  *
  * <p>输入节点名按「名称提示」解析，输出节点名按「名称提示 → 形状/dtype 推断」解析，
- * 换导出、换文件名都不会静默错位；模型输入边长与 {@link LayoutConfig#getMaxSideLength()}
+ * 换导出、换文件名都不会静默错位；模型输入边长与 {@code LayoutConfig#getMaxSideLength()}
  * 不一致时快速失败。
+ *
+ * <p>线程安全：ONNX session 线程安全，每次推理新建 3 个 {@code OnnxTensor}；
+ * 通常由 {@link net.dreamlu.mica.ai.layout.pipeline.LayoutPipeline} 单例持有。
  */
 @Slf4j
 public class LayoutDetector implements AutoCloseable {
@@ -85,6 +88,14 @@ public class LayoutDetector implements AutoCloseable {
 	private final String scaleInputName;
 	private final String boxesOutputName;
 
+	/**
+	 * 构造版面检测器，加载 ONNX 模型并解析输入输出张量名。
+	 *
+	 * @param environment    ONNX 运行环境
+	 * @param config         版面分析配置
+	 * @param sessionOptions ONNX 会话选项
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载或张量名解析失败
+	 */
 	public LayoutDetector(OrtEnvironment environment, LayoutConfig config,
 						OrtSession.SessionOptions sessionOptions) {
 		this.environment = environment;
@@ -104,6 +115,13 @@ public class LayoutDetector implements AutoCloseable {
 			scaleInputName, boxesOutputName);
 	}
 
+	/**
+	 * 版面检测。
+	 *
+	 * @param bgr 原图 BGR Mat（可为 null / empty，会安全返回空列表）
+	 * @return 版面区域列表（按 {@code LayoutResult#getReadingOrder()} 已排序）
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} letterbox / ONNX 推理失败
+	 */
 	public List<LayoutResult> detect(Mat bgr) {
 		if (bgr == null || bgr.empty()) {
 			return LayoutResult.emptyList();
@@ -152,6 +170,13 @@ public class LayoutDetector implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 解码字节数组为 BGR Mat 并跑 {@link #detect(Mat)}，自动 release 临时 Mat。
+	 *
+	 * @param imageBytes 图像字节（非空）
+	 * @return 版面区域列表
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 解码或推理失败
+	 */
 	public List<LayoutResult> detectBytes(byte[] imageBytes) {
 		Mat bgr = null;
 		try {

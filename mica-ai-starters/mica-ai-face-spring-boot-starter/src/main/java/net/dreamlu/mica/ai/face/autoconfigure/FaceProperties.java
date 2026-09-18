@@ -38,6 +38,7 @@ public class FaceProperties {
 	@NestedConfigurationProperty
 	private OrtSessionOptions onnx = new OrtSessionOptions();
 
+	/** 模型路径配置。 */
 	@Getter
 	@Setter
 	public static class Model {
@@ -46,12 +47,14 @@ public class FaceProperties {
 		private ModelEntry liveness = new ModelEntry();
 	}
 
+	/** 单个模型的路径配置。 */
 	@Getter
 	@Setter
 	public static class ModelEntry {
 		private String path;
 	}
 
+	/** 人脸检测参数配置。 */
 	@Getter
 	@Setter
 	public static class Detection {
@@ -59,6 +62,7 @@ public class FaceProperties {
 		private float nmsThreshold = 0.3f;
 	}
 
+	/** 活体检测参数配置。 */
 	@Getter
 	@Setter
 	public static class Liveness {
@@ -67,12 +71,14 @@ public class FaceProperties {
 		private double cropScale = 2.7;
 	}
 
+	/** 1:1 比对参数配置。 */
 	@Getter
 	@Setter
 	public static class Verify {
 		private float threshold = 0.35f;
 	}
 
+	/** 头像提取参数配置。 */
 	@Getter
 	@Setter
 	public static class Avatar {
@@ -91,6 +97,7 @@ public class FaceProperties {
 		private int maxFaces = 0;
 	}
 
+	/** 证件卡片提取参数配置。 */
 	@Getter
 	@Setter
 	public static class Card {

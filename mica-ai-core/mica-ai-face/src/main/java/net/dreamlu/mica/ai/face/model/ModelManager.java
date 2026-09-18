@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.face.model;
 
 import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtLoggingLevel;
 import ai.onnxruntime.OrtSession;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,12 +47,17 @@ public class ModelManager implements AutoCloseable {
 
 	private final ModelConfig config;
 
+	/**
+	 * 按配置加载检测、识别、（可选的）活体 ONNX 模型。
+	 *
+	 * @param config 模型配置，不能为 {@code null}
+	 * @throws NullPointerException config 为 {@code null} 时抛出
+	 */
 	public ModelManager(ModelConfig config) {
 		this.config = Objects.requireNonNull(config, "ModelConfig must not be null");
-		this.environment = OrtEnvironment.getEnvironment();
+		this.environment = OrtEnvironment.getEnvironment(OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR);
 		this.onnxOptions = config.getOnnx() != null ? config.getOnnx() : OrtSessionOptions.defaults();
 		this.sessionOptions = OrtSessionFactory.build(this.onnxOptions);
-
 		this.detection = new OnnxModelSession(environment, config.getDetectionModelPath(), sessionOptions, "detection");
 		this.recognition = new OnnxModelSession(environment, config.getRecognitionModelPath(), sessionOptions, "recognition");
 		if (config.getLivenessModelPath() != null && !config.getLivenessModelPath().isEmpty()) {
@@ -61,18 +67,39 @@ public class ModelManager implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 按配置创建模型管理器。
+	 *
+	 * @param config 模型配置
+	 * @return 模型管理器实例
+	 */
 	public static ModelManager create(ModelConfig config) {
 		return new ModelManager(config);
 	}
 
+	/**
+	 * 获取人脸检测模型会话。
+	 *
+	 * @return 检测模型 OrtSession
+	 */
 	public OrtSession getDetectionSession() {
 		return detection.getSession();
 	}
 
+	/**
+	 * 获取人脸识别模型会话。
+	 *
+	 * @return 识别模型 OrtSession
+	 */
 	public OrtSession getRecognitionSession() {
 		return recognition.getSession();
 	}
 
+	/**
+	 * 获取活体检测模型会话，未配置活体模型时返回 {@code null}。
+	 *
+	 * @return 活体模型 OrtSession，未加载时为 {@code null}
+	 */
 	public OrtSession getLivenessSession() {
 		return liveness != null ? liveness.getSession() : null;
 	}

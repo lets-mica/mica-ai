@@ -34,16 +34,22 @@ import java.nio.FloatBuffer;
 import java.util.Collections;
 
 /**
- * 车牌类型分类器（HyperLPR3 litemodel_cls_96x，96×96 → 3 类 logits）。
+ * 车牌类型分类器（HyperLPR3 {@code litemodel_cls_96x}，96×96 → 3 类 logits）。
  *
  * <p>仅在 Pipeline 根据首字符不能确定车牌颜色时调用，对应 Python 版
  * {@code self.classifier(pad)}。
+ *
+ * <p>线程安全：内部 ONNX session 线程安全；通常由 {@link net.dreamlu.mica.ai.plate.pipeline.PlatePipeline}
+ * 单例持有。
  */
 @Slf4j
 public class PlateClassifier implements AutoCloseable {
 
+    /** 车牌颜色类型：黄色 */
     public static final int YELLOW = 0;
+    /** 车牌颜色类型：蓝色 */
     public static final int BLUE = 1;
+    /** 车牌颜色类型：绿色 */
     public static final int GREEN = 2;
 
     private final OrtEnvironment environment;
@@ -51,6 +57,13 @@ public class PlateClassifier implements AutoCloseable {
     @Getter
     private final int inputSize;
 
+    /**
+     * 构造车牌类型分类器。
+     *
+     * @param environment    ONNX 运行环境
+     * @param config         车牌识别配置
+     * @param sessionOptions ONNX session 选项
+     */
     public PlateClassifier(OrtEnvironment environment, PlateConfig config,
                            OrtSession.SessionOptions sessionOptions) {
         this.environment = environment;
@@ -60,6 +73,13 @@ public class PlateClassifier implements AutoCloseable {
             sessionOptions, "plate-classifier");
     }
 
+    /**
+     * 分类车牌颜色类型。
+     *
+     * @param bgr BGR 格式车牌图像
+     * @return 车牌颜色类型索引：0 黄色、1 蓝色、2 绿色
+     * @throws MicaAiException 推理失败时抛出，{@link ErrorCode#INFERENCE_FAILED}
+     */
     public int classify(Mat bgr) {
         try {
             Mat resized = new Mat();

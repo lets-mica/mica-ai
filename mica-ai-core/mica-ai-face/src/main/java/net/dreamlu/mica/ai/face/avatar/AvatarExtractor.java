@@ -36,6 +36,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 头像提取器：检测人脸并按可配置的裁剪窗口输出规格化头像。
+ *
+ * <p>支持自动朝向矫正、关键点去旋转、分块检测小脸等能力。
+ */
 @Getter
 public class AvatarExtractor {
 
@@ -64,19 +69,43 @@ public class AvatarExtractor {
 	private final FaceDetector detector;
 	private final AvatarOptions defaults;
 
+	/**
+	 * 使用模型管理器构造，人脸检测器与默认配置内部创建。
+	 *
+	 * @param modelManager 模型管理器，用于加载人脸检测模型
+	 */
 	public AvatarExtractor(ModelManager modelManager) {
 		this(new FaceDetector(modelManager), AvatarOptions.defaults());
 	}
 
+	/**
+	 * 使用给定的人脸检测器构造，配置取默认值。
+	 *
+	 * @param detector 人脸检测器
+	 */
 	public AvatarExtractor(FaceDetector detector) {
 		this(detector, AvatarOptions.defaults());
 	}
 
+	/**
+	 * 使用给定的人脸检测器与默认配置构造。
+	 *
+	 * @param detector 人脸检测器
+	 * @param defaults 默认头像提取配置，为 {@code null} 时使用默认配置
+	 */
 	public AvatarExtractor(FaceDetector detector, AvatarOptions defaults) {
 		this.detector = detector;
 		this.defaults = defaults == null ? AvatarOptions.defaults() : defaults;
 	}
 
+	/**
+	 * 提取单个人脸头像，未检测到人脸时抛出异常。
+	 *
+	 * @param image   输入图像
+	 * @param options 头像提取配置，为 {@code null} 时使用默认配置
+	 * @return 头像提取结果
+	 * @throws MicaAiException 未检测到人脸时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public AvatarResult extract(Mat image, AvatarOptions options) {
 		AvatarOptions opts = options == null ? defaults : options;
 		List<AvatarResult> results = extractAll(image, opts.toBuilder().maxFaces(1).build());
@@ -86,10 +115,25 @@ public class AvatarExtractor {
 		return results.get(0);
 	}
 
+	/**
+	 * 使用默认配置提取单个人脸头像。
+	 *
+	 * @param image 输入图像
+	 * @return 头像提取结果
+	 * @throws MicaAiException 未检测到人脸时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public AvatarResult extract(Mat image) {
 		return extract(image, defaults);
 	}
 
+	/**
+	 * 提取图中所有人脸头像，未检测到人脸时返回空列表。
+	 *
+	 * @param image   输入图像
+	 * @param options 头像提取配置，为 {@code null} 时使用默认配置
+	 * @return 头像提取结果列表，按人脸面积从大到小排序
+	 * @throws MicaAiException 入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public List<AvatarResult> extractAll(Mat image, AvatarOptions options) {
 		if (image == null || image.empty()) {
 			throw new MicaAiException(ErrorCode.AVATAR_FAILED, "头像提取入参图像为空");
@@ -119,10 +163,26 @@ public class AvatarExtractor {
 		return results;
 	}
 
+	/**
+	 * 使用默认配置提取图中所有人脸头像。
+	 *
+	 * @param image 输入图像
+	 * @return 头像提取结果列表，按人脸面积从大到小排序
+	 * @throws MicaAiException 入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public List<AvatarResult> extractAll(Mat image) {
 		return extractAll(image, defaults);
 	}
 
+	/**
+	 * 在图像副本上绘制人脸框、头像窗口四边形与调参信息，用于调试。
+	 *
+	 * @param image    输入图像
+	 * @param results  头像提取结果列表
+	 * @param options  头像提取配置，为 {@code null} 时使用默认配置
+	 * @return 绘制后的图像副本
+	 * @throws MicaAiException 入参图像为空时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public static Mat drawDebug(Mat image, List<AvatarResult> results, AvatarOptions options) {
 		if (image == null || image.empty()) {
 			throw new MicaAiException(ErrorCode.AVATAR_FAILED, "标注入参图像为空");

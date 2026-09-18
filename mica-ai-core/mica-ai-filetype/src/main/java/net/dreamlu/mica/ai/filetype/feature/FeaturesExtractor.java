@@ -27,6 +27,8 @@ import java.util.Arrays;
  * 头部 lstrip 后取前 {@code beg_size} 字节左对齐写入，尾部 rstrip 后取末
  * {@code end_size} 字节右对齐写入，不足部分填充 {@code padding_token}。
  * 文件大小 &le; block_size 时调用方应把头尾传入同一份原始内容。
+ *
+ * <p>输出张量形状 {@code int[beg_size + end_size]}，可直接喂给 ONNX 模型。
  */
 @UtilityClass
 public class FeaturesExtractor {

@@ -21,7 +21,13 @@ import lombok.RequiredArgsConstructor;
 import java.util.Locale;
 
 /**
- * 车牌类型，对齐 HyperLPR3 {@code common/typedef.py}，{@link #getValue()} 与 Python 常量值一致。
+ * 车牌类型，对齐 HyperLPR3 {@code common/typedef.py}，{@code getValue()} 与 Python 常量值一致。
+ *
+ * <p>判型规则由 {@link net.dreamlu.mica.ai.plate.pipeline.PlatePipeline#codeFilter(String)}
+ * 实现，按 WJ / 8 位 / 学 / 港澳 / 警 / 粤Z 顺序命中；都不命中时为 {@link #UNKNOWN}，
+ * 再交给颜色分类器兜底（黄 / 蓝 / 绿）。
+ *
+ * <p>{@link #getCode()} 输出小写下划线字符串，供 JSON / 配置使用。
  */
 @Getter
 @RequiredArgsConstructor
@@ -81,6 +87,8 @@ public enum PlateType {
 
 	/**
 	 * 序列化名（小写下划线），供 JSON / 配置使用。
+	 *
+	 * @return 小写下划线形式的序列化名
 	 */
 	public String getCode() {
 		return name().toLowerCase(Locale.ROOT);

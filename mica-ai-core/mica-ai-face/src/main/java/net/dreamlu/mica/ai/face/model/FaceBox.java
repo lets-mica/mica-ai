@@ -16,17 +16,22 @@
 package net.dreamlu.mica.ai.face.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
  * 人脸检测框。
  *
- * <p>描述人脸检测模型（YuNet）输出的单个人脸区域，包含边界框坐标、置信度与 5 个关键点
- * (左眼、右眼、鼻尖、左嘴角、右嘴角)。
+ * <p>描述人脸检测模型（YuNet）输出的单个人脸区域，字段含义：
+ * <ul>
+ *   <li>{@code x1 / y1 / x2 / y2}：原图坐标系下的边界框（像素）</li>
+ *   <li>{@code score}：YuNet 的 sqrt(cls × obj) 综合分，{@code [0, 1]}</li>
+ *   <li>{@code landmarks}：5 个关键点 {@code float[5][2]}，顺序为
+ *       左眼 / 右眼 / 鼻尖 / 左嘴角 / 右嘴角；可为 {@code null}（仅 YuNet 部分 stride 输出时）</li>
+ * </ul>
+ *
+ * <p>不可变。
  */
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class FaceBox {
 

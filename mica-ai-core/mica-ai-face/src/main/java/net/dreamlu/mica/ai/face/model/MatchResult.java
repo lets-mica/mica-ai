@@ -16,14 +16,19 @@
 package net.dreamlu.mica.ai.face.model;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
  * 单条人脸特征匹配结果。
+ *
+ * <ul>
+ *   <li>{@code personId}：人脸库侧的业务标识</li>
+ *   <li>{@code similarity}：与底库的余弦相似度，{@code [-1, 1]}</li>
+ * </ul>
+ *
+ * <p>不可变。
  */
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class MatchResult {
 

@@ -22,6 +22,13 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 单条文件类型的元数据（{@code content_types_kb.min.json} 中的一行）。
+ *
+ * <p>字段由 Jackson 通过 {@link JsonProperty} 显式绑定 snake_case；缺失字段（除
+ * {@code label} 外）会回退到安全默认值（{@code mime_type="application/octet-stream"}、
+ * {@code group="other"}、{@code extensions=[]}）。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

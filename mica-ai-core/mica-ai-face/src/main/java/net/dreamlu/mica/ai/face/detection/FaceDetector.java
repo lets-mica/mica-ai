@@ -63,6 +63,7 @@ import java.util.Map;
 @Getter
 public class FaceDetector {
 
+	/** 模型输入边长（640，letterbox 前的目标尺寸）。 */
 	public static final int INPUT_SIZE = 640;
 	private static final int MIN_TILE_SIDE = 48;
 	private static final int[] STRIDES = {8, 16, 32};
@@ -74,6 +75,11 @@ public class FaceDetector {
 	private final float threshold;
 	private final float nmsThreshold;
 
+	/**
+	 * 使用模型管理器构造人脸检测器，检测阈值取全局配置。
+	 *
+	 * @param modelManager 模型管理器，提供检测会话与环境
+	 */
 	public FaceDetector(ModelManager modelManager) {
 		this.session = modelManager.getDetectionSession();
 		this.env = modelManager.getEnvironment();
@@ -109,6 +115,13 @@ public class FaceDetector {
 		return union < 1e-10f ? 0f : inter / union;
 	}
 
+	/**
+	 * 按分值降序做非极大值抑制，过滤重叠的检测框。
+	 *
+	 * @param boxes        检测框列表
+	 * @param iouThreshold IoU 阈值，超过该值的低分框被抑制
+	 * @return 保留的检测框列表，入参为空时返回空列表
+	 */
 	public static List<FaceBox> nms(List<FaceBox> boxes, float iouThreshold) {
 		if (boxes == null || boxes.isEmpty()) {
 			return Collections.emptyList();
@@ -132,10 +145,25 @@ public class FaceDetector {
 		return result;
 	}
 
+	/**
+	 * 使用默认阈值检测图中所有人脸。
+	 *
+	 * @param image 输入图像
+	 * @return 检测到的人脸框列表，含 5 个关键点；入参图像为空时返回空列表
+	 * @throws MicaAiException 推理失败时抛出，错误码 {@link ErrorCode#DETECTION_FAILED}
+	 */
 	public List<FaceBox> detect(Mat image) {
 		return detect(image, threshold);
 	}
 
+	/**
+	 * 使用指定阈值检测图中所有人脸。
+	 *
+	 * @param image     输入图像
+	 * @param threshold 检测分值阈值，低于该值的框被过滤
+	 * @return 检测到的人脸框列表，含 5 个关键点；入参图像为空时返回空列表
+	 * @throws MicaAiException 推理失败时抛出，错误码 {@link ErrorCode#DETECTION_FAILED}
+	 */
 	public List<FaceBox> detect(Mat image, float threshold) {
 		if (image == null || image.empty()) {
 			return Collections.emptyList();
@@ -173,6 +201,16 @@ public class FaceDetector {
 		}
 	}
 
+	/**
+	 * 对大图分块检测，用于找出整图推理漏掉的小人脸。
+	 *
+	 * @param image     输入图像
+	 * @param tileSize  分块边长（像素）
+	 * @param overlap   相邻分块的重叠比例，取值 [0, 1)
+	 * @param threshold 检测分值阈值
+	 * @return 检测到的人脸框列表，含 5 个关键点；入参图像为空时返回空列表
+	 * @throws MicaAiException 推理失败时抛出，错误码 {@link ErrorCode#DETECTION_FAILED}
+	 */
 	public List<FaceBox> detectTiled(Mat image, int tileSize, double overlap, float threshold) {
 		if (image == null || image.empty()) {
 			return Collections.emptyList();

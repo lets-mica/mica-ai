@@ -38,6 +38,13 @@ public class ImageUtils {
 	private ImageUtils() {
 	}
 
+	/**
+	 * 解码任意常见格式（jpg / png / bmp / webp 等）的字节数组为 BGR {@link Mat}。
+	 *
+	 * @param imageBytes 图像字节（非空）
+	 * @return BGR Mat（3 通道），调用方负责 {@code release()}
+	 * @throws MicaAiException {@link ErrorCode#DETECTION_FAILED} 输入为空或解码失败
+	 */
 	public static Mat byteArrayToMat(byte[] imageBytes) {
 		if (imageBytes == null || imageBytes.length == 0) {
 			throw new MicaAiException(
@@ -52,6 +59,16 @@ public class ImageUtils {
 		return mat;
 	}
 
+	/**
+	 * 按人脸框外扩指定比例裁剪，并缩放到指定输出尺寸。
+	 *
+	 * @param image      输入图像
+	 * @param box        人脸框
+	 * @param scale      外扩比例，相对人脸框长边
+	 * @param outputSize 输出正方形边长（像素）
+	 * @return 裁剪并缩放后的图像
+	 * @throws MicaAiException 入参为空或裁剪区域无效时抛出，错误码 {@link ErrorCode#LIVENESS_FAILED}
+	 */
 	public static Mat cropWithMargin(Mat image, FaceBox box, double scale, int outputSize) {
 		if (image == null || image.empty() || box == null) {
 			throw new MicaAiException(
@@ -86,6 +103,14 @@ public class ImageUtils {
 		}
 	}
 
+	/**
+	 * 把 BGR {@link Mat} 转成 CHW float，并做 scale / offset 线性变换。
+	 *
+	 * @param bgr    原图 BGR Mat
+	 * @param scale  像素缩放系数
+	 * @param offset 像素偏移量
+	 * @return CHW 布局的 float 数组
+	 */
 	public static float[] bgrHwcToChwFloat(Mat bgr, float scale, float offset) {
 		int h = bgr.rows();
 		int w = bgr.cols();
@@ -104,6 +129,14 @@ public class ImageUtils {
 		return data;
 	}
 
+	/**
+	 * 将 BGR 图像转为 RGB、CHW 排布的 float 数组，用于模型输入。
+	 *
+	 * @param bgr    BGR 输入图像
+	 * @param scale  像素值缩放系数
+	 * @param offset 像素值偏移量
+	 * @return RGB CHW 排布的 float 数组
+	 */
 	public static float[] bgrHwcToRgbChwFloat(Mat bgr, float scale, float offset) {
 		int h = bgr.rows();
 		int w = bgr.cols();
@@ -122,6 +155,15 @@ public class ImageUtils {
 		return data;
 	}
 
+	/**
+	 * 将 BGR 图像编码为指定格式的字节数组。
+	 *
+	 * @param bgr     BGR 输入图像
+	 * @param format  图片格式，支持 png / jpg / bmp / webp
+	 * @param quality JPEG 压缩质量，取值 [0, 100]，其它格式忽略
+	 * @return 编码后的字节数组
+	 * @throws MicaAiException 图像为空或格式不支持时抛出，错误码 {@link ErrorCode#ENCODE_FAILED}
+	 */
 	public static byte[] matToBytes(Mat bgr, String format, int quality) {
 		if (bgr == null || bgr.empty()) {
 			throw new MicaAiException(
@@ -168,6 +210,12 @@ public class ImageUtils {
 		}
 	}
 
+	/**
+	 * 计算图像清晰度（拉普拉斯算子标准差），值越大越清晰。
+	 *
+	 * @param bgr BGR 输入图像
+	 * @return 清晰度得分，入参图像为空时返回 0
+	 */
 	public static double sharpness(Mat bgr) {
 		if (bgr == null || bgr.empty()) {
 			return 0d;
@@ -190,6 +238,11 @@ public class ImageUtils {
 		}
 	}
 
+	/**
+	 * 批量安全 release：null 容忍，逐个 release。
+	 *
+	 * @param mats 任意数量 Mat（可为 null / 单个 / 数组）
+	 */
 	public static void releaseAll(Mat... mats) {
 		if (mats == null) {
 			return;

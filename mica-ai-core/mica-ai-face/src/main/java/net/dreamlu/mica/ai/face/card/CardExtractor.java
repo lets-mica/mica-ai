@@ -60,18 +60,37 @@ public class CardExtractor {
 	private final FaceDetector detector;
 	private final CardOptions defaults;
 
+	/**
+	 * 构造提取器，检测器与配置取默认值（不支持朝向自动矫正）。
+	 */
 	public CardExtractor() {
 		this(null, CardOptions.defaults());
 	}
 
+	/**
+	 * 构造提取器，配置自定义，检测器取默认值（不支持朝向自动矫正）。
+	 *
+	 * @param defaults 卡片提取配置，为 {@code null} 时使用默认配置
+	 */
 	public CardExtractor(CardOptions defaults) {
 		this(null, defaults);
 	}
 
+	/**
+	 * 构造提取器，检测器自定义，配置取默认值。
+	 *
+	 * @param detector 人脸检测器，用于朝向自动矫正；为 {@code null} 时禁用自动矫正
+	 */
 	public CardExtractor(FaceDetector detector) {
 		this(detector, CardOptions.defaults());
 	}
 
+	/**
+	 * 构造提取器。
+	 *
+	 * @param detector 人脸检测器，用于朝向自动矫正；为 {@code null} 时禁用自动矫正
+	 * @param defaults 卡片提取配置，为 {@code null} 时使用默认配置
+	 */
 	public CardExtractor(FaceDetector detector, CardOptions defaults) {
 		this.detector = detector;
 		CardOptions opts = defaults == null ? CardOptions.defaults() : defaults;
@@ -79,6 +98,14 @@ public class CardExtractor {
 			? opts.toBuilder().autoOrient(false).build() : opts;
 	}
 
+	/**
+	 * 从图像中提取单张卡片，未找到卡片时抛出异常。
+	 *
+	 * @param image   输入图像
+	 * @param options 卡片提取配置，为 {@code null} 时使用默认配置
+	 * @return 卡片提取结果
+	 * @throws MicaAiException 未找到卡片、入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public CardResult extract(Mat image, CardOptions options) {
 		List<CardResult> results = extractAll(image, options, 1);
 		if (results.isEmpty()) {
@@ -88,10 +115,25 @@ public class CardExtractor {
 		return results.get(0);
 	}
 
+	/**
+	 * 使用默认配置从图像中提取单张卡片。
+	 *
+	 * @param image 输入图像
+	 * @return 卡片提取结果
+	 * @throws MicaAiException 未找到卡片、入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public CardResult extract(Mat image) {
 		return extract(image, defaults);
 	}
 
+	/**
+	 * 从图像字节数组中提取单张卡片。
+	 *
+	 * @param imageBytes 输入图像字节数组（JPEG/PNG 等编码格式）
+	 * @param options    卡片提取配置，为 {@code null} 时使用默认配置
+	 * @return 卡片提取结果
+	 * @throws MicaAiException 解码失败、未找到卡片或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public CardResult extract(byte[] imageBytes, CardOptions options) {
 		Mat image = ImageUtils.byteArrayToMat(imageBytes);
 		try {
@@ -101,14 +143,36 @@ public class CardExtractor {
 		}
 	}
 
+	/**
+	 * 使用默认配置从图像字节数组中提取单张卡片。
+	 *
+	 * @param imageBytes 输入图像字节数组（JPEG/PNG 等编码格式）
+	 * @return 卡片提取结果
+	 * @throws MicaAiException 解码失败、未找到卡片或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public CardResult extract(byte[] imageBytes) {
 		return extract(imageBytes, defaults);
 	}
 
+	/**
+	 * 从图像中提取所有卡片，未找到时返回空列表。
+	 *
+	 * @param image   输入图像
+	 * @param options 卡片提取配置，为 {@code null} 时使用默认配置
+	 * @return 卡片提取结果列表
+	 * @throws MicaAiException 入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public List<CardResult> extractAll(Mat image, CardOptions options) {
 		return extractAll(image, options, Integer.MAX_VALUE);
 	}
 
+	/**
+	 * 使用默认配置从图像中提取所有卡片。
+	 *
+	 * @param image 输入图像
+	 * @return 卡片提取结果列表
+	 * @throws MicaAiException 入参图像为空或配置校验失败时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public List<CardResult> extractAll(Mat image) {
 		return extractAll(image, defaults);
 	}
@@ -138,6 +202,14 @@ public class CardExtractor {
 		return results;
 	}
 
+	/**
+	 * 在图像副本上绘制卡片四边形、角点与调参信息，用于调试。
+	 *
+	 * @param image   输入图像
+	 * @param results 卡片提取结果列表
+	 * @return 绘制后的图像副本
+	 * @throws MicaAiException 入参图像为空时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public static Mat drawDebug(Mat image, List<CardResult> results) {
 		if (image == null || image.empty()) {
 			throw new MicaAiException(
@@ -173,6 +245,14 @@ public class CardExtractor {
 		return canvas;
 	}
 
+	/**
+	 * 在图像副本上绘制单张卡片的调试信息。
+	 *
+	 * @param image  输入图像
+	 * @param result 卡片提取结果，为 {@code null} 时仅返回图像副本
+	 * @return 绘制后的图像副本
+	 * @throws MicaAiException 入参图像为空时抛出，错误码 {@link ErrorCode#CARD_FAILED}
+	 */
 	public static Mat drawDebug(Mat image, CardResult result) {
 		return drawDebug(image, result == null ? Collections.emptyList()
 			: Collections.singletonList(result));

@@ -43,8 +43,11 @@ public class FaceVerifier {
 	 * 多张人脸时的选脸策略（保留枚举，当前实现始终按面积最大选；保留以备后续扩展）。
 	 */
 	public enum MultiFaceStrategy {
+		/** 多脸时直接拒绝。 */
 		REJECT,
+		/** 保留得分最高的人脸。 */
 		LARGEST_SCORE,
+		/** 保留面积最大的人脸。 */
 		LARGEST_AREA
 	}
 
@@ -53,6 +56,11 @@ public class FaceVerifier {
 	private final FeatureExtractor extractor;
 	private final float defaultThreshold;
 
+	/**
+	 * 使用模型管理器构造比对门面，阈值取全局配置。
+	 *
+	 * @param modelManager 模型管理器，提供检测、对齐、特征提取所需资源
+	 */
 	public FaceVerifier(ModelManager modelManager) {
 		this.detector = new FaceDetector(modelManager);
 		this.aligner = new FaceAligner();
@@ -60,12 +68,29 @@ public class FaceVerifier {
 		this.defaultThreshold = modelManager.getConfig().getVerifyThreshold();
 	}
 
+	/**
+	 * 计算两张图中人脸特征的余弦相似度。
+	 *
+	 * @param image1 第一张图像
+	 * @param image2 第二张图像
+	 * @return 余弦相似度，取值约 [-1, 1]
+	 * @throws MicaAiException 任一图像未检测到人脸时抛出，错误码 {@link ErrorCode#VERIFICATION_FAILED}
+	 */
 	public float similarity(Mat image1, Mat image2) {
 		float[] f1 = extractSingle(image1);
 		float[] f2 = extractSingle(image2);
 		return FeatureExtractor.compare(f1, f2);
 	}
 
+	/**
+	 * 以指定阈值做 1:1 比对。
+	 *
+	 * @param probe     待比对图像
+	 * @param reference 参考图像
+	 * @param threshold 判定阈值，为 {@code null} 时使用默认阈值
+	 * @return 比对结果（相似度、阈值与是否通过）
+	 * @throws MicaAiException 任一图像未检测到人脸时抛出，错误码 {@link ErrorCode#VERIFICATION_FAILED}
+	 */
 	public VerifyResult verify(Mat probe, Mat reference, Float threshold) {
 		float[] f1 = extractSingle(probe);
 		float[] f2 = extractSingle(reference);
@@ -74,10 +99,27 @@ public class FaceVerifier {
 		return new VerifyResult(sim, th, sim >= th);
 	}
 
+	/**
+	 * 使用默认阈值做 1:1 比对。
+	 *
+	 * @param probe     待比对图像
+	 * @param reference 参考图像
+	 * @return 比对结果（相似度、阈值与是否通过）
+	 * @throws MicaAiException 任一图像未检测到人脸时抛出，错误码 {@link ErrorCode#VERIFICATION_FAILED}
+	 */
 	public VerifyResult verify(Mat probe, Mat reference) {
 		return verify(probe, reference, null);
 	}
 
+	/**
+	 * 对图像字节数组以指定阈值做 1:1 比对。
+	 *
+	 * @param probeBytes     待比对图像字节数组（JPEG/PNG 等编码格式）
+	 * @param referenceBytes 参考图像字节数组（JPEG/PNG 等编码格式）
+	 * @param threshold      判定阈值，为 {@code null} 时使用默认阈值
+	 * @return 比对结果（相似度、阈值与是否通过）
+	 * @throws MicaAiException 解码失败或任一图像未检测到人脸时抛出，错误码 {@link ErrorCode#VERIFICATION_FAILED}
+	 */
 	public VerifyResult verify(byte[] probeBytes, byte[] referenceBytes, Float threshold) {
 		Mat p = null;
 		Mat r = null;
@@ -90,6 +132,14 @@ public class FaceVerifier {
 		}
 	}
 
+	/**
+	 * 对图像字节数组使用默认阈值做 1:1 比对。
+	 *
+	 * @param probeBytes     待比对图像字节数组（JPEG/PNG 等编码格式）
+	 * @param referenceBytes 参考图像字节数组（JPEG/PNG 等编码格式）
+	 * @return 比对结果（相似度、阈值与是否通过）
+	 * @throws MicaAiException 解码失败或任一图像未检测到人脸时抛出，错误码 {@link ErrorCode#VERIFICATION_FAILED}
+	 */
 	public VerifyResult verify(byte[] probeBytes, byte[] referenceBytes) {
 		return verify(probeBytes, referenceBytes, null);
 	}

@@ -34,11 +34,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 内容类型知识库（content_types_kb.min.json）注册表。
+ * 内容类型知识库（{@code content_types_kb.min.json}）注册表。
  *
  * <p>语义对齐 magika Python 版 {@code ContentTypeData}：kb 中缺失的字段按
  * {@code is_text} 填充默认 mime / group / description，未知 label 兜底为
  * {@code unknown} 条目。
+ *
+ * <p>线程安全：构造后内部 {@code Map} 不再变更，可作为单例 Bean 共享。
  */
 @Slf4j
 public class ContentTypeRegistry {

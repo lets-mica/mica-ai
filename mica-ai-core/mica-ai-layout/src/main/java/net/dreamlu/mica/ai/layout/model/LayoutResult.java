@@ -43,6 +43,11 @@ public class LayoutResult {
 	private int order;
 	private int readingOrder;
 
+	/**
+	 * 返回共享的不可变空结果列表。
+	 *
+	 * @return 空的 {@code List<LayoutResult>}
+	 */
 	public static List<LayoutResult> emptyList() {
 		return Collections.emptyList();
 	}

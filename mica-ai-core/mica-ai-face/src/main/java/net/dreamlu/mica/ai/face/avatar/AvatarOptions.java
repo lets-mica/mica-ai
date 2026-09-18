@@ -23,6 +23,9 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import org.opencv.core.Scalar;
 
+/**
+ * 头像提取配置：输出尺寸、裁剪比例、去旋转、背景色、分块检测等参数。
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -68,18 +71,39 @@ public class AvatarOptions {
 	@Builder.Default
 	private int maxFaces = 0;
 
+	/**
+	 * 获取默认配置实例。
+	 *
+	 * @return 默认配置
+	 */
 	public static AvatarOptions defaults() {
 		return AvatarOptions.builder().build();
 	}
 
+	/**
+	 * 获取适合普通人脸照片的配置（faceScale 1.3，取景更紧）。
+	 *
+	 * @return 配置实例
+	 */
 	public static AvatarOptions facePhoto() {
 		return AvatarOptions.builder().faceScale(1.3).build();
 	}
 
+	/**
+	 * 获取适合半身人像的配置（faceScale 2.0，取景更宽松）。
+	 *
+	 * @return 配置实例
+	 */
 	public static AvatarOptions portrait() {
 		return AvatarOptions.builder().faceScale(2.0).build();
 	}
 
+	/**
+	 * 获取背景色的 OpenCV 标量（BGR 顺序）。
+	 *
+	 * @return 背景色标量
+	 * @throws MicaAiException 背景色格式非法时抛出，错误码 {@link ErrorCode#AVATAR_FAILED}
+	 */
 	public Scalar backgroundScalar() {
 		return parseColor(background);
 	}
