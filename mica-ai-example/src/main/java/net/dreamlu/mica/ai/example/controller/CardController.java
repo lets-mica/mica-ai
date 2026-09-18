@@ -34,19 +34,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 证件卡片提取端点。
@@ -64,6 +56,45 @@ import java.util.Map;
 public class CardController {
 
 	private final CardExtractor cardExtractor;
+
+	private static int quality(Integer quality) {
+		return quality == null ? 95 : quality;
+	}
+
+	private static MediaType contentType(String format) {
+		return "jpg".equalsIgnoreCase(format) || "jpeg".equalsIgnoreCase(format)
+			? MediaType.IMAGE_JPEG : MediaType.IMAGE_PNG;
+	}
+
+	private static ResponseEntity<Object> image(byte[] bytes, MediaType type,
+												Map<String, String> headers) {
+		ResponseEntity.BodyBuilder builder = ResponseEntity.ok().contentType(type);
+		if (headers != null) {
+			headers.forEach(builder::header);
+		}
+		return builder.body(bytes);
+	}
+
+	private static ResponseEntity<Object> json(Object body, HttpStatus status) {
+		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
+	}
+
+	private static ResponseEntity<Object> failure(MicaAiException e) {
+		Map<String, Object> body = error(e.getMessage());
+		return json(body, HttpStatus.BAD_REQUEST);
+	}
+
+	private static void releaseAll(List<CardResult> results) {
+		if (results != null) {
+			results.forEach(CardResult::release);
+		}
+	}
+
+	private static Map<String, Object> error(String msg) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("error", msg);
+		return m;
+	}
 
 	/**
 	 * 提取卡片：返回画面中得分最高的卡片，直接输出图片字节。
@@ -180,44 +211,5 @@ public class CardController {
 			releaseAll(results);
 			ImageUtils.releaseAll(image);
 		}
-	}
-
-	private static int quality(Integer quality) {
-		return quality == null ? 95 : quality;
-	}
-
-	private static MediaType contentType(String format) {
-		return "jpg".equalsIgnoreCase(format) || "jpeg".equalsIgnoreCase(format)
-			? MediaType.IMAGE_JPEG : MediaType.IMAGE_PNG;
-	}
-
-	private static ResponseEntity<Object> image(byte[] bytes, MediaType type,
-												Map<String, String> headers) {
-		ResponseEntity.BodyBuilder builder = ResponseEntity.ok().contentType(type);
-		if (headers != null) {
-			headers.forEach(builder::header);
-		}
-		return builder.body(bytes);
-	}
-
-	private static ResponseEntity<Object> json(Object body, HttpStatus status) {
-		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
-	}
-
-	private static ResponseEntity<Object> failure(MicaAiException e) {
-		Map<String, Object> body = error(e.getMessage());
-		return json(body, HttpStatus.BAD_REQUEST);
-	}
-
-	private static void releaseAll(List<CardResult> results) {
-		if (results != null) {
-			results.forEach(CardResult::release);
-		}
-	}
-
-	private static Map<String, Object> error(String msg) {
-		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("error", msg);
-		return m;
 	}
 }

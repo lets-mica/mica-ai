@@ -15,7 +15,6 @@
  */
 package net.dreamlu.mica.ai.example;
 
-import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.autoconfigure.FaceAutoConfiguration;
 import net.dreamlu.mica.ai.face.model.ModelManager;
@@ -34,10 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 规避 Surefire fork 问题。
  */
 class ExampleApplicationContextTest {
-
-	@SpringBootConfiguration
-	static class EmptyConfig {
-	}
 
 	private static ApplicationContextRunner runner(Class<?>... autoConfigs) {
 		return new ApplicationContextRunner()
@@ -67,5 +62,9 @@ class ExampleApplicationContextTest {
 		Class<?> type = ModelManager.class;
 		assertThat(type.getName()).isEqualTo(
 			"net.dreamlu.mica.ai.face.model.ModelManager");
+	}
+
+	@SpringBootConfiguration
+	static class EmptyConfig {
 	}
 }

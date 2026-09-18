@@ -15,9 +15,9 @@
  */
 package net.dreamlu.mica.ai.filetype.postprocess;
 
-import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
 import net.dreamlu.mica.ai.filetype.config.ModelConfig;
+import net.dreamlu.mica.ai.filetype.config.PredictionMode;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;
 
 import java.util.Collections;
@@ -39,6 +39,13 @@ public class PredictionPostProcessor {
 	private final ContentTypeRegistry registry;
 	private final PredictionMode predictionMode;
 
+	/**
+	 * 构造后处理器。
+	 *
+	 * @param modelConfig    模型配置
+	 * @param registry       内容类型注册表
+	 * @param predictionMode 预测模式
+	 */
 	public PredictionPostProcessor(ModelConfig modelConfig,
 								   ContentTypeRegistry registry,
 								   PredictionMode predictionMode) {

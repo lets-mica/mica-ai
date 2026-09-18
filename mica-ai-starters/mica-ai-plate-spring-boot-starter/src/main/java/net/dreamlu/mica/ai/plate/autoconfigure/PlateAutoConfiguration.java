@@ -35,6 +35,12 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = "mica.ai.plate", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class PlateAutoConfiguration {
 
+	/**
+	 * 创建车牌识别管道 Bean。
+	 *
+	 * @param properties 车牌识别配置属性
+	 * @return PlatePipeline 实例
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public PlatePipeline platePipeline(PlateProperties properties) {

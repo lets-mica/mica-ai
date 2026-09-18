@@ -24,7 +24,6 @@ import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeInfo;
 import net.dreamlu.mica.ai.filetype.model.ContentTypeLabel;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -51,10 +50,22 @@ public class ContentTypeRegistry {
 
 	private final Map<String, ContentTypeInfo> types;
 
+	/**
+	 * 构造注册表。
+	 *
+	 * @param types label → 类型信息映射（null 时按空注册表处理）
+	 */
 	public ContentTypeRegistry(Map<String, ContentTypeInfo> types) {
 		this.types = types == null ? Collections.<String, ContentTypeInfo>emptyMap() : types;
 	}
 
+	/**
+	 * 从 classpath / 文件路径加载知识库。
+	 *
+	 * @param path 资源路径或文件路径
+	 * @return 注册表
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 加载 / 解析失败
+	 */
 	public static ContentTypeRegistry load(String path) {
 		if (path == null || path.isEmpty()) {
 			throw new MicaAiException(
@@ -78,6 +89,13 @@ public class ContentTypeRegistry {
 		}
 	}
 
+	/**
+	 * 从 JSON 字节数组解析知识库。
+	 *
+	 * @param json 知识库 JSON 内容
+	 * @return 注册表
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 解析失败
+	 */
 	public static ContentTypeRegistry load(byte[] json) {
 		try {
 			Map<String, ContentTypeInfo> raw = new ObjectMapper().readValue(
@@ -90,6 +108,13 @@ public class ContentTypeRegistry {
 		}
 	}
 
+	/**
+	 * 从输入流加载知识库。
+	 *
+	 * @param in 知识库 JSON 输入流
+	 * @return 注册表
+	 * @throws IOException 流读取失败
+	 */
 	public static ContentTypeRegistry load(InputStream in) throws IOException {
 		Map<String, ContentTypeInfo> raw = new ObjectMapper().readValue(
 			in, new TypeReference<Map<String, ContentTypeInfo>>() {
@@ -126,6 +151,12 @@ public class ContentTypeRegistry {
 		return info;
 	}
 
+	/**
+	 * 按 label 查询类型信息，未知 label 回退到 unknown 兜底信息。
+	 *
+	 * @param label 模型输出的类别 label
+	 * @return 类型信息（永不为 null）
+	 */
 	public ContentTypeInfo get(String label) {
 		ContentTypeInfo info = types.get(label);
 		if (info != null) {
@@ -149,6 +180,11 @@ public class ContentTypeRegistry {
 		return info;
 	}
 
+	/**
+	 * 注册表内的类别数。
+	 *
+	 * @return 类别数
+	 */
 	public int size() {
 		return types.size();
 	}

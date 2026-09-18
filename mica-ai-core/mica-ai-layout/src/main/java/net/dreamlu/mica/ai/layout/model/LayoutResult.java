@@ -52,5 +52,8 @@ public class LayoutResult {
 		return Collections.emptyList();
 	}
 
+	/**
+	 * 阅读顺序缺失时 readingOrder 字段的占位值。
+	 */
 	public static final int READING_ORDER_NONE = -1;
 }

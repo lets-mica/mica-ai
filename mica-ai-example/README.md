@@ -4,19 +4,20 @@
 
 本模块面向集成测试场景：
 
-1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype / plate 能力。
+1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype /
+   plate 能力。
 2. **`@SpringBootTest` 集成测试**：覆盖 Starter 的自动装配行为（`enabled` 开关、fail-fast、Bean 注入）。
 
 ---
 
 ## 1. 环境要求
 
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| JDK | **8+** | 推荐 Temurin / Azul Zulu 8、11、17 |
-| Maven | 3.6+ | 多模块构建 |
-| Spring Boot | 2.7.x | 由根 BOM 引入 |
-| ONNX 模型 | YuNet + SFace + Magika + HyperLPR3 | 见各能力 README |
+| 组件          | 版本                                 | 说明                             |
+|-------------|------------------------------------|--------------------------------|
+| JDK         | **8+**                             | 推荐 Temurin / Azul Zulu 8、11、17 |
+| Maven       | 3.6+                               | 多模块构建                          |
+| Spring Boot | 2.7.x                              | 由根 BOM 引入                      |
+| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 | 见各能力 README                    |
 
 ---
 
@@ -33,7 +34,8 @@ mvn -pl mica-ai-example spring-boot:run
 
 ### 2.2 启用 face / filetype / plate
 
-编辑 [src/main/resources/application.yml](src/main/resources/application.yml)，把模型路径改成你的实际路径（默认走 classpath）：
+编辑 [src/main/resources/application.yml](src/main/resources/application.yml)，把模型路径改成你的实际路径（默认走
+classpath）：
 
 ```yaml
 mica:
@@ -76,15 +78,16 @@ mvn -pl mica-ai-example -am test
 
 ## 3. REST 端点
 
-| 路径 | 方法 | 描述 |
-|------|------|------|
-| `/face/detect` | POST multipart | 上传图片，返回人脸框 + 关键点 + score |
-| `/face/extract` | POST multipart | 上传图片，返回 128d Embedding + L2 norm |
-| `/filetype/detect` | POST multipart | 上传任意文件，返回 modelLabel / outputLabel / score / mimeType / group / description |
-| `/filetype/detect-bytes` | POST octet-stream | 上传二进制，返回同上字段 |
-| `/plate/recognize` | POST multipart | 上传车辆图片，返回车牌号 + 类型 + 置信度 |
+| 路径                       | 方法                | 描述                                                                          |
+|--------------------------|-------------------|-----------------------------------------------------------------------------|
+| `/face/detect`           | POST multipart    | 上传图片，返回人脸框 + 关键点 + score                                                    |
+| `/face/extract`          | POST multipart    | 上传图片，返回 128d Embedding + L2 norm                                            |
+| `/filetype/detect`       | POST multipart    | 上传任意文件，返回 modelLabel / outputLabel / score / mimeType / group / description |
+| `/filetype/detect-bytes` | POST octet-stream | 上传二进制，返回同上字段                                                                |
+| `/plate/recognize`       | POST multipart    | 上传车辆图片，返回车牌号 + 类型 + 置信度                                                     |
 
-> layout 能力已通过 starter 自动装配 `LayoutPipeline` Bean，但因模型 125MB 不随仓库分发，本示例默认 `mica.ai.layout.enabled=false`，**未提供 layout REST 端点**；本地放好模型后置 `true` 即可 `Autowired LayoutPipeline` 直接使用。
+> layout 能力已通过 starter 自动装配 `LayoutPipeline` Bean，但因模型 125MB 不随仓库分发，本示例默认
+`mica.ai.layout.enabled=false`，**未提供 layout REST 端点**；本地放好模型后置 `true` 即可 `Autowired LayoutPipeline` 直接使用。
 
 Swagger UI：`http://localhost:8181/swagger-ui.html`
 

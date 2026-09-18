@@ -27,7 +27,12 @@ package net.dreamlu.mica.ai.filetype.config;
  * </ul>
  */
 public enum PredictionMode {
+	/**
+	 * 高置信度阈值校验（low_confidence_threshold=0.2，不通过时返回 unknown）。
+	 */
     HIGH_CONFIDENCE,
+	/** 中置信度阈值校验（medium_confidence_threshold=0.5）。 */
     MEDIUM_CONFIDENCE,
+	/** 不做阈值校验，永远采用模型 argmax 输出。 */
     BEST_GUESS
 }

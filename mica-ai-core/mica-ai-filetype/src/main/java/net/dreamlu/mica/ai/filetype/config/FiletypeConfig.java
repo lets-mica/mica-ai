@@ -23,6 +23,9 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
+/**
+ * Magika 文件类型检测配置（模型 / 知识库路径、预测模式、ONNX 会话参数）。
+ */
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
@@ -45,6 +48,11 @@ public class FiletypeConfig {
     @Builder.Default
 	private OrtSessionOptions onnx = OrtSessionOptions.defaults();
 
+	/**
+	 * 校验配置合法性。
+	 *
+	 * @throws MicaAiException {@link ErrorCode#ILLEGAL_ARGUMENT} 配置非法
+	 */
     public void validate() {
         if (modelVersion == null || modelVersion.isEmpty()) {
             throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
@@ -56,14 +64,29 @@ public class FiletypeConfig {
         }
     }
 
+	/**
+	 * 解析模型 ONNX 文件路径（未配置时回退内置 classpath 资源）。
+	 *
+	 * @return 模型路径
+	 */
     public String resolveModelPath() {
         return resolveResource(modelPath, MODEL_RESOURCE);
     }
 
+	/**
+	 * 解析 config.min.json 路径（未配置时回退内置 classpath 资源）。
+	 *
+	 * @return 配置路径
+	 */
     public String resolveConfigPath() {
         return resolveResource(configPath, CONFIG_RESOURCE);
     }
 
+	/**
+	 * 解析 content_types_kb.min.json 路径（未配置时回退内置 classpath 资源）。
+	 *
+	 * @return 知识库路径
+	 */
     public String resolveContentTypesPath() {
         return resolveResource(contentTypesPath, KB_RESOURCE);
     }

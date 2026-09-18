@@ -25,8 +25,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
-import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
+import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.model.LivenessResult;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.util.ImageUtils;
@@ -63,6 +63,46 @@ public class FaceController {
 	private final FeatureExtractor extractor;
 	private final FaceVerifier verifier;
 	private final LivenessDetector livenessDetector;
+
+	private static Path save(MultipartFile file) throws IOException {
+		String original = file.getOriginalFilename() == null ? "face.png" : file.getOriginalFilename();
+		Path tmp = Files.createTempFile("mica-face-", "-" + original);
+		file.transferTo(tmp.toFile());
+		tmp.toFile().deleteOnExit();
+		return tmp;
+	}
+
+	private static Map<String, Object> boxView(FaceBox box) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("x1", box.getX1());
+		m.put("y1", box.getY1());
+		m.put("x2", box.getX2());
+		m.put("y2", box.getY2());
+		m.put("score", box.getScore());
+		m.put("landmarks", box.getLandmarks());
+		return m;
+	}
+
+	private static Map<String, Object> embeddingView(float[] vec) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("dim", vec.length);
+		double norm = 0;
+		for (float v : vec) {
+			norm += (double) v * v;
+		}
+		m.put("l2Norm", Math.sqrt(norm));
+		m.put("preview", preview(vec, 8));
+		return m;
+	}
+
+	private static List<Float> preview(float[] vec, int n) {
+		int len = Math.min(n, vec.length);
+		List<Float> list = new java.util.ArrayList<>(len);
+		for (int i = 0; i < len; i++) {
+			list.add(vec[i]);
+		}
+		return list;
+	}
 
 	@Operation(summary = "人脸检测", description = "仅做检测：返回每张人脸的 bbox + 关键点 + score")
 	@ApiResponses(value = {
@@ -161,45 +201,5 @@ public class FaceController {
 				aligned.release();
 			}
 		}
-	}
-
-	private static Path save(MultipartFile file) throws IOException {
-		String original = file.getOriginalFilename() == null ? "face.png" : file.getOriginalFilename();
-		Path tmp = Files.createTempFile("mica-face-", "-" + original);
-		file.transferTo(tmp.toFile());
-		tmp.toFile().deleteOnExit();
-		return tmp;
-	}
-
-	private static Map<String, Object> boxView(FaceBox box) {
-		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("x1", box.getX1());
-		m.put("y1", box.getY1());
-		m.put("x2", box.getX2());
-		m.put("y2", box.getY2());
-		m.put("score", box.getScore());
-		m.put("landmarks", box.getLandmarks());
-		return m;
-	}
-
-	private static Map<String, Object> embeddingView(float[] vec) {
-		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("dim", vec.length);
-		double norm = 0;
-		for (float v : vec) {
-			norm += (double) v * v;
-		}
-		m.put("l2Norm", Math.sqrt(norm));
-		m.put("preview", preview(vec, 8));
-		return m;
-	}
-
-	private static List<Float> preview(float[] vec, int n) {
-		int len = Math.min(n, vec.length);
-		List<Float> list = new java.util.ArrayList<>(len);
-		for (int i = 0; i < len; i++) {
-			list.add(vec[i]);
-		}
-		return list;
 	}
 }

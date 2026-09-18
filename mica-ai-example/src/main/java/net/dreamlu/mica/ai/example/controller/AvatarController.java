@@ -24,7 +24,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.avatar.AvatarExtractor;
 import net.dreamlu.mica.ai.face.avatar.AvatarOptions;
@@ -36,19 +35,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 人脸头像提取端点。
@@ -68,6 +59,49 @@ import java.util.Map;
 public class AvatarController {
 
 	private final AvatarExtractor avatarExtractor;
+
+	private static int quality(Integer quality) {
+		return quality == null ? 95 : quality;
+	}
+
+	private static MediaType contentType(String format) {
+		return "jpg".equalsIgnoreCase(format) || "jpeg".equalsIgnoreCase(format)
+			? MediaType.IMAGE_JPEG : MediaType.IMAGE_PNG;
+	}
+
+	private static ResponseEntity<Object> image(byte[] bytes, MediaType type,
+												Map<String, String> headers) {
+		ResponseEntity.BodyBuilder builder = ResponseEntity.ok().contentType(type);
+		if (headers != null) {
+			headers.forEach(builder::header);
+		}
+		return builder.body(bytes);
+	}
+
+	private static ResponseEntity<Object> json(Object body, HttpStatus status) {
+		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
+	}
+
+	/**
+	 * {@link MicaAiException} 统一按 400 返回：本接口的异常基本都是「未检测到人脸」
+	 * 或参数越界，属于调用方问题。
+	 */
+	private static ResponseEntity<Object> failure(MicaAiException e) {
+		Map<String, Object> body = error(e.getMessage());
+		return json(body, HttpStatus.BAD_REQUEST);
+	}
+
+	private static void releaseAll(List<AvatarResult> results) {
+		if (results != null) {
+			results.forEach(AvatarResult::release);
+		}
+	}
+
+	private static Map<String, Object> error(String msg) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("error", msg);
+		return m;
+	}
 
 	/**
 	 * 提取头像：返回画面中面积最大的人脸，直接输出图片字节。
@@ -296,48 +330,5 @@ public class AvatarController {
 			builder.maxFaces(maxFaces);
 		}
 		return builder.build();
-	}
-
-	private static int quality(Integer quality) {
-		return quality == null ? 95 : quality;
-	}
-
-	private static MediaType contentType(String format) {
-		return "jpg".equalsIgnoreCase(format) || "jpeg".equalsIgnoreCase(format)
-			? MediaType.IMAGE_JPEG : MediaType.IMAGE_PNG;
-	}
-
-	private static ResponseEntity<Object> image(byte[] bytes, MediaType type,
-												Map<String, String> headers) {
-		ResponseEntity.BodyBuilder builder = ResponseEntity.ok().contentType(type);
-		if (headers != null) {
-			headers.forEach(builder::header);
-		}
-		return builder.body(bytes);
-	}
-
-	private static ResponseEntity<Object> json(Object body, HttpStatus status) {
-		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body);
-	}
-
-	/**
-	 * {@link MicaAiException} 统一按 400 返回：本接口的异常基本都是「未检测到人脸」
-	 * 或参数越界，属于调用方问题。
-	 */
-	private static ResponseEntity<Object> failure(MicaAiException e) {
-		Map<String, Object> body = error(e.getMessage());
-		return json(body, HttpStatus.BAD_REQUEST);
-	}
-
-	private static void releaseAll(List<AvatarResult> results) {
-		if (results != null) {
-			results.forEach(AvatarResult::release);
-		}
-	}
-
-	private static Map<String, Object> error(String msg) {
-		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("error", msg);
-		return m;
 	}
 }

@@ -78,6 +78,12 @@ public class FiletypeDetector implements AutoCloseable {
 	private final PredictionMode predictionMode;
 	private final String inputName;
 
+	/**
+	 * 构造检测器并加载模型 / 配置 / 知识库。
+	 *
+	 * @param config 检测配置
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型或配置加载失败
+	 */
 	public FiletypeDetector(FiletypeConfig config) {
 		Objects.requireNonNull(config, "FiletypeConfig must not be null");
 		config.validate();
@@ -97,14 +103,32 @@ public class FiletypeDetector implements AutoCloseable {
 			version, modelConfig.getTargetLabelsSpace().size(), modelConfig.featuresSize());
 	}
 
+	/**
+	 * 创建检测器。
+	 *
+	 * @param config 检测配置
+	 * @return FiletypeDetector 实例
+	 */
 	public static FiletypeDetector create(FiletypeConfig config) {
 		return new FiletypeDetector(config);
 	}
 
+	/**
+	 * 用默认配置创建检测器。
+	 *
+	 * @return FiletypeDetector 实例
+	 */
 	public static FiletypeDetector createDefault() {
 		return new FiletypeDetector(FiletypeConfig.builder().build());
 	}
 
+	/**
+	 * 按文件路径识别文件类型。
+	 *
+	 * @param path 文件路径（不可为空）
+	 * @return 识别结果
+	 * @throws MicaAiException {@link ErrorCode#ILLEGAL_ARGUMENT} 路径为空 / 不可读
+	 */
 	public FiletypeResult detectPath(String path) {
 		if (path == null || path.isEmpty()) {
 			throw new MicaAiException(
@@ -113,6 +137,13 @@ public class FiletypeDetector implements AutoCloseable {
 		return detectPath(Paths.get(path));
 	}
 
+	/**
+	 * 按文件路径识别文件类型（目录 / 非常规文件返回特殊结果）。
+	 *
+	 * @param path 文件路径
+	 * @return 识别结果
+	 * @throws MicaAiException {@link ErrorCode#NOT_FOUND} 文件不存在；{@link ErrorCode#INFERENCE_FAILED} 读取失败
+	 */
 	public FiletypeResult detectPath(Path path) {
 		Objects.requireNonNull(path, "Path must not be null");
 		try {
@@ -139,6 +170,13 @@ public class FiletypeDetector implements AutoCloseable {
 		}
 	}
 
+	/**
+	 * 按字节数组识别文件类型。
+	 *
+	 * @param content 文件内容字节
+	 * @return 识别结果
+	 * @throws MicaAiException {@link ErrorCode#ILLEGAL_ARGUMENT} 内容为空
+	 */
 	public FiletypeResult detectBytes(byte[] content) {
 		if (content == null) {
 			throw new MicaAiException(
@@ -150,6 +188,10 @@ public class FiletypeDetector implements AutoCloseable {
 	/**
 	 * 从输入流识别。流长度未知，会先完整读入内存，超大内容请改用
 	 * {@link #detectPath(String)} 或 {@link #detectBytes(byte[])}。
+	 *
+	 * @param stream 输入流
+	 * @return 识别结果
+	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 读取输入流失败
 	 */
 	public FiletypeResult detectStream(InputStream stream) {
 		Objects.requireNonNull(stream, "InputStream must not be null");

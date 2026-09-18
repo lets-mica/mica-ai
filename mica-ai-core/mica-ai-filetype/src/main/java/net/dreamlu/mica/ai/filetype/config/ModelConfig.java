@@ -24,6 +24,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Magika 模型配置（config.min.json 反序列化产物）。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -63,6 +66,11 @@ public class ModelConfig {
     @JsonProperty("overwrite_map")
     private Map<String, String> overwriteMap;
 
+	/**
+	 * 特征总长度（begSize + endSize）。
+	 *
+	 * @return 特征长度
+	 */
     public int featuresSize() {
         return begSize + endSize;
     }

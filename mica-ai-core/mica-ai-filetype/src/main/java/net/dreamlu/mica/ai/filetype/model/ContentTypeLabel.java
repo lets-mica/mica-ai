@@ -29,10 +29,18 @@ package net.dreamlu.mica.ai.filetype.model;
  */
 public interface ContentTypeLabel {
 
+	/**
+	 * 未知类型（兜底）。
+	 */
     String UNKNOWN = "unknown";
+	/** 纯文本文件。 */
     String TXT = "txt";
+	/** 0 字节文件。 */
     String EMPTY = "empty";
+	/** 目录。 */
     String DIRECTORY = "directory";
+	/** 符号链接。 */
     String SYMLINK = "symlink";
+	/** 特殊结果下 modelLabel 字段的值。 */
     String UNDEFINED = "undefined";
 }

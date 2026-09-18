@@ -52,6 +52,21 @@ import java.util.Map;
 public class PlateController {
 	private final PlatePipeline pipeline;
 
+	private static List<Map<String, Object>> view(List<PlateResult> results) {
+		List<Map<String, Object>> list = new ArrayList<>();
+		for (PlateResult r : results) {
+			Map<String, Object> m = new LinkedHashMap<>();
+			m.put("plateCode", r.getPlateCode());
+			m.put("plateType", r.getPlateType() == null ? null : r.getPlateType().getCode());
+			m.put("detectionConfidence", r.getDetectionConfidence());
+			m.put("recognitionConfidence", r.getRecognitionConfidence());
+			m.put("boundingBox", r.getBoundingBox());
+			m.put("landmarks", r.getLandmarks());
+			list.add(m);
+		}
+		return list;
+	}
+
 	@Operation(summary = "上传图片识别车牌", description = "检测车牌 + 透视校正 + CRNN 识别 + 颜色分类，返回车牌号 / 类型 / 置信度 / 框 / 关键点")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "识别成功",
@@ -69,20 +84,5 @@ public class PlateController {
 		try (InputStream in = file.getInputStream()) {
 			return view(pipeline.recognizeBytes(IOUtil.readAllBytes(in)));
 		}
-	}
-
-	private static List<Map<String, Object>> view(List<PlateResult> results) {
-		List<Map<String, Object>> list = new ArrayList<>();
-		for (PlateResult r : results) {
-			Map<String, Object> m = new LinkedHashMap<>();
-			m.put("plateCode", r.getPlateCode());
-			m.put("plateType", r.getPlateType() == null ? null : r.getPlateType().getCode());
-			m.put("detectionConfidence", r.getDetectionConfidence());
-			m.put("recognitionConfidence", r.getRecognitionConfidence());
-			m.put("boundingBox", r.getBoundingBox());
-			m.put("landmarks", r.getLandmarks());
-			list.add(m);
-		}
-		return list;
 	}
 }

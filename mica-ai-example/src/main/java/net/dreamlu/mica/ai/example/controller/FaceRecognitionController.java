@@ -77,6 +77,10 @@ public class FaceRecognitionController {
 		return m;
 	}
 
+	private static float area(FaceBox box) {
+		return (box.getX2() - box.getX1()) * (box.getY2() - box.getY1());
+	}
+
 	/**
 	 * 注册人脸：上传图片 + personId，提取第一张人脸特征后存入向量仓库。
 	 */
@@ -288,9 +292,5 @@ public class FaceRecognitionController {
 			throw new MicaAiException(ErrorCode.VERIFICATION_FAILED, "活体检测未通过");
 		}
 		return feat;
-	}
-
-	private static float area(FaceBox box) {
-		return (box.getX2() - box.getX1()) * (box.getY2() - box.getY1());
 	}
 }

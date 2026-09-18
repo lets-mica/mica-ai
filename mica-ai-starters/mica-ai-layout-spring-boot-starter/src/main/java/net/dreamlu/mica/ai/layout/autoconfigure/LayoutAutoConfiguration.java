@@ -35,6 +35,12 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = "mica.ai.layout", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class LayoutAutoConfiguration {
 
+	/**
+	 * 创建文档版面分析管道 Bean。
+	 *
+	 * @param properties 版面分析配置属性
+	 * @return LayoutPipeline 实例
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public LayoutPipeline layoutPipeline(LayoutProperties properties) {

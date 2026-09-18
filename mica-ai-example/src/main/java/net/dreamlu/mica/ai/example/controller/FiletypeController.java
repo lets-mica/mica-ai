@@ -28,11 +28,7 @@ import net.dreamlu.mica.ai.filetype.model.ContentTypeInfo;
 import net.dreamlu.mica.ai.filetype.model.FiletypeResult;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -51,6 +47,23 @@ import java.util.Map;
 public class FiletypeController {
 
 	private final FiletypeDetector detector;
+
+	private static Map<String, Object> view(FiletypeResult result) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		m.put("outputLabel", result.getOutputLabel());
+		m.put("modelLabel", result.getModelLabel());
+		m.put("score", result.getScore());
+		m.put("text", result.isText());
+		m.put("mode", result.getMode().name());
+		ContentTypeInfo ct = result.getContentType();
+		if (ct != null) {
+			m.put("mimeType", ct.getMimeType());
+			m.put("group", ct.getGroup());
+			m.put("description", ct.getDescription());
+			m.put("extensions", ct.getExtensions());
+		}
+		return m;
+	}
 
 	@Operation(summary = "上传文件识别", description = "识别上传文件的类型，返回 model label / output label / score / mime / group / description")
 	@ApiResponses(value = {
@@ -79,22 +92,5 @@ public class FiletypeController {
 				schema = @Schema(type = "string", format = "binary")))
 		@RequestParam("file") MultipartFile file) throws IOException {
 		return view(detector.detectBytes(file.getBytes()));
-	}
-
-	private static Map<String, Object> view(FiletypeResult result) {
-		Map<String, Object> m = new LinkedHashMap<>();
-		m.put("outputLabel", result.getOutputLabel());
-		m.put("modelLabel", result.getModelLabel());
-		m.put("score", result.getScore());
-		m.put("text", result.isText());
-		m.put("mode", result.getMode().name());
-		ContentTypeInfo ct = result.getContentType();
-		if (ct != null) {
-			m.put("mimeType", ct.getMimeType());
-			m.put("group", ct.getGroup());
-			m.put("description", ct.getDescription());
-			m.put("extensions", ct.getExtensions());
-		}
-		return m;
 	}
 }

@@ -44,6 +44,14 @@ public class FeaturesExtractor {
 		ASCII_WHITESPACE[0x20] = true;
 	}
 
+	/**
+	 * 按模型配置提取特征：头 begSize 字节 + 尾 endSize 字节，中段以 padding 填充。
+	 *
+	 * @param config 模型配置
+	 * @param head   文件头字节
+	 * @param tail   文件尾字节
+	 * @return 长度为 featuresSize() 的特征数组
+	 */
 	public static int[] extract(ModelConfig config, byte[] head, byte[] tail) {
 		int begSize = config.getBegSize();
 		int endSize = config.getEndSize();
@@ -67,6 +75,13 @@ public class FeaturesExtractor {
 		return features;
 	}
 
+	/**
+	 * 判断文件字节数是否达到 DL 模型最低要求（min_file_size_for_dl）。
+	 *
+	 * @param config   模型配置
+	 * @param features 已提取的特征数组
+	 * @return true 表示字节数足够，可走 DL 推理
+	 */
 	public static boolean hasEnoughMeaningfulBytes(ModelConfig config, int[] features) {
 		int idx = config.getMinFileSizeForDl() - 1;
 		if (idx < 0) {

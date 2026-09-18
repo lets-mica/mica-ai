@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.example.pipeline;
 
 import lombok.Getter;
+import net.dreamlu.mica.ai.example.repository.VectorRepository;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
@@ -24,14 +25,9 @@ import net.dreamlu.mica.ai.face.model.LivenessResult;
 import net.dreamlu.mica.ai.face.model.MatchResult;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.util.ImageUtils;
-import net.dreamlu.mica.ai.example.repository.VectorRepository;
 import org.opencv.core.Mat;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 人脸识别管线编排示例。
