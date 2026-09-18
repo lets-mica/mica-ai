@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.face.liveness;
 
@@ -22,10 +34,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 活体检测器，基于 MiniFASNetV2 ONNX 模型。
+ * 活体检测器，基于 MiniFASNetV2 ONNX 模型（{@code 2.7_80x80_MiniFASNetV2.onnx}）。
  *
  * <p><b>类别顺序</b>：<code>0 = 纸质照片攻击(print)、1 = 真人(real)、2 = 屏幕翻拍攻击(replay)</code>，
  * 活体概率取 <b>下标 1</b>。
+ *
+ * <p><b>输入</b>：原图 + 人脸框，按 {@code cropScale}（默认 2.7）外扩裁剪到 80×80 BGR，
+ * <b>不要</b>直接传对齐后的 112×112 人脸，否则视野太窄影响精度。
+ *
+ * <p>线程安全：依赖 {@code ModelManager} 持有的 ONNX Session（线程安全），可作为
+ * Spring 单例 bean；本类仅含构造时冻结的不可变字段。
  */
 @Getter
 public class LivenessDetector {
@@ -43,10 +61,23 @@ public class LivenessDetector {
 	private final float threshold;
 	private final double cropScale;
 
+	/**
+	 * 构造活体检测器（默认阈值 0.85、外扩 2.7 倍）。
+	 *
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 活体模型未加载
+	 */
 	public LivenessDetector(ModelManager modelManager) {
 		this(modelManager, 0.85f, 2.7);
 	}
 
+	/**
+	 * 构造活体检测器。
+	 *
+	 * @param modelManager 模型管理器（活体 session 必须存在）
+	 * @param threshold    真人概率阈值；{@code > threshold} 判为 live
+	 * @param cropScale    人脸框外扩倍数（推荐 2.7，与训练时一致）
+	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 活体模型未加载
+	 */
 	public LivenessDetector(ModelManager modelManager, float threshold, double cropScale) {
 		OrtSession s = modelManager.getLivenessSession();
 		if (s == null) {
@@ -83,6 +114,14 @@ public class LivenessDetector {
 		return result;
 	}
 
+	/**
+	 * 单帧活体检测。
+	 *
+	 * @param image 原图（BGR）
+	 * @param box   人脸框（YuNet 检出）
+	 * @return {@link LivenessResult}，含真人概率 + 是否通过 + 攻击类型
+	 * @throws MicaAiException {@link ErrorCode#LIVENESS_FAILED} 入参为空 / 推理失败
+	 */
 	public LivenessResult check(Mat image, FaceBox box) {
 		if (image == null || image.empty() || box == null) {
 			throw new MicaAiException(

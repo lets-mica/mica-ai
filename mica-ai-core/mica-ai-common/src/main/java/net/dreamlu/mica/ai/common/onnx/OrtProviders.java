@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.common.onnx;
 
@@ -53,7 +65,8 @@ public class OrtProviders {
 	 * 解析当前运行时可用的 ONNX Runtime provider 名称（不注册）。
 	 *
 	 * @param preferCpu true 强制 CPU；false 按 CoreML &gt; CUDA 自动选
-	 * @return provider 名称数组，首个元素为最终选择
+	 * @return provider 名称数组，首个元素为最终选择；返回数组永不为 null，
+	 *         长度为 1，枚举失败时回退 {@code CPU}
 	 */
 	public static String[] resolve(boolean preferCpu) {
 		if (preferCpu) {
@@ -85,7 +98,9 @@ public class OrtProviders {
 
 	/**
 	 * 把 {@code providers[0]} 解析到的加速器注册到 {@link OrtSession.SessionOptions}。
-	 * 注册失败仅 warn，不抛异常。
+	 *
+	 * <p>注册失败仅 warn（不抛异常），由调用方继续走默认 CPU 推理；空数组 / null
+	 * 直接 no-op。
 	 *
 	 * @param providers   {@link #resolve(boolean)} 返回的 provider 名数组
 	 * @param opts        待配置的 SessionOptions

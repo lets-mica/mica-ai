@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.face.recognition;
 
@@ -28,9 +40,14 @@ import java.util.Map;
  *     <li><b>归一化内嵌在模型内</b>，外部<b>不要</b>再归一化。</li>
  *     <li><b>输出</b>：{@code [1, 128]}，未归一化的 128 维特征，本类负责 L2 归一化。</li>
  * </ul>
+ *
+ * <p>线程安全：ONNX Runtime OrtSession 线程安全，本类 stateless，可作为 Spring 单例 Bean 共享。
  */
 public class FeatureExtractor {
 
+	/**
+	 * 输出特征维度：固定 128d，已 L2 归一化（点积 = 余弦相似度）。
+	 */
 	public static final int FEATURE_DIM = 128;
 	private static final float SCALE = 1.0f;
 	private static final float OFFSET = 0.0f;
@@ -43,6 +60,14 @@ public class FeatureExtractor {
 		this.env = modelManager.getEnvironment();
 	}
 
+	/**
+	 * 计算两 L2-归一化特征向量的余弦相似度（点积等价形式）。
+	 *
+	 * @param a 向量 a（非 null，长度 = {@link #FEATURE_DIM}）
+	 * @param b 向量 b（非 null，长度需与 a 一致）
+	 * @return 范围 {@code [-1, 1]} 的余弦相似度
+	 * @throws MicaAiException {@link ErrorCode#EXTRACTION_FAILED} 向量为空或维度不匹配
+	 */
 	public static float compare(float[] a, float[] b) {
 		if (a == null || b == null) {
 			throw new MicaAiException(
@@ -85,6 +110,13 @@ public class FeatureExtractor {
 		return copy;
 	}
 
+	/**
+	 * 从 112×112 已对齐 BGR 人脸图提取 128d L2-归一化特征。
+	 *
+	 * @param alignedFace 由 {@link FaceAligner} 对齐后的 BGR Mat（112×112）
+	 * @return 长度为 {@link #FEATURE_DIM} 的 float 数组，||v|| ≈ 1
+	 * @throws MicaAiException {@link ErrorCode#EXTRACTION_FAILED} 入参为空 / 推理失败
+	 */
 	public float[] extract(Mat alignedFace) {
 		if (alignedFace == null || alignedFace.empty()) {
 			throw new MicaAiException(

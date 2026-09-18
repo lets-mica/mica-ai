@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.face.verification;
 
@@ -20,10 +32,16 @@ import java.util.List;
  * 人脸 1:1 比对（人证核验）门面。
  *
  * <p>编排完整链路：对两张图分别执行 检测 → 对齐 → 特征提取 → 余弦相似度。
+ *
+ * <p>线程安全：内部持有的 {@link FaceDetector} / {@link FeatureExtractor} stateless 且
+ * ONNX session 线程安全；本类自身仅含构造时冻结的不可变字段，可作为 Spring 单例 Bean。
  */
 @Getter
 public class FaceVerifier {
 
+	/**
+	 * 多张人脸时的选脸策略（保留枚举，当前实现始终按面积最大选；保留以备后续扩展）。
+	 */
 	public enum MultiFaceStrategy {
 		REJECT,
 		LARGEST_SCORE,

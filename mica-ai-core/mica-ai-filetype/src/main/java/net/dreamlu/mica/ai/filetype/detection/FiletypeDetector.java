@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.filetype.detection;
 
@@ -62,7 +74,6 @@ public class FiletypeDetector implements AutoCloseable {
 	private final PredictionPostProcessor postProcessor;
 	private final PredictionMode predictionMode;
 	private final String inputName;
-	private final Object inferLock = new Object();
 
 	public FiletypeDetector(FiletypeConfig config) {
 		Objects.requireNonNull(config, "FiletypeConfig must not be null");
@@ -191,17 +202,16 @@ public class FiletypeDetector implements AutoCloseable {
 	}
 
 	private float[] runInference(int[] features) {
-		synchronized (inferLock) {
-			try (OnnxTensor tensor = OnnxTensor.createTensor(
-				environment, java.nio.IntBuffer.wrap(features), new long[]{1, features.length})) {
-				Map<String, OnnxTensor> inputs = Collections.singletonMap(inputName, tensor);
-				try (OrtSession.Result result = modelSession.getSession().run(inputs)) {
-					return toFloats(result.get(0).getValue());
-				}
-			} catch (OrtException e) {
-				throw new MicaAiException(
-					ErrorCode.INFERENCE_FAILED, "filetype 模型推理失败", e);
+		// ONNX Runtime OrtSession thread-safe；OnnxTensor 每次新建不在并发路径共享，无需额外锁。
+		try (OnnxTensor tensor = OnnxTensor.createTensor(
+			environment, java.nio.IntBuffer.wrap(features), new long[]{1, features.length})) {
+			Map<String, OnnxTensor> inputs = Collections.singletonMap(inputName, tensor);
+			try (OrtSession.Result result = modelSession.getSession().run(inputs)) {
+				return toFloats(result.get(0).getValue());
 			}
+		} catch (OrtException e) {
+			throw new MicaAiException(
+				ErrorCode.INFERENCE_FAILED, "filetype 模型推理失败", e);
 		}
 	}
 
@@ -300,7 +310,7 @@ public class FiletypeDetector implements AutoCloseable {
 		modelSession.close();
 		try {
 			sessionOptions.close();
-		} catch (Throwable e) {
+		} catch (Exception e) {
 			log.warn("关闭共享 OrtSession.SessionOptions 失败: {}", e.getMessage());
 		}
 	}

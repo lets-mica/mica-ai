@@ -47,6 +47,7 @@
 | 🖼️ 头像 / 证件卡片提取 | `mica-ai-face` | 几何变换 + USM/CLAHE | 正方形头像 / 矫正卡面 | Apache 2.0 | ✅ |
 | 📄 文件类型识别 | `mica-ai-filetype` | Google Magika `standard_v3_3` | **214 类** + mime / group / description | Apache 2.0 | ✅ |
 | 🚗 中国车牌识别 | `mica-ai-plate` | HyperLPR3 v20230229 | 车牌号 + 10 类判型 + 颜色 | Apache 2.0 | ✅ |
+| 📐 文档版面分析 | `mica-ai-layout` | PP-DocLayoutV3 | **25 类版面区域** + V3 阅读顺序 | Apache 2.0 | ✅ |
 
 ### 整体架构
 
@@ -63,11 +64,13 @@
                                    │
                                    ▼
         ┌──────────────────────────────────────────────────────┐
-        │                     mica-ai-core                     │
+        │                    mica-ai-core                     │
         │   mica-ai-face        mica-ai-filetype  mica-ai-plate│
         │   YuNet + SFace 🎭    Magika 214 类 📄  HyperLPR3 🚗  │
         │   + 活体 MiniFASNet   + mime / group   + 车牌号 / 颜色│
         │   + 头像 / 证件卡片                                  │
+        │              mica-ai-layout                         │
+        │              PP-DocLayoutV3 📐 25 类 + 阅读顺序      │
         └──────────────────────────┬───────────────────────────┘
                                    │
                                    ▼
@@ -116,6 +119,11 @@
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-plate</artifactId>             <!-- 中国车牌识别 -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-layout</artifactId>            <!-- 文档版面分析（模型 125MB 不随仓库分发） -->
     <version>${mica-ai.version}</version>
 </dependency>
 ```
@@ -196,6 +204,7 @@ public class FaceEnrollService {
 | [mica-ai-face-spring-boot-starter](mica-ai-starters/mica-ai-face-spring-boot-starter/README.md) | `mica.ai.face` | 人脸检测 + 128d 特征 + 活体 + 头像 / 证件卡片提取 |
 | [mica-ai-filetype-spring-boot-starter](mica-ai-starters/mica-ai-filetype-spring-boot-starter/README.md) | `mica.ai.filetype` | Google Magika 复刻，214 类文件类型识别（含 / 排除置信度三模式） |
 | [mica-ai-plate-spring-boot-starter](mica-ai-starters/mica-ai-plate-spring-boot-starter/README.md) | `mica.ai.plate` | HyperLPR3 中国车牌识别（检测 + CRNN 识别 + 颜色分类 + 10 类判型） |
+| [mica-ai-layout-spring-boot-starter](mica-ai-starters/mica-ai-layout-spring-boot-starter/README.md) | `mica.ai.layout` | PP-DocLayoutV3 文档版面分析（25 类 + V3 阅读顺序；模型 125MB 不随仓库分发，需本地放模型） |
 
 只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用。
 
@@ -210,16 +219,19 @@ mica-ai/
 ├── mica-ai-core/                   # 核心引擎（零 Spring，纯 Java 8+）
 │   ├── mica-ai-face/               #   🎭 OpenCV Zoo 人脸识别
 │   ├── mica-ai-filetype/           #   📄 Google Magika 文件类型识别
-│   └── mica-ai-plate/              #   🚗 HyperLPR3 中国车牌识别
+│   ├── mica-ai-plate/              #   🚗 HyperLPR3 中国车牌识别
+│   └── mica-ai-layout/             #   📐 PP-DocLayoutV3 文档版面分析
 ├── mica-ai-starters/               # Spring Boot 2 Starter
 │   ├── mica-ai-face-spring-boot-starter/
 │   ├── mica-ai-filetype-spring-boot-starter/
-│   └── mica-ai-plate-spring-boot-starter/
+│   ├── mica-ai-plate-spring-boot-starter/
+│   └── mica-ai-layout-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产（直接入库，均 <50MB）
     ├── face/models/                #   YuNet + SFace + MiniFASNetV2
     ├── filetype/models/            #   Magika standard_v3_3
-    └── plate/models/               #   HyperLPR3 v20230229
+    ├── plate/models/               #   HyperLPR3 v20230229
+    └── layout/models/              #   PP-DocLayoutV3（125MB，⚠️ 不随仓库分发）
 ```
 
 ---
@@ -246,6 +258,7 @@ mica-ai/
 | 🖼️ **头像 / 证件卡片标准化** | `mica-ai-face` 的 `AvatarExtractor` / `CardExtractor` |
 | 📄 **任意文件 MIME 推断 / 内容审计** | `mica-ai-filetype` — 214 类 + 三种置信度模式 |
 | 🚗 **停车场 / 道闸 / 智慧出行** | `mica-ai-plate` 的 `PlatePipeline` + 颜色分类兜底 |
+| 📐 **PDF / 文档预处理 / 阅读顺序** | `mica-ai-layout` 的 `LayoutPipeline` — 25 类版面 + V3 阅读顺序 |
 
 ---
 

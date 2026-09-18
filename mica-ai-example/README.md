@@ -84,6 +84,8 @@ mvn -pl mica-ai-example -am test
 | `/filetype/detect-bytes` | POST octet-stream | 上传二进制，返回同上字段 |
 | `/plate/recognize` | POST multipart | 上传车辆图片，返回车牌号 + 类型 + 置信度 |
 
+> layout 能力已通过 starter 自动装配 `LayoutPipeline` Bean，但因模型 125MB 不随仓库分发，本示例默认 `mica.ai.layout.enabled=false`，**未提供 layout REST 端点**；本地放好模型后置 `true` 即可 `Autowired LayoutPipeline` 直接使用。
+
 Swagger UI：`http://localhost:8181/swagger-ui.html`
 
 ---

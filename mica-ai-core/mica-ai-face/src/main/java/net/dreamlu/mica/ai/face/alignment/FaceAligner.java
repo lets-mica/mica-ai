@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.face.alignment;
 
@@ -18,9 +30,14 @@ import org.opencv.imgproc.Imgproc;
  *
  * <p>基于 5 个关键点估计相似变换矩阵，将人脸区域 warp 到 112×112 的标准正脸。
  * 参考点坐标取自 InsightFace 标准 ArcFace 对齐模板。
+ *
+ * <p>线程安全：本类 stateless，可作为单例 Bean 共享。
  */
 public class FaceAligner {
 
+	/**
+	 * 对齐输出正方形边长（与 SFace 输入一致）。
+	 */
 	public static final int OUTPUT_SIZE = 112;
 
 	private static final float[][] REFERENCE_112 = {
@@ -31,6 +48,15 @@ public class FaceAligner {
 		{70.7299f, 92.2041f}
 	};
 
+	/**
+	 * 将原图人脸区域 warp 到 112×112 标准正脸。
+	 *
+	 * @param image   原图（BGR）
+	 * @param faceBox YuNet 检出框（必须含 5 个关键点）
+	 * @return 112×112 已对齐的 BGR Mat，调用方负责 {@code release()}
+	 * @throws MicaAiException {@link ErrorCode#ALIGNMENT_FAILED}
+	 *         入参为空 / 关键点数 ≠ 5 / 仿射矩阵估计失败
+	 */
 	public Mat align(Mat image, FaceBox faceBox) {
 		if (image == null || image.empty() || faceBox == null || faceBox.getLandmarks() == null) {
 			throw new MicaAiException(

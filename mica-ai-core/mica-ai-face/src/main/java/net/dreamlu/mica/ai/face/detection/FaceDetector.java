@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.face.detection;
 
@@ -44,7 +56,9 @@ import java.util.Map;
  *     <li>框解码为 anchor-free：{@code cx = (c + dx) * stride}，{@code w = exp(dw) * stride}。</li>
  * </ul>
  *
- * @author L.cm
+ * <p>线程安全：ONNX Runtime OrtSession 本身线程安全；本类为 stateless，可以作为单例 Bean
+ * 在 Spring 容器中共享；唯一的可变状态是每次推理新建的 {@code OnnxTensor}，try-with-resources
+ * 保证释放，无跨线程共享问题。
  */
 @Getter
 public class FaceDetector {

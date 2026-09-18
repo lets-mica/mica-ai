@@ -2,13 +2,14 @@
 
 > mica-ai Spring Boot Starter 聚合模块，一行配置即可将 AI 能力接入 Spring Boot 应用。
 
-本模块为聚合 POM（`packaging=pom`），包含 3 个 starter：
+本模块为聚合 POM（`packaging=pom`），包含 4 个 starter：
 
 | Starter | 功能 | 配置前缀 |
 |---------|------|---------|
 | [mica-ai-face-spring-boot-starter](mica-ai-face-spring-boot-starter/README.md) | OpenCV Zoo 人脸识别（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体 + 头像 / 证件卡片提取） | `mica.ai.face` |
 | [mica-ai-filetype-spring-boot-starter](mica-ai-filetype-spring-boot-starter/README.md) | Google Magika 文件类型识别（214 类，三种置信度模式） | `mica.ai.filetype` |
 | [mica-ai-plate-spring-boot-starter](mica-ai-plate-spring-boot-starter/README.md) | HyperLPR3 中国车牌识别（检测 + 识别 + 颜色分类 + 10 类判型） | `mica.ai.plate` |
+| [mica-ai-layout-spring-boot-starter](mica-ai-layout-spring-boot-starter/README.md) | PP-DocLayoutV3 文档版面分析（25 类 + V3 阅读顺序；模型 125MB 不随仓库分发，需本地放模型） | `mica.ai.layout` |
 
 ---
 
@@ -40,6 +41,11 @@
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-plate-spring-boot-starter</artifactId>
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-layout-spring-boot-starter</artifactId>
     <version>${mica-ai.version}</version>
 </dependency>
 ```

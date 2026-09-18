@@ -38,6 +38,11 @@ model-tools/
 >
 > layout 模型未随仓库分发，因此在示例配置里 `mica.ai.layout.enabled=false`；本地放好 `model.onnx` 后置 `true` 即可。
 
+**网盘下载：**
+我用夸克网盘给你分享了「mica-ai」，点击链接或复制整段内容，打开「夸克APP」即可获取。
+链接：https://pan.quark.cn/s/56cdf019c2c1
+提取码：yjAh
+
 ## 🚀 使用
 
 Java 端直接按路径引用（支持 `classpath:`），以 plate 为例：

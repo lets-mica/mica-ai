@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.layout.detection;
 
@@ -68,7 +80,6 @@ public class LayoutDetector implements AutoCloseable {
 	@Getter
 	private final LayoutConfig config;
 	private final LayoutPostProcessor postProcessor;
-	private final Object inferLock = new Object();
 	private final String imageInputName;
 	private final String imShapeInputName;
 	private final String scaleInputName;
@@ -102,36 +113,35 @@ public class LayoutDetector implements AutoCloseable {
 		LetterBoxResult pre = letterBox(bgr, config.getMaxSideLength(),
 			config.getMean(), config.getStd());
 		try {
-			synchronized (inferLock) {
-				OnnxTensor imageTensor = null;
-				OnnxTensor imShapeTensor = null;
-				OnnxTensor scaleTensor = null;
-				Map<String, OnnxTensor> inputs = new HashMap<>(3);
-				try {
-					imageTensor = OnnxTensor.createTensor(environment,
-						FloatBuffer.wrap(pre.tensorData),
-						new long[]{1, 3, pre.side, pre.side});
-					imShapeTensor = OnnxTensor.createTensor(environment,
-						FloatBuffer.wrap(new float[]{(float) origH, (float) origW}),
-						new long[]{1, 2});
-					float invScale = (float) (1d / pre.scale);
-					scaleTensor = OnnxTensor.createTensor(environment,
-						FloatBuffer.wrap(new float[]{invScale, invScale}),
-						new long[]{1, 2});
-					inputs.put(imageInputName, imageTensor);
-					inputs.put(imShapeInputName, imShapeTensor);
-					inputs.put(scaleInputName, scaleTensor);
-					try (OrtSession.Result result = session.getSession().run(inputs)) {
-						return parseAndPostProcess(result, pre, origW, origH);
-					} catch (OrtException e) {
-						throw new MicaAiException(
-							ErrorCode.INFERENCE_FAILED, "layout 模型推理失败", e);
-					}
-				} finally {
-					closeQuietly(imageTensor);
-					closeQuietly(imShapeTensor);
-					closeQuietly(scaleTensor);
+			// ONNX Runtime OrtSession thread-safe；3 个 OnnxTensor 每次新建不在并发路径共享，无需额外锁。
+			OnnxTensor imageTensor = null;
+			OnnxTensor imShapeTensor = null;
+			OnnxTensor scaleTensor = null;
+			Map<String, OnnxTensor> inputs = new HashMap<>(3);
+			try {
+				imageTensor = OnnxTensor.createTensor(environment,
+					FloatBuffer.wrap(pre.tensorData),
+					new long[]{1, 3, pre.side, pre.side});
+				imShapeTensor = OnnxTensor.createTensor(environment,
+					FloatBuffer.wrap(new float[]{(float) origH, (float) origW}),
+					new long[]{1, 2});
+				float invScale = (float) (1d / pre.scale);
+				scaleTensor = OnnxTensor.createTensor(environment,
+					FloatBuffer.wrap(new float[]{invScale, invScale}),
+					new long[]{1, 2});
+				inputs.put(imageInputName, imageTensor);
+				inputs.put(imShapeInputName, imShapeTensor);
+				inputs.put(scaleInputName, scaleTensor);
+				try (OrtSession.Result result = session.getSession().run(inputs)) {
+					return parseAndPostProcess(result, pre, origW, origH);
+				} catch (OrtException e) {
+					throw new MicaAiException(
+						ErrorCode.INFERENCE_FAILED, "layout 模型推理失败", e);
 				}
+			} finally {
+				closeQuietly(imageTensor);
+				closeQuietly(imShapeTensor);
+				closeQuietly(scaleTensor);
 			}
 		} catch (Exception e) {
 			if (e instanceof MicaAiException) {

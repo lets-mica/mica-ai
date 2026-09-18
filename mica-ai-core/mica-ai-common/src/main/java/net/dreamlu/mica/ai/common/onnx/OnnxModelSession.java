@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024-2026 mica-ai
+ * Copyright (c) 2019-2029, Dreamlu 卢春梦 (596392912@qq.com & dreamlu.net).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package net.dreamlu.mica.ai.common.onnx;
 
@@ -12,11 +24,11 @@ import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 单个 ONNX 模型的会话持有者（跨能力通用基础设施）。
@@ -25,7 +37,8 @@ import java.util.Objects;
  * 资源释放（{@link #close()}）也彼此隔离，便于按需启停与单元测试。
  * classpath: 前缀的资源解析逻辑集中在此处，供各模型复用。
  *
- * @author L.cm
+ * <p>线程安全：{@link OrtSession} 本身线程安全，本类通过 {@code AtomicBoolean}
+ * 守护 {@link #close()}，可重入；其他字段均为 final。
  */
 @Slf4j
 @Getter
@@ -40,6 +53,7 @@ public class OnnxModelSession {
 	private final OrtEnvironment environment;
 	private final OrtSession session;
 	private final String sourcePath;
+	private final AtomicBoolean closed = new AtomicBoolean(false);
 
 	public OnnxModelSession(OrtEnvironment environment, String path,
 							OrtSession.SessionOptions options, String name) {
@@ -108,6 +122,9 @@ public class OnnxModelSession {
 	}
 
 	public void close() {
+		if (!closed.compareAndSet(false, true)) {
+			return;
+		}
 		if (session == null) {
 			return;
 		}
