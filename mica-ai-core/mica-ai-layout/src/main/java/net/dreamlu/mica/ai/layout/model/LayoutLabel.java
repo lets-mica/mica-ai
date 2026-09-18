@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.layout.model;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -37,6 +38,7 @@ import java.util.Set;
  * 或通过 {@code LayoutConfig.skipOrderLabels} 整体覆盖。
  */
 @Getter
+@RequiredArgsConstructor
 public enum LayoutLabel {
 
 	/** 摘要 */
@@ -93,12 +95,6 @@ public enum LayoutLabel {
 	private final String code;
 	private final int index;
 	private final boolean skipOrder;
-
-	LayoutLabel(String code, int index, boolean skipOrder) {
-		this.code = code;
-		this.index = index;
-		this.skipOrder = skipOrder;
-	}
 
 	/**
 	 * 按 code 解析枚举（忽略大小写）。
