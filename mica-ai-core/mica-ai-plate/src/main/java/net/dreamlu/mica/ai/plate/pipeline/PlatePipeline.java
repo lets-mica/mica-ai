@@ -16,15 +16,12 @@
 package net.dreamlu.mica.ai.plate.pipeline;
 
 import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtProvider;
 import ai.onnxruntime.OrtSession;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OrtDevice;
-import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
 import net.dreamlu.mica.ai.plate.config.PlateConfig;
 import net.dreamlu.mica.ai.plate.alignment.PlateAligner;
 import net.dreamlu.mica.ai.plate.detection.PlateDetector;
@@ -77,7 +74,7 @@ public class PlatePipeline implements AutoCloseable {
 				"detection / recognition / classification 模型路径必须全部配置");
 		}
 		OrtEnvironment environment = OrtEnvironment.getEnvironment();
-		OrtSession.SessionOptions sessionOptions = buildSessionOptions(config.getOnnx());
+		OrtSession.SessionOptions sessionOptions = OrtSessionFactory.build(config.getOnnx());
 		this.detector = new PlateDetector(environment, config, sessionOptions);
 		this.recognizer = new PlateRecognizer(environment, config, sessionOptions);
 		this.classifier = new PlateClassifier(environment, config, sessionOptions);
@@ -103,33 +100,6 @@ public class PlatePipeline implements AutoCloseable {
 	 */
 	public static PlatePipeline createDefault() {
 		return new PlatePipeline(PlateConfig.builder().build());
-	}
-
-	private static OrtSession.SessionOptions buildSessionOptions(OrtSessionOptions onnx) {
-		OrtSession.SessionOptions so = new OrtSession.SessionOptions();
-		try {
-			if (onnx != null) {
-				if (onnx.getIntraOpNumThreads() > 0) {
-					so.setIntraOpNumThreads(onnx.getIntraOpNumThreads());
-				}
-				if (onnx.getInterOpNumThreads() > 0) {
-					so.setInterOpNumThreads(onnx.getInterOpNumThreads());
-				}
-				OrtDevice device = onnx.getDevice();
-				if (OrtDevice.GPU == device) {
-					Set<OrtProvider> providers = OrtEnvironment.getAvailableProviders();
-					if (providers != null && providers.contains(OrtProvider.CUDA)) {
-						so.addCUDA(onnx.getCudaDeviceId());
-						log.info("mica-ai-plate: 已启用 CUDA 执行提供器 (deviceId={})", onnx.getCudaDeviceId());
-					} else {
-						log.warn("mica-ai-plate: 未检测到可用的 CUDA 执行提供器，回退到 CPU 推理");
-					}
-				}
-			}
-		} catch (OrtException e) {
-			throw new MicaAiException(ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
-		}
-		return so;
 	}
 
 	static PlateType codeFilter(String plateCode) {

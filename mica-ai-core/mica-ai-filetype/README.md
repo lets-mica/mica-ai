@@ -53,8 +53,8 @@
 
 | 组件 | 类 | 职责 |
 |------|----|------|
-| 主引擎 | [`FiletypeDetector`](src/main/java/net/dreamlu/mica/ai/filetype/FiletypeDetector.java) | 实现 `AutoCloseable`，对外提供 `detectPath` / `detectBytes` / `detectStream` |
-| 配置 | [`FiletypeConfig`](src/main/java/net/dreamlu/mica/ai/filetype/FiletypeConfig.java) | Builder 模式，含 `modelPath` / `configPath` / `contentTypesPath` / `predictionMode` / `onnx` |
+| 主引擎 | [`FiletypeDetector`](src/main/java/net/dreamlu/mica/ai/filetype/detection/FiletypeDetector.java) | 实现 `AutoCloseable`，对外提供 `detectPath` / `detectBytes` / `detectStream` |
+| 配置 | [`FiletypeConfig`](src/main/java/net/dreamlu/mica/ai/filetype/config/FiletypeConfig.java) | Builder 模式，含 `modelPath` / `configPath` / `contentTypesPath` / `predictionMode` / `onnx` |
 | 模型配置 POJO | [`ModelConfig`](src/main/java/net/dreamlu/mica/ai/filetype/config/ModelConfig.java) | 解析 `config.min.json`（`@JsonProperty` 显式注解 snake_case 字段） |
 | 类型知识库 | [`ContentTypeRegistry`](src/main/java/net/dreamlu/mica/ai/filetype/config/ContentTypeRegistry.java) | 加载 `content_types_kb.min.json` + 缺失字段兜底（mime / group / extensions）+ unknown fallback |
 | 特征提取 | [`FeaturesExtractor`](src/main/java/net/dreamlu/mica/ai/filetype/feature/FeaturesExtractor.java) | head+tail lstrip/rstrip → 取首尾 → padding 到 `beg_size+end_size=2048` |
@@ -62,7 +62,7 @@
 | 结果对象 | [`FiletypeResult`](src/main/java/net/dreamlu/mica/ai/filetype/model/FiletypeResult.java) | 含 `outputLabel` / `modelLabel` / `score` / `contentType` / `mode` / `isText` |
 | 类型元数据 | [`ContentTypeInfo`](src/main/java/net/dreamlu/mica/ai/filetype/model/ContentTypeInfo.java) | 解析 `content_types_kb.min.json` 单条记录 |
 | 标签常量 | [`ContentTypeLabel`](src/main/java/net/dreamlu/mica/ai/filetype/model/ContentTypeLabel.java) | 特殊标签：`unknown` / `txt` / `empty` / `directory` / `symlink` / `undefined` |
-| 预测模式 | [`PredictionMode`](src/main/java/net/dreamlu/mica/ai/filetype/PredictionMode.java) | 枚举：`HIGH_CONFIDENCE` / `MEDIUM_CONFIDENCE` / `BEST_GUESS` |
+| 预测模式 | [`PredictionMode`](src/main/java/net/dreamlu/mica/ai/filetype/config/PredictionMode.java) | 枚举：`HIGH_CONFIDENCE` / `MEDIUM_CONFIDENCE` / `BEST_GUESS` |
 
 ### 处理流程
 
@@ -82,6 +82,9 @@ Path / Bytes / Stream
       ▼
 FiletypeResult{outputLabel, modelLabel, score, contentType, mode, isText}
 ```
+
+> 注意 `modelLabel` 与 `outputLabel` 的区别：`modelLabel` 是模型 argmax 的直接结果（调试用），
+> `outputLabel` 才是经 `overwrite_map` 改写 + 阈值判定后的对外标签，两者可能不同。
 
 ---
 

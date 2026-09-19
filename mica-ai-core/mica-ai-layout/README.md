@@ -158,7 +158,8 @@ mica:
       class-score-thresholds:        # per-class 阈值（可选）
         14: 0.5   # image 类更严
         21: 0.5   # table 类更严
-      device: cpu
+      onnx:
+        device: cpu                  # cpu / gpu（⚠️ device 在 onnx 下，不是顶层）
 ```
 
 ```java
@@ -190,7 +191,7 @@ public class DemoController {
 | `nms-diff-class-threshold` | `0.98` | 异类框 IoU 阈值（0.98 ⇒ 类间几乎不互斥，允许版面区域嵌套） |
 | `max-detections` | `100` | 单图最多返回版面区域数 |
 | `mean` / `std` | `[0.8286,0.8281,0.8282]` / `[0.1889,0.1889,0.1889]` | 归一化参数 |
-| `device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
+| `onnx.device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
 | `onnx.intra-op-num-threads` | `0` | 0 = ORT 默认 |
 | `onnx.inter-op-num-threads` | `0` | 0 = ORT 默认 |
 

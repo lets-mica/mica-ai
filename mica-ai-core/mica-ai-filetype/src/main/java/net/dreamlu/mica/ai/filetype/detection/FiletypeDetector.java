@@ -15,15 +15,17 @@
  */
 package net.dreamlu.mica.ai.filetype.detection;
 
-import ai.onnxruntime.*;
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
-import net.dreamlu.mica.ai.common.onnx.OrtDevice;
-import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.filetype.config.ContentTypeRegistry;
 import net.dreamlu.mica.ai.filetype.config.FiletypeConfig;
@@ -90,7 +92,7 @@ public class FiletypeDetector implements AutoCloseable {
 		String version = resolveModelVersion(config.getModelVersion());
 		this.predictionMode = config.getPredictionMode();
 		this.environment = OrtEnvironment.getEnvironment();
-		this.sessionOptions = buildSessionOptions(config.getOnnx());
+		this.sessionOptions = OrtSessionFactory.build(config.getOnnx());
 		this.modelSession = new OnnxModelSession(
 			environment, config.resolveModelPath(),
 			sessionOptions, "filetype");
@@ -318,36 +320,6 @@ public class FiletypeDetector implements AutoCloseable {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED, "加载模型配置失败: " + path, e);
 		}
-	}
-
-	private static OrtSession.SessionOptions buildSessionOptions(OrtSessionOptions options) {
-		OrtSessionOptions opts = options != null ? options : OrtSessionOptions.defaults();
-		OrtSession.SessionOptions so = new OrtSession.SessionOptions();
-		try {
-			if (opts.getIntraOpNumThreads() > 0) {
-				so.setIntraOpNumThreads(opts.getIntraOpNumThreads());
-			}
-			if (opts.getInterOpNumThreads() > 0) {
-				so.setInterOpNumThreads(opts.getInterOpNumThreads());
-			}
-			so.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
-		} catch (OrtException e) {
-			throw new MicaAiException(
-				ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
-		}
-		OrtDevice device = opts.getDevice();
-		if (OrtDevice.GPU == device) {
-			try {
-				if (OrtEnvironment.getAvailableProviders().contains(OrtProvider.CUDA)) {
-					so.addCUDA(opts.getCudaDeviceId());
-				} else {
-					log.warn("mica-ai-filetype: 未检测到可用的 CUDA 执行提供器，回退到 CPU 推理");
-				}
-			} catch (OrtException e) {
-				log.warn("mica-ai-filetype: 启用 CUDA 执行提供器失败，回退到 CPU 推理: {}", e.getMessage());
-			}
-		}
-		return so;
 	}
 
 	@Override

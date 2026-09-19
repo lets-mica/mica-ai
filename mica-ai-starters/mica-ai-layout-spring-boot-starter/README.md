@@ -161,4 +161,6 @@ public class MyLayoutConfig {
 
 ## 5. 完整示例
 
-参见 [`mica-ai-example`](../../mica-ai-example/README.md)：已聚合 face / filetype / plate / layout 四个 Starter，对 layout 能力默认 `enabled=false`，本地放好模型后置 `true` 即可启用 `/layout/detect` 端点。
+参见 [`mica-ai-example`](../../mica-ai-example/README.md)：已聚合 face / filetype / plate / layout 四个 Starter，
+并提供了 `/layout/detect` 与 `/layout/detect-bytes` 端点；对 layout 能力默认 `enabled=false`
+（模型未随仓库分发），本地放好模型后置 `true` 即可启用。

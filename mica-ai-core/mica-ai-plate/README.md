@@ -143,7 +143,8 @@ mica:
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5
       max-plates: 5
-      device: cpu                    # cpu / gpu
+      onnx:
+        device: cpu                  # cpu / gpu（⚠️ device 在 onnx 下，不是顶层）
 ```
 
 ```java
@@ -170,9 +171,9 @@ public class DemoController {
 | `detection-confidence-threshold` | `0.25` | 检测置信度阈值 |
 | `detection-nms-threshold` | `0.5` | NMS IoU 阈值 |
 | `max-plates` | `5` | 单图最多返回车牌数 |
-| `device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
+| `onnx.device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
 | `onnx.intra-op-num-threads` | `0` | 0 = ORT 默认 |
-| `onnx.inter-op-threads` | `0` | 0 = ORT 默认 |
+| `onnx.inter-op-num-threads` | `0` | 0 = ORT 默认 |
 
 ### 输出字段（`PlateResult`）
 

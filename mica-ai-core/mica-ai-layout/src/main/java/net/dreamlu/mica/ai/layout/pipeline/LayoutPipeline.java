@@ -16,14 +16,11 @@
 package net.dreamlu.mica.ai.layout.pipeline;
 
 import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtProvider;
 import ai.onnxruntime.OrtSession;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OrtDevice;
-import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
 import net.dreamlu.mica.ai.layout.config.LayoutConfig;
 import net.dreamlu.mica.ai.layout.detection.LayoutDetector;
 import net.dreamlu.mica.ai.layout.model.LayoutResult;
@@ -37,7 +34,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * PP-DocLayoutV2 / V3 文档版面分析门面。
@@ -78,7 +74,7 @@ public class LayoutPipeline implements AutoCloseable {
 		config.validate();
 		this.config = config;
 		OrtEnvironment environment = OrtEnvironment.getEnvironment();
-		this.sessionOptions = buildSessionOptions(config.getOnnx());
+		this.sessionOptions = OrtSessionFactory.build(config.getOnnx());
 		this.detector = new LayoutDetector(environment, config, sessionOptions);
 		log.info("mica-ai-layout 初始化完成: version={} maxSide={} score={} nms={} maxDet={}",
 			config.getModelVersion(), config.getMaxSideLength(),
@@ -105,33 +101,6 @@ public class LayoutPipeline implements AutoCloseable {
 	 */
 	public static LayoutPipeline createDefault() {
 		return new LayoutPipeline(LayoutConfig.builder().build());
-	}
-
-	private static OrtSession.SessionOptions buildSessionOptions(OrtSessionOptions onnx) {
-		OrtSession.SessionOptions so = new OrtSession.SessionOptions();
-		try {
-			if (onnx != null) {
-				if (onnx.getIntraOpNumThreads() > 0) {
-					so.setIntraOpNumThreads(onnx.getIntraOpNumThreads());
-				}
-				if (onnx.getInterOpNumThreads() > 0) {
-					so.setInterOpNumThreads(onnx.getInterOpNumThreads());
-				}
-				OrtDevice device = onnx.getDevice();
-				if (OrtDevice.GPU == device) {
-					Set<OrtProvider> providers = OrtEnvironment.getAvailableProviders();
-					if (providers != null && providers.contains(OrtProvider.CUDA)) {
-						so.addCUDA(onnx.getCudaDeviceId());
-						log.info("mica-ai-layout: 已启用 CUDA 执行提供器 (deviceId={})", onnx.getCudaDeviceId());
-					} else {
-						log.warn("mica-ai-layout: 未检测到可用的 CUDA 执行提供器，回退到 CPU 推理");
-					}
-				}
-			}
-		} catch (OrtException e) {
-			throw new MicaAiException(ErrorCode.MODEL_LOAD_FAILED, "配置 ONNX 会话选项失败", e);
-		}
-		return so;
 	}
 
 	/**
