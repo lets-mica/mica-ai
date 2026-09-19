@@ -33,6 +33,8 @@ mica:
         crop-scale: 2.7
       verify:
         threshold: 0.35
+        # 单图多脸时的选脸策略：LARGEST_AREA（默认，面积最大）/ LARGEST_SCORE / REJECT（多脸直接拒绝）
+        strategy: LARGEST_AREA
     # ============================================================
     #  📄 Filetype —— Google Magika standard_v3_3（Apache-2.0）
     #  路径留空走 classpath: mica-ai/models/filetype/standard_v3_3/*

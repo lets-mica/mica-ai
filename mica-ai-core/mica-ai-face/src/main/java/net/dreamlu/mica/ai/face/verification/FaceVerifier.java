@@ -19,6 +19,7 @@ import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
+import net.dreamlu.mica.ai.face.config.MultiFaceStrategy;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.model.ModelManager;
@@ -35,37 +36,43 @@ import java.util.List;
  *
  * <p>线程安全：内部持有的 {@link FaceDetector} / {@link FeatureExtractor} stateless 且
  * ONNX session 线程安全；本类自身仅含构造时冻结的不可变字段，可作为 Spring 单例 Bean。
+ *
+ * <p>单张图检出多张人脸时按 {@link MultiFaceStrategy} 选脸，默认取面积最大者。
  */
 @Getter
 public class FaceVerifier {
-
-	/**
-	 * 多张人脸时的选脸策略（保留枚举，当前实现始终按面积最大选；保留以备后续扩展）。
-	 */
-	public enum MultiFaceStrategy {
-		/** 多脸时直接拒绝。 */
-		REJECT,
-		/** 保留得分最高的人脸。 */
-		LARGEST_SCORE,
-		/** 保留面积最大的人脸。 */
-		LARGEST_AREA
-	}
 
 	private final FaceDetector detector;
 	private final FaceAligner aligner;
 	private final FeatureExtractor extractor;
 	private final float defaultThreshold;
+	private final MultiFaceStrategy multiFaceStrategy;
 
 	/**
-	 * 使用模型管理器构造比对门面，阈值取全局配置。
+	 * 使用模型管理器构造比对门面，阈值与多脸策略均取全局配置。
 	 *
 	 * @param modelManager 模型管理器，提供检测、对齐、特征提取所需资源
 	 */
 	public FaceVerifier(ModelManager modelManager) {
+		this(modelManager, modelManager.getConfig().getMultiFaceStrategy());
+	}
+
+	/**
+	 * 使用模型管理器构造比对门面，显式指定多脸选脸策略。
+	 *
+	 * <p>阈值仍取全局配置；策略为 {@code null} 时回退到
+	 * {@link MultiFaceStrategy#DEFAULT}。
+	 *
+	 * @param modelManager      模型管理器，提供检测、对齐、特征提取所需资源
+	 * @param multiFaceStrategy 多张人脸时的选脸策略，{@code null} 表示用默认策略
+	 */
+	public FaceVerifier(ModelManager modelManager, MultiFaceStrategy multiFaceStrategy) {
 		this.detector = new FaceDetector(modelManager);
 		this.aligner = new FaceAligner();
 		this.extractor = new FeatureExtractor(modelManager);
 		this.defaultThreshold = modelManager.getConfig().getVerifyThreshold();
+		this.multiFaceStrategy = multiFaceStrategy != null
+			? multiFaceStrategy : MultiFaceStrategy.DEFAULT;
 	}
 
 	/**
@@ -145,21 +152,10 @@ public class FaceVerifier {
 	}
 
 	private float[] extractSingle(Mat image) {
-		List<FaceBox> boxes = detector.detect(image);
-		if (boxes.isEmpty()) {
+		FaceBox box = selectFace(detector.detect(image), multiFaceStrategy);
+		if (box == null) {
 			throw new MicaAiException(
 				ErrorCode.VERIFICATION_FAILED, "未检测到人脸");
-		}
-		FaceBox box = boxes.get(0);
-		if (boxes.size() > 1) {
-			float bestArea = area(box);
-			for (int i = 1; i < boxes.size(); i++) {
-				float a = area(boxes.get(i));
-				if (a > bestArea) {
-					bestArea = a;
-					box = boxes.get(i);
-				}
-			}
 		}
 		Mat aligned = null;
 		try {
@@ -168,6 +164,59 @@ public class FaceVerifier {
 		} finally {
 			ImageUtils.releaseAll(aligned);
 		}
+	}
+
+	/**
+	 * 按策略从单张图的检测结果中选出用于比对的那张人脸。
+	 *
+	 * <p>包级可见以便单测直接覆盖选脸逻辑（无需加载模型）。
+	 *
+	 * @param boxes    单张图的人脸检测结果，可为空
+	 * @param strategy 选脸策略，不可为 {@code null}（由构造器归一化保证）
+	 * @return 选定人脸；无任何人脸时返回 {@code null}
+	 * @throws MicaAiException {@link ErrorCode#VERIFICATION_FAILED}
+	 *                        策略为 {@link MultiFaceStrategy#REJECT} 且检出多于一张人脸
+	 */
+	static FaceBox selectFace(List<FaceBox> boxes, MultiFaceStrategy strategy) {
+		if (boxes == null || boxes.isEmpty()) {
+			return null;
+		}
+		if (boxes.size() == 1) {
+			return boxes.get(0);
+		}
+		switch (strategy) {
+			case REJECT:
+				throw new MicaAiException(ErrorCode.VERIFICATION_FAILED,
+					"检测到 " + boxes.size() + " 张人脸，策略 REJECT 拒绝比对");
+			case LARGEST_SCORE:
+				return byLargestScore(boxes);
+			case LARGEST_AREA:
+			default:
+				return byLargestArea(boxes);
+		}
+	}
+
+	private static FaceBox byLargestScore(List<FaceBox> boxes) {
+		FaceBox best = boxes.get(0);
+		for (int i = 1; i < boxes.size(); i++) {
+			if (boxes.get(i).getScore() > best.getScore()) {
+				best = boxes.get(i);
+			}
+		}
+		return best;
+	}
+
+	private static FaceBox byLargestArea(List<FaceBox> boxes) {
+		FaceBox best = boxes.get(0);
+		float bestArea = area(best);
+		for (int i = 1; i < boxes.size(); i++) {
+			float a = area(boxes.get(i));
+			if (a > bestArea) {
+				bestArea = a;
+				best = boxes.get(i);
+			}
+		}
+		return best;
 	}
 
 	private static float area(FaceBox box) {

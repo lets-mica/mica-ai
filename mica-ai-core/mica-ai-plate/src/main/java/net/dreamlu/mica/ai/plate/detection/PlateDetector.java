@@ -19,6 +19,8 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
@@ -271,17 +273,11 @@ public class PlateDetector implements AutoCloseable {
         public int layerNum;
     }
 
+    @AllArgsConstructor(access = AccessLevel.PACKAGE)
     static class LetterBoxResult {
         final float[] tensorData;
         final double ratio;
         final int left;
         final int top;
-
-        LetterBoxResult(float[] tensorData, double ratio, int left, int top) {
-            this.tensorData = tensorData;
-            this.ratio = ratio;
-            this.left = left;
-            this.top = top;
-        }
     }
 }

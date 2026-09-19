@@ -66,6 +66,7 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.detectionThreshold(properties.getDetection().getThreshold())
 			.nmsThreshold(properties.getDetection().getNmsThreshold())
 			.verifyThreshold(properties.getVerify().getThreshold())
+			.multiFaceStrategy(properties.getVerify().getStrategy())
 			.onnx(properties.getOnnx())
 			.build();
 		return ModelManager.create(config);

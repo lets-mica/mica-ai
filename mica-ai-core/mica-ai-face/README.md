@@ -110,6 +110,22 @@ boolean samePerson = score > 0.35f;   // SFace 经验阈值
 > 也可以直接走门面（内部自动完成 检测 → 对齐 → 特征）：
 > `new FaceVerifier(manager).verify(probeMat, refMat)` 返回 `VerifyResult`；
 > `verifyThreshold` 默认 `0.35`，可用 `ModelConfig.builder().verifyThreshold(...)` 调整。
+>
+> **多脸选脸策略**：`FaceVerifier` 每张图只取**一张**脸做比对，策略对 probe / reference
+> 同时生效。默认 `LARGEST_AREA`（取面积最大者）：
+>
+> ```java
+> // 方式一：走 ModelConfig（Starter 场景对应 mica.ai.face.verify.strategy）
+> ModelConfig cfg = ModelConfig.builder().multiFaceStrategy(MultiFaceStrategy.LARGEST_SCORE).build();
+> // 方式二：直接构造，优先级高于 ModelConfig
+> FaceVerifier verifier = new FaceVerifier(manager, MultiFaceStrategy.REJECT);
+> ```
+>
+> | 策略 | 行为 | 适用场景 |
+> |------|------|---------|
+> | `LARGEST_AREA`（默认） | 取检测框面积最大者 | 自拍/现场照本人占主体，1.0.0 既有行为 |
+> | `LARGEST_SCORE` | 取检测置信度最高者 | 人脸被遮挡、侧脸导致大框置信度偏低 |
+> | `REJECT` | 多脸直接拒绝，抛 `MicaAiException`（`VERIFICATION_FAILED`） | 合规要求「必须单人独照」，不替业务做猜测 |
 
 ### 4.4 活体（默认关闭）
 
@@ -161,13 +177,14 @@ CardResult card = cardExtractor.extract(idCardImage);
 
 | 组件 | 类 | 职责 |
 |------|----|------|
-| 配置 | [`ModelConfig`](src/main/java/net/dreamlu/mica/ai/face/config/ModelConfig.java) | Builder 模式：det / rec / live 三模型路径 + 阈值 |
+| 配置 | [`ModelConfig`](src/main/java/net/dreamlu/mica/ai/face/config/ModelConfig.java) | Builder 模式：det / rec / live 三模型路径 + 阈值 + 多脸选脸策略 |
 | 模型会话 | [`ModelManager`](src/main/java/net/dreamlu/mica/ai/face/model/ModelManager.java) | 实现 `AutoCloseable`，托管三个 ONNX Session |
 | 检测 | [`FaceDetector`](src/main/java/net/dreamlu/mica/ai/face/detection/FaceDetector.java) | YuNet 推理 + NMS，返回 `FaceBox`（含 5 关键点） |
 | 对齐 | [`FaceAligner`](src/main/java/net/dreamlu/mica/ai/face/alignment/FaceAligner.java) | 5 关键点仿射到 112×112 |
 | 特征 | [`FeatureExtractor`](src/main/java/net/dreamlu/mica/ai/face/recognition/FeatureExtractor.java) | SFace 推理 + L2 归一化 |
 | 活体 | [`LivenessDetector`](src/main/java/net/dreamlu/mica/ai/face/liveness/LivenessDetector.java) | MiniFASNetV2 推理 + softmax（print / real / replay） |
 | 比对 | [`FaceVerifier`](src/main/java/net/dreamlu/mica/ai/face/verification/FaceVerifier.java) | 检测 → 对齐 → 特征 → 余弦相似度 一体化门面；相似度计算在静态 `FeatureExtractor.compare(a, b)` |
+| 选脸策略 | [`MultiFaceStrategy`](src/main/java/net/dreamlu/mica/ai/face/config/MultiFaceStrategy.java) | 单图多脸时的取舍：面积最大 / 置信度最高 / 直接拒绝 |
 | 头像 | [`AvatarExtractor`](src/main/java/net/dreamlu/mica/ai/face/avatar/AvatarExtractor.java) | 自动摆正 / 分块兜底 / 两阶段重采样 |
 | 卡片 | [`CardExtractor`](src/main/java/net/dreamlu/mica/ai/face/card/CardExtractor.java) | 掩膜 + 四边形拟合 + 透视矫正 + USM/CLAHE |
 | 图像工具 | [`ImageUtils`](src/main/java/net/dreamlu/mica/ai/face/util/ImageUtils.java) | 字节流解码 / 外扩裁剪 / BGR→CHW float / 编码输出 / 清晰度 / 批量 release |
@@ -230,6 +247,9 @@ milvusClient.insert("face_gallery", List.of(
 - **资源释放**：所有推理入口返回的 `Mat`（含 `AvatarResult` / `CardResult`）由调用方 `release()`；
   `ModelManager` 是 `AutoCloseable`，请用 try-with-resources。
 - **Embedding 维度**：固定 **128d**，已 L2 归一化（点积 = 余弦相似度）。
+- **1:1 比对每图只取一张脸**：默认取面积最大者，见 §4.3 的 `MultiFaceStrategy`。
+  选 `REJECT` 时多脸会抛 `MicaAiException`（`VERIFICATION_FAILED`），**不是**返回 `passed=false`，
+  调用方需按异常处理。
 - **GPU 加速**：替换 `onnxruntime` 依赖为 `onnxruntime_gpu` 并启用 CUDA provider 即可。
 - **批量输入**：本模块按"一次一图"调用，向量库侧的批量写入由调用方控制。
 - **活体**：默认关闭（无模型路径时跳过加载），商业落地前请按 `AGENTS.md` §6.1 自查模型许可。

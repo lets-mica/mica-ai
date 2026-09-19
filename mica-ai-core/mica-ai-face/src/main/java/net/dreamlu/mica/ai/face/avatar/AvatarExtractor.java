@@ -15,7 +15,10 @@
  */
 package net.dreamlu.mica.ai.face.avatar;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
@@ -508,40 +511,20 @@ public class AvatarExtractor {
 		}
 	}
 
+	@Getter
+	@Accessors(fluent = true)
+	@AllArgsConstructor(access = AccessLevel.PACKAGE)
 	static final class Window {
 		private final double[] affine;
 		private final int side;
-
-		Window(double[] affine, int side) {
-			this.affine = affine;
-			this.side = side;
-		}
-
-		public double[] affine() {
-			return affine;
-		}
-
-		public int side() {
-			return side;
-		}
 	}
 
+	@Getter
+	@Accessors(fluent = true)
+	@AllArgsConstructor(access = AccessLevel.PACKAGE)
 	private static final class Located {
 		private final List<FaceBox> boxes;
 		private final boolean tiled;
-
-		private Located(List<FaceBox> boxes, boolean tiled) {
-			this.boxes = boxes;
-			this.tiled = tiled;
-		}
-
-		public List<FaceBox> boxes() {
-			return boxes;
-		}
-
-		public boolean tiled() {
-			return tiled;
-		}
 	}
 
 	static Window windowAffine(FaceBox box, AvatarOptions opts) {

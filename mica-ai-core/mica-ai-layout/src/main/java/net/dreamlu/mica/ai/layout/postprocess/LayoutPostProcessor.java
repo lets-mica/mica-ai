@@ -15,6 +15,8 @@
  */
 package net.dreamlu.mica.ai.layout.postprocess;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import net.dreamlu.mica.ai.layout.config.LayoutConfig;
 import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 import net.dreamlu.mica.ai.layout.model.LayoutResult;
@@ -306,19 +308,12 @@ public class LayoutPostProcessor {
 		return rank;
 	}
 
+	@AllArgsConstructor(access = AccessLevel.PACKAGE)
 	static class RawBox {
 		final int[] box;
 		final float score;
 		final LayoutLabel label;
 		final int index;
 		final float orderKey;
-
-		RawBox(int[] box, float score, LayoutLabel label, int index, float orderKey) {
-			this.box = box;
-			this.score = score;
-			this.label = label;
-			this.index = index;
-			this.orderKey = orderKey;
-		}
 	}
 }

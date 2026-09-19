@@ -79,9 +79,7 @@ public enum PlateType {
 	YELLOW_DOUBLE(9);
 
 	/**
-	 * -- GETTER --
-	 * 对齐 Python
-	 * 的常量值（UNKNOWN 为 -1，其余 0-9）。
+	 * 对齐 Python 的常量值（UNKNOWN 为 -1，其余 0-9）。
 	 */
 	private final int value;
 

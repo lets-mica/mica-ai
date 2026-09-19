@@ -19,6 +19,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
@@ -215,21 +216,11 @@ public class PlateRecognizer implements AutoCloseable {
     /**
      * 车牌文本识别结果。
      */
+    @AllArgsConstructor
     public static class RecognitionResult {
         /** 识别出的车牌文本 */
         public final String text;
         /** 识别平均置信度 */
         public final float confidence;
-
-        /**
-         * 构造识别结果。
-         *
-         * @param text       车牌文本
-         * @param confidence 识别平均置信度
-         */
-        public RecognitionResult(String text, float confidence) {
-            this.text = text;
-            this.confidence = confidence;
-        }
     }
 }

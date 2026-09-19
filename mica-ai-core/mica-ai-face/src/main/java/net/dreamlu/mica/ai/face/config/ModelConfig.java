@@ -42,4 +42,7 @@ public class ModelConfig {
 
 	@Builder.Default
 	private float verifyThreshold = 0.35f;
+
+	@Builder.Default
+	private MultiFaceStrategy multiFaceStrategy = MultiFaceStrategy.DEFAULT;
 }

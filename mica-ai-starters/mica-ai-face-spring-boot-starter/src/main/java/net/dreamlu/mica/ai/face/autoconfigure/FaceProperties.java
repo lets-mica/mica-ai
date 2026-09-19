@@ -18,6 +18,7 @@ package net.dreamlu.mica.ai.face.autoconfigure;
 import lombok.Getter;
 import lombok.Setter;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
+import net.dreamlu.mica.ai.face.config.MultiFaceStrategy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -143,6 +144,13 @@ public class FaceProperties {
 		 * 余弦相似度阈值（0~1，达到该值判定为同一人）。
 		 */
 		private float threshold = 0.35f;
+		/**
+		 * 单张图检出多张人脸时的选脸策略。
+		 *
+		 * <p>{@code LARGEST_AREA}（默认，取面积最大者）/ {@code LARGEST_SCORE}（取置信度最高者）/
+		 * {@code REJECT}（多脸直接拒绝比对，抛 {@code MicaAiException}）。
+		 */
+		private MultiFaceStrategy strategy = MultiFaceStrategy.DEFAULT;
 	}
 
 	/**

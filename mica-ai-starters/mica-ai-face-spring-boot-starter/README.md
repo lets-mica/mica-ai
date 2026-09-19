@@ -38,6 +38,7 @@ mica:
         model-path: classpath:models/2.7_80x80_MiniFASNetV2.onnx        # 启用必填
       verify:
         threshold: 0.35                   # 1:1 比对阈值
+        strategy: LARGEST_AREA            # 多脸选脸：LARGEST_AREA / LARGEST_SCORE / REJECT
       avatar:
         size: 256
       card:
@@ -59,6 +60,7 @@ mica:
 | `mica.ai.face.liveness.enabled` | `false` | 活体开关（开启必填 `model-path`） |
 | `mica.ai.face.liveness.model-path` | — | MiniFASNetV2 路径 |
 | `mica.ai.face.verify.threshold` | `0.35` | 1:1 比对阈值 |
+| `mica.ai.face.verify.strategy` | `LARGEST_AREA` | 单图多脸时的选脸策略：`LARGEST_AREA`（面积最大）/ `LARGEST_SCORE`（置信度最高）/ `REJECT`（多脸直接抛 `MicaAiException`） |
 | `mica.ai.face.avatar.size` | `256` | 头像边长（像素） |
 | `mica.ai.face.card.output-width` | `1011` | 卡片输出宽 |
 | `mica.ai.face.card.output-height` | `638` | 卡片输出高 |
