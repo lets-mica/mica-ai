@@ -20,5 +20,6 @@
         <module>mica-ai-filetype-spring-boot-starter</module>
         <module>mica-ai-plate-spring-boot-starter</module>
         <module>mica-ai-layout-spring-boot-starter</module>
+        <module>mica-ai-matting-spring-boot-starter</module>
     </modules>
 </project>

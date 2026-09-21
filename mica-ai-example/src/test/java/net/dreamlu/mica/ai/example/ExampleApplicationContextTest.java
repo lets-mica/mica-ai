@@ -18,11 +18,17 @@ package net.dreamlu.mica.ai.example;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.autoconfigure.FaceAutoConfiguration;
 import net.dreamlu.mica.ai.face.model.ModelManager;
+import net.dreamlu.mica.ai.matting.MattingEngine;
+import net.dreamlu.mica.ai.matting.autoconfigure.MattingAutoConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,6 +68,51 @@ class ExampleApplicationContextTest {
 		Class<?> type = ModelManager.class;
 		assertThat(type.getName()).isEqualTo(
 			"net.dreamlu.mica.ai.face.model.ModelManager");
+	}
+
+	@Test
+	@DisplayName("Matting 关闭时不应创建 MattingEngine，且不会因缺模型而启动失败")
+	void mattingDisabledShouldNotCreateEngine() {
+		runner(MattingAutoConfiguration.class)
+			.withPropertyValues("mica.ai.matting.enabled=false")
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).doesNotHaveBean(MattingEngine.class);
+			});
+	}
+
+	@Test
+	@DisplayName("Matting 指向真实 u2netp 模型时应装配出可用的 MattingEngine")
+	void mattingShouldWireEngineAgainstRealModel() {
+		Path model = locateRepoFile("model-tools/matting/models/u2netp.onnx");
+		if (model == null) {
+			// 模型未入库的场景下跳过，不阻塞新克隆仓库的构建
+			return;
+		}
+		runner(MattingAutoConfiguration.class)
+			.withPropertyValues("mica.ai.matting.model-path=" + model.toAbsolutePath())
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).hasSingleBean(MattingEngine.class);
+				MattingEngine engine = ctx.getBean(MattingEngine.class);
+				assertThat(engine.modelInputSize()).isEqualTo(320);
+				assertThat(engine.outputCount()).isEqualTo(7);
+			});
+	}
+
+	/**
+	 * 从当前工作目录向上查找仓库根，定位入库模型。
+	 */
+	private static Path locateRepoFile(String relative) {
+		Path dir = Paths.get("").toAbsolutePath();
+		for (int i = 0; i < 6 && dir != null; i++) {
+			Path candidate = dir.resolve(relative);
+			if (Files.exists(candidate)) {
+				return candidate;
+			}
+			dir = dir.getParent();
+		}
+		return null;
 	}
 
 	@SpringBootConfiguration

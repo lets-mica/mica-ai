@@ -61,6 +61,8 @@ logs
 
 # build helper (用户特定环境的 Maven settings 绕过本地镜像)
 .mvn/
+# 本机 mvn shell wrapper 损坏时的直连 launcher 脚本，含机器特定绝对路径，不入库
+mvnc.sh
 
 # system ignore
 .DS_Store

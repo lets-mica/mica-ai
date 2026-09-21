@@ -76,6 +76,22 @@ mica:
       # 设为 0 表示不启用（只走绝对阈值）。
       score-ratio: 0.6
       max-detections: 100
+    # ============================================================
+    #  ✂️ Matting —— U²-Net u2netp 通用抠图（Apache-2.0）
+    #  模型 4.36MB，已入库（model-tools/matting/models/u2netp.onnx），可安全开启。
+    #  换模型：同族的 u2net（168MB，通用显著性完整版）/ u2net_human_seg（168MB，人体分割）
+    #  契约与 u2netp 完全一致，只需改 model-path 指向本地文件，Java 代码零改动。
+    #  min-max-normalize：把相对显著性拉伸到满 alpha 区间，低对比度图建议保持 true。
+    # ============================================================
+    matting:
+      enabled: true
+      model-version: u2netp
+      model-path: model-tools/matting/models/u2netp.onnx
+      input-size: 320
+      output-select: AUTO
+      binary-threshold: 0.5
+      min-max-normalize: true
+      background-color: [ 255, 255, 255 ]
 
 logging:
   level:

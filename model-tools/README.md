@@ -18,10 +18,14 @@ model-tools/
 ├── plate/                      # 对应 mica-ai-plate
 │   ├── README.md
 │   └── models/                 # HyperLPR3 检测 / 识别 / 分类
-└── layout/                     # 对应 mica-ai-layout
+├── layout/                     # 对应 mica-ai-layout
+│   ├── README.md
+│   ├── models/                 # PP-DocLayoutV3（125MB，⚠️ 不随仓库分发，见下）
+│   └── scripts/                # ONNX 契约探针（probe_coord_space.py 等）
+└── matting/                    # 对应 mica-ai-matting
     ├── README.md
-    ├── models/                 # PP-DocLayoutV3（125MB，⚠️ 不随仓库分发，见下）
-    └── scripts/                # ONNX 契约探针（probe_coord_space.py 等）
+    ├── models/                 # u2netp 抠图（4.36MB，随仓库分发）
+    └── scripts/                # 契约探针（probe_preprocess.py / probe_model_identity.py）
 ```
 
 ## 🧩 模型清单与 License
@@ -33,6 +37,7 @@ model-tools/
 | filetype | `model.onnx` + `config.min.json` + `content_types_kb.min.json` | [google/magika standard_v3_3](https://github.com/google/magika) | Apache-2.0 ✅ |
 | plate | `y5fu_320x_sim.onnx` / `y5fu_640x_sim.onnx` / `rpv3_mdict_160_r3.onnx` / `litemodel_cls_96x_r1.onnx` | [szad670401/HyperLPR](https://github.com/szad670401/HyperLPR) v20230229 | Apache-2.0 ✅ |
 | layout | `model.onnx`（125MB，⚠️ 不随仓库分发） | [PaddleOCR PP-DocLayoutV3](https://github.com/PaddlePaddle/PaddleOCR) | Apache-2.0 ✅ |
+| matting | `u2netp.onnx`（4.36MB，随仓库分发） | [danielgatis/rembg](https://github.com/danielgatis/rembg) 打包 [xuebinqin/U-2-Net](https://github.com/xuebinqin/U-2-Net) | Apache-2.0 ✅ |
 
 > 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），但 `2.7_80x80_MiniFASNetV2.onnx`（MIT）已随仓库分发，启用时无须额外下载。
 >
@@ -62,6 +67,7 @@ mica:
 - [`mica-ai-core/mica-ai-filetype/README.md`](../mica-ai-core/mica-ai-filetype/README.md)
 - [`mica-ai-core/mica-ai-plate/README.md`](../mica-ai-core/mica-ai-plate/README.md)
 - [`mica-ai-core/mica-ai-layout/README.md`](../mica-ai-core/mica-ai-layout/README.md)
+- [`mica-ai-core/mica-ai-matting/README.md`](../mica-ai-core/mica-ai-matting/README.md)
 
 模型完整性由各能力模块的集成测试覆盖（加载真 ONNX 跑一遍完整推理，全程离线、不连外网）：
 

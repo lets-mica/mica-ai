@@ -2,6 +2,30 @@
 
 本项目的所有显著变更都会记录在此文件中。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [Unreleased]
+
+### ✨ 新增能力
+
+- ✂️ `mica-ai-matting` —— U²-Net `u2netp` 通用抠图（显著性目标检测）：`MattingEngine` 提供原尺寸 alpha 掩码、透明底 PNG（BGRA）、纯色底合成、二值掩码四组输出
+  - 模型 `u2netp.onnx` **4.36 MB**（Apache-2.0，[danielgatis/rembg](https://github.com/danielgatis/rembg) 打包 [xuebinqin/U-2-Net](https://github.com/xuebinqin/U-2-Net)），**随仓库分发**
+  - I/O 实测（onnxruntime 1.30）：输入 `input.1 [1,3,320,320]` float32；输出 **7 个** `[1,1,320,320]`，索引 0 即 d0，索引 1..6 为 deep supervision 中间输出，推理须忽略
+  - d0 **已内置 Sigmoid**（实测落在 `[0,1]`），不要重复 sigmoid；`minMaxNormalize`（默认开）保留 rembg 参考行为，对低对比度输入实测放大 ~470×
+  - 预处理 ImageNet 归一化（**RGB** 顺序）；实测通道顺序敏感、`mean/std` 绝对值不敏感（对照实验见 `model-tools/matting/scripts/probe_preprocess.py`）
+  - 输出节点名不可依赖（数字名 `1959`..`1965`），定位策略显式化为可配置的 `output-select`（`AUTO` / `FIRST` / `D0`），默认 `AUTO` 为先名称提示、再校验「7 个同形输出」取首个
+- 🔌 `mica-ai-matting-spring-boot-starter`（`mica.ai.matting` 前缀）：`@Bean(destroyMethod = "close")` + `@ConditionalOnMissingBean`；`MattingPropertiesTest` 覆盖配置绑定、默认值一致性，并通过 `MattingAutoConfiguration#toConfig` 校验**真实装配链**（不重抄 builder，漏装配即失败）
+
+### 🔧 模型可插拔
+
+- **切换 U²-Net 族模型无需改 Java 代码**：`u2net`（168MB，通用显著性完整版）与 `u2net_human_seg`（168MB，人体分割）经实测与 `u2netp` **契约完全一致**（同 `input.1 [1,3,320,320]` 输入、7 个 `[1,1,320,320]` 输出、同名 `1959`..`1965`、同归一化），仅需改 `model-path`
+- 两个 168MB 模型按 AGENTS.md §6.2 **不入库**（超 50MB），由使用者自行下载后指向本地路径；集成测试支持 `-Dmica.ai.matting.externalModel=<path>` 用外置模型跑同一套断言（不传则该项自动跳过）
+- ⚠️ **实测纠正一条误导性线索**：本机 `u2netp.onnx` 的 `sha256` 与 HuggingFace `BritishWerewolf/U-2-Net-Human-Seg` 的 onnx **逐字节相同**，但行为实测显示其贴近**通用显著性 `u2net`**（静物图 MAE `0.0009`）而非 `human_seg`（MAE `0.0400`，差 44 倍）；对「无人图」的保守度 `u2netp` 1.54× vs `human_seg` 2.15×。新增 `model-tools/matting/scripts/probe_model_identity.py` 用于多模型行为对照 —— **权重语义须看行为，不能只看文件名或哈希**
+
+### 🧪 测试
+
+- `MattingIntegrationTest`：15 项真模型集成测试，覆盖 I/O 契约（1 输入 / 7 输出 / 320 边长）、掩码尺寸回填（含 640×120 极端长宽比，防 OpenCV `Size(宽,高)` 写反）、alpha 语义、min-max 边界、BGRA/纯色底/二值三种输出形态、缺文件与空输入兜底、`output-select` 策略实际生效（`D0` 在数字命名导出上必须快速失败）、外置模型可加载
+
+---
+
 ## [1.0.0] - 2026-09-19
 
 🎉 **首个正式版发布** —— mica-ai 1.0.0 正式发布，提供四个可商用、零 Python、纯 ONNX Runtime 的 Java 8+ AI 能力：

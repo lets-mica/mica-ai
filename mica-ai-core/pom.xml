@@ -21,5 +21,6 @@
         <module>mica-ai-filetype</module>
         <module>mica-ai-plate</module>
         <module>mica-ai-layout</module>
+        <module>mica-ai-matting</module>
     </modules>
 </project>
