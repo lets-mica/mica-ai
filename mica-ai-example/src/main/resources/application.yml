@@ -92,6 +92,22 @@ mica:
       binary-threshold: 0.5
       min-max-normalize: true
       background-color: [ 255, 255, 255 ]
+    # ============================================================
+    #  🔤 TextLine —— PP-LCNet 文本行方向分类（Apache-2.0）
+    #  模型 6.46MB，已入库（model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx）。
+    #  判定一条已定位的文本行是 0 度还是 180 度（倒置），供 OCR 前置转正。
+    #  换模型：轻量版 PP-LCNet_x0_25_textline_ori（约 0.96MB）契约一致，改 model-path 即可。
+    #  upside-down-threshold：判定为倒置的最低概率。实测真实扫描件上倒置态仅得
+    #  p≈0.58（合成图可达 0.73），若误旋转代价高可调高到 0.6~0.7 让其保持不动。
+    # ============================================================
+    textline:
+      enabled: true
+      model-version: PP-LCNet_x1_0_textline_ori
+      model-path: model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx
+      input-width: 160
+      input-height: 80
+      channel-order: BGR
+      upside-down-threshold: 0.5
 
 logging:
   level:

@@ -7,7 +7,7 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）能力，封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
 音频（TTS / ASR / 声纹）和 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含。
 
@@ -31,13 +31,15 @@ mica-ai/
 │   ├── mica-ai-filetype/           # 📄 Google Magika（214 类文件类型识别，Apache-2.0）
 │   ├── mica-ai-plate/              # 🚗 HyperLPR3（中国车牌检测 + 识别 + 判型，Apache-2.0）
 │   ├── mica-ai-layout/             # 📐 PP-DocLayoutV3（文档版面分析 + 阅读顺序，Apache-2.0）
-│   └── mica-ai-matting/            # ✂️ U²-Net 族（通用抠图，Apache-2.0）
+│   ├── mica-ai-matting/            # ✂️ U²-Net 族（通用抠图，Apache-2.0）
+│   └── mica-ai-textline/           # 🔤 PP-LCNet（文本行 0°/180° 方向分类 + 转正，Apache-2.0）
 ├── mica-ai-starters/               # Spring Boot Starter（自动注入 Bean）
 │   ├── mica-ai-face-spring-boot-starter/
 │   ├── mica-ai-filetype-spring-boot-starter/
 │   ├── mica-ai-plate-spring-boot-starter/
 │   ├── mica-ai-layout-spring-boot-starter/
-│   └── mica-ai-matting-spring-boot-starter/
+│   ├── mica-ai-matting-spring-boot-starter/
+│   └── mica-ai-textline-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 ├── docs/                           # 落地跟踪文档（模块稳定后并入 README）
 └── model-tools/                    # 模型资产（随仓库分发，单文件上限见 §6.2）
@@ -45,12 +47,13 @@ mica-ai/
     ├── filetype/models/            #   Magika standard_v3_3（Apache-2.0）
     ├── plate/models/               #   HyperLPR3 v20230229（Apache-2.0）
     ├── layout/models/              #   PP-DocLayoutV3（Apache-2.0，⚠️ 125MB 不随仓库分发）
-    └── matting/models/             #   U²-Net u2netp（Apache-2.0，4.36MB；u2net / u2net_human_seg 168MB 不随仓库分发）
+    ├── matting/models/             #   U²-Net u2netp（Apache-2.0，4.36MB；u2net / u2net_human_seg 168MB 不随仓库分发）
+    └── textline/models/            #   PP-LCNet_x1_0_textline_ori（Apache-2.0，6.46MB；x0_25 轻量版不随仓库分发）
 ```
 
 > **重要**：
 > - `mica-ai-core/mica-ai-<cap>/README.md` 是各能力"模型规格 / 核心组件 / I/O 格式"的事实来源
->   （`face` / `filetype` / `plate` / `layout` / `matting` 各一份）
+>   （`face` / `filetype` / `plate` / `layout` / `matting` / `textline` 各一份）
 >
 > Agent 在对应能力内做修改前**先读**对应 README。
 
@@ -136,6 +139,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
   | `mica-ai-plate` 检测 / 识别 / 判型 | HyperLPR3 v20230229（`y5fu_*` 检测 + `rpv3_mdict_*` 识别 + `litemodel_cls_*` 判型） | Apache 2.0 | ✅ |
   | `mica-ai-layout` 版面检测 | PP-DocLayoutV3（PaddleOCR，paddle2onnx 转换产物） | Apache 2.0 | ✅ |
   | `mica-ai-matting` 抠图 | U²-Net 族 `u2netp`（入库 4.36MB）/ `u2net` / `u2net_human_seg`（外置 168MB）（xuebinqin/U-2-Net，danielgatis/rembg 打包 ONNX），三者 I/O 契约一致 | Apache 2.0 | ✅ |
+  | `mica-ai-textline` 方向分类 | PP-LCNet_x1_0_textline_ori（入库 6.46MB）/ PP-LCNet_x0_25_textline_ori（外置 ~0.96MB）（PaddlePaddle/PaddleX，paddle2onnx 转换产物），两者 I/O 契约一致 | Apache 2.0 | ✅ |
 
 - **禁止**：
   - 直接搬运 GPL / AGPL / LGPL 模型权重并以"商用"名义打包
@@ -175,13 +179,14 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 | 新增 Spring Boot 配置项 | Starter `FaceProperties.java` / `FiletypeProperties.java` + 对应 `*AutoConfiguration.java` | 用 `mica-auto` 生成 import → 跑 `mvn install` → 子 README 加示例 |
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调整 `intraOpNumThreads` / `interOpNumThreads` / `device` (cpu/gpu) |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
+| 新增分类/方向能力（文本行方向这类 N 类分类） | `mica-ai-textline/detection/TextLineDetector.java` | **先拿到官方 `inference.yml` 确认 `label_list` 顺序与预处理契约，不要凭 ONNX 输出维度猜类别语义**（写反 = 正的判成倒的）→ 校验「配置的输入宽高 == 模型形状」并快速失败 → 复核 `Imgproc.resize` 的 `Size` 是 **(宽, 高)** → 集成测试断言类别语义 + 真实数据置信度区间 |
 
 ---
 
 ## 8. 验证清单（改完跑一遍）
 
 - [ ] `mvn -DskipTests install` 通过
-- [ ] `mvn test` 全绿（face / filetype / plate / layout / matting / example 六个模块）
+- [ ] `mvn test` 全绿（face / filetype / plate / layout / matting / textline / example 七个模块）
 - [ ] 替换了模型：对应能力模块的**集成测试**通过（加载真 ONNX 跑一遍完整推理）
 - [ ] 新增能力：模块 README + Starter + `model-tools/<cap>/README.md` 三处齐全，且能力清单（根 README / 本文件 §1 §2 §6.1）同步
 - [ ] 改了 Starter：在 `application.yml` 加示例，且至少 1 个 `@Autowired` 使用点

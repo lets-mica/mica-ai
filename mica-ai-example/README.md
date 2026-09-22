@@ -1,11 +1,11 @@
 # mica-ai-example
 
-> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout Starter 的可运行示例与集成测试。
+> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout + Matting + TextLine Starter 的可运行示例与集成测试。
 
 本模块面向集成测试场景：
 
 1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype /
-   plate / layout 能力。
+   plate / layout / matting / textline 能力。
 2. **Starter 自动装配测试**：覆盖 `enabled` 开关、fail-fast、Bean 注入（基于轻量级
    `ApplicationContextRunner`，非 `@SpringBootTest`）。
 
@@ -13,12 +13,12 @@
 
 ## 1. 环境要求
 
-| 组件          | 版本                                 | 说明                             |
-|-------------|------------------------------------|--------------------------------|
-| JDK         | **8+**                             | 推荐 Temurin / Azul Zulu 8、11、17 |
-| Maven       | 3.6+                               | 多模块构建                          |
-| Spring Boot | 2.7.x                              | 由根 BOM 引入                      |
-| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 | 见各能力 README；layout 模型需自行获取     |
+| 组件          | 版本                                                      | 说明                             |
+|-------------|---------------------------------------------------------|--------------------------------|
+| JDK         | **8+**                                                  | 推荐 Temurin / Azul Zulu 8、11、17 |
+| Maven       | 3.6+                                                    | 多模块构建                          |
+| Spring Boot | 2.7.x                                                   | 由根 BOM 引入                      |
+| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 + U²-Net + PP-LCNet | 见各能力 README；layout 模型需自行获取     |
 
 ---
 
@@ -62,7 +62,16 @@ mica:
       detection-model-path: model-tools/plate/models/y5fu_320x_sim.onnx
       recognition-model-path: model-tools/plate/models/rpv3_mdict_160_r3.onnx
       classification-model-path: model-tools/plate/models/litemodel_cls_96x_r1.onnx
+    matting:
+      enabled: true
+      model-path: model-tools/matting/models/u2netp.onnx
+    textline:
+      enabled: true
+      model-path: model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx
 ```
+
+> matting（`u2netp` 4.36MB）/ textline（`PP-LCNet_x1_0` 6.46MB）模型均已入库，默认 `enabled: true` 即可用，
+> 无需像 layout 那样兜底关闭。
 
 > ⚠️ 当 `enabled=true` 但必填项缺失时，应用启动会 **fail-fast** 抛出 `MicaAiException`。
 > 不希望加载该能力时，设 `enabled: false` 即可。
@@ -101,6 +110,11 @@ mvn -pl mica-ai-example -am test
 | `/plate/recognize` | POST multipart | 上传车辆图片，返回车牌号 + 类型 + 置信度 |
 | `/layout/detect` | POST multipart | 上传文档图片，返回版面区域（需本地有模型并置 `enabled=true`） |
 | `/layout/detect-bytes` | POST octet-stream | 同上，octet-stream 入参 |
+| `/matting/cutout` | POST multipart | 上传图片，返回透明底 PNG（BGRA） |
+| `/matting/cutout-on-color` | POST multipart | 上传图片 + 底色，返回纯色底合成 PNG |
+| `/matting/mask` | POST multipart | 上传图片，返回二值掩码 PNG（单通道 0/255） |
+| `/textline/classify` | POST multipart | 上传**单行文本图**，返回 orientation / label / score / upsideDown / angle（JSON） |
+| `/textline/upright` | POST multipart | 上传单行文本图，倒置则旋转 180° 输出 PNG，正常则原样回传 |
 
 > layout 能力已提供 REST 端点（`LayoutController`），但因模型 125MB 不随仓库分发，本示例默认
 > `mica.ai.layout.enabled=false` ⇒ 该端点**未装配**，访问会 404；本地放好模型后置 `true` 即可启用。
@@ -113,7 +127,7 @@ Swagger UI：`http://localhost:8181/swagger-ui.html`
 
 ```
 mica-ai-example/
-├── pom.xml                                          # face + filetype + plate + layout starter + spring-boot-starter-web
+├── pom.xml                                          # 各能力 starter + spring-boot-starter-web
 ├── src/main/java/net/dreamlu/mica/ai/example/
 │   ├── ExampleApplication.java                      # @SpringBootApplication 入口
 │   ├── config/OpenApiConfig.java
@@ -126,9 +140,11 @@ mica-ai-example/
 │       ├── CardController.java                      # /face/card/extract + /cards
 │       ├── FiletypeController.java                  # /filetype/detect + /filetype/detect-bytes
 │       ├── PlateController.java                     # /plate/recognize
-│       └── LayoutController.java                    # /layout/detect + /layout/detect-bytes
+│       ├── LayoutController.java                    # /layout/detect + /layout/detect-bytes
+│       ├── MattingController.java                   # /matting/cutout + /cutout-on-color + /mask
+│       └── TextLineController.java                  # /textline/classify + /textline/upright
 ├── src/main/resources/
-│   ├── application.yml                              # face + filetype + plate + layout 示例配置
+│   ├── application.yml                              # 各能力示例配置
 │   └── logback-spring.xml
 └── src/test/java/net/dreamlu/mica/ai/example/
     ├── ExampleApplicationContextTest.java           # Starter 自动装配测试（ApplicationContextRunner）

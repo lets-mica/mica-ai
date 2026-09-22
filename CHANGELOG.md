@@ -13,6 +13,15 @@
   - 预处理 ImageNet 归一化（**RGB** 顺序）；实测通道顺序敏感、`mean/std` 绝对值不敏感（对照实验见 `model-tools/matting/scripts/probe_preprocess.py`）
   - 输出节点名不可依赖（数字名 `1959`..`1965`），定位策略显式化为可配置的 `output-select`（`AUTO` / `FIRST` / `D0`），默认 `AUTO` 为先名称提示、再校验「7 个同形输出」取首个
 - 🔌 `mica-ai-matting-spring-boot-starter`（`mica.ai.matting` 前缀）：`@Bean(destroyMethod = "close")` + `@ConditionalOnMissingBean`；`MattingPropertiesTest` 覆盖配置绑定、默认值一致性，并通过 `MattingAutoConfiguration#toConfig` 校验**真实装配链**（不重抄 builder，漏装配即失败）
+- 🔤 `mica-ai-textline` —— PP-LCNet 文本行方向分类（0° / 180°）：`TextLineEngine` 提供「只判定」（`classify*` → `TextLineOrientationResult`）与「判定+转正」（`uprightBytes` / `rotateIfUpsideDown`）两组能力，典型用途是 OCR 流水线前置转正
+  - 模型 `PP-LCNet_x1_0_textline_ori.onnx` **6.46 MB**（Apache-2.0，[PaddlePaddle/PaddleX](https://github.com/PaddlePaddle/PaddleX) 文本行方向分类，paddle2onnx 转换产物），**随仓库分发**
+  - I/O 实测（2026-09-21）：输入 `x [N,3,80,160]` float32；输出 `fetch_name_0 [N,2]` float32 **原始 logits**（未 softmax）；类别顺序来自官方 `inference.yml` 的 `label_list: [0_degree, 180_degree]`
+  - ⚠️ **H=80 / W=160，别写反**：官方 `ResizeImage: {size: [160, 80]}` 是 PaddlePaddle 的 **(宽, 高)**；构造期比对模型输入形状与 `input-width` / `input-height`，不一致直接 `MicaAiException` 快速失败
+  - ⚠️ **真实数据置信度远低于合成图**：合成文本行饱和到 `logits=[+1.0, +0.0]` → `p=0.7311`；官方真实样例倒置态仅 `p≈0.5772`，已逼近默认阈值 `0.5`。默认保留 `0.5`，但 README / yml 均记录「误旋转代价高时调到 0.6~0.7 让拿不准的行保持不动」
+  - 通道顺序默认 `BGR`（严格复刻 PaddleX 在 OpenCV 原生 BGR 上逐通道归一化的行为）；实测本任务判定结构朝向而非颜色，**BGR / RGB 结论一致**
+  - 输出名 `fetch_name_0` 是 Paddle2ONNX 自动命名，**不可硬编码**：先按名称提示（`fetch_name_0`/`logits`/`output`/`prob`/`softmax`）匹配，再回落「唯一的 2 维 float 输出」结构判定
+  - `uprightBytes` 在方向正常时**原样返回输入字节**（不重编码、零画质损失），实测 `isSameAs` 为真；`rotateIfUpsideDown` 同理返回**入参本身**
+- 🔌 `mica-ai-textline-spring-boot-starter`（`mica.ai.textline` 前缀）：`@Bean(destroyMethod = "close")` + `@ConditionalOnMissingBean`；`TextLinePropertiesTest` 覆盖配置绑定与默认值一致性，并通过 `TextLineAutoConfiguration#toConfig` 校验**真实装配链**（已用「删掉一行 `.upsideDownThreshold(...)` 即测试失败」验证过该测试确实有牙）
 
 ### 🔧 模型可插拔
 
@@ -20,9 +29,13 @@
 - 两个 168MB 模型按 AGENTS.md §6.2 **不入库**（超 50MB），由使用者自行下载后指向本地路径；集成测试支持 `-Dmica.ai.matting.externalModel=<path>` 用外置模型跑同一套断言（不传则该项自动跳过）
 - ⚠️ **实测纠正一条误导性线索**：本机 `u2netp.onnx` 的 `sha256` 与 HuggingFace `BritishWerewolf/U-2-Net-Human-Seg` 的 onnx **逐字节相同**，但行为实测显示其贴近**通用显著性 `u2net`**（静物图 MAE `0.0009`）而非 `human_seg`（MAE `0.0400`，差 44 倍）；对「无人图」的保守度 `u2netp` 1.54× vs `human_seg` 2.15×。新增 `model-tools/matting/scripts/probe_model_identity.py` 用于多模型行为对照 —— **权重语义须看行为，不能只看文件名或哈希**
 
+- **切换 PP-LCNet 文本行方向模型同样无需改 Java 代码**：轻量版 `PP-LCNet_x0_25_textline_ori`（约 0.96MB，未入库）与内置 `x1_0` 版 I/O 契约一致（同 `x [N,3,80,160]` 输入、同 `[N,2]` 输出、同归一化、同类别语义），仅需改 `model-path`
+  - 新增 `model-tools/textline/scripts/probe_contract.py`：只读契约探针，打印 I/O 签名与 `sha256`，并核验**类别语义**（索引 0 = `0_degree`）、**通道顺序敏感性**（BGR vs RGB）、**退化输入鲁棒性**（缩小 / 模糊 / JPEG q30）—— 换导出 / 排查判定异常时先跑它
+
 ### 🧪 测试
 
 - `MattingIntegrationTest`：15 项真模型集成测试，覆盖 I/O 契约（1 输入 / 7 输出 / 320 边长）、掩码尺寸回填（含 640×120 极端长宽比，防 OpenCV `Size(宽,高)` 写反）、alpha 语义、min-max 边界、BGRA/纯色底/二值三种输出形态、缺文件与空输入兜底、`output-select` 策略实际生效（`D0` 在数字命名导出上必须快速失败）、外置模型可加载
+- `TextLineIntegrationTest`：16 项真模型集成测试，覆盖 I/O 契约（1 输入 / 160×80 / 2 类）、**宽高写反必须快速失败**、类别索引语义（索引 1 = 180°，写反即「把正的转成倒的」）、前景极性无影响、窄长行（700×60，宽高比 11.7:1）仍判定正确、**真实数据置信度区间断言**（`isBetween(0.55, 0.72)`，而非照抄合成图的 0.7311）、通道顺序不改变结论、转正后复检闭环、`uprightBytes` 在方向正常时零拷贝返回（`isSameAs`）、阈值确实生效（阈值 1.0 时不判倒置）、路径入参与缺失文件兜底、null / 空图返回 null、外置模型可加载
 
 ---
 

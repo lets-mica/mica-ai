@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Maven Central](https://img.shields.io/badge/Maven-1.0.0-red?style=flat-square&logo=apache-maven)](https://mvnrepository.com/artifact/net.dreamlu/mica-ai)
 
-> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 开箱即用
+> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 通用抠图 + 文本行方向分类 开箱即用
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
@@ -49,6 +49,7 @@
 | 🚗 中国车牌识别 | `mica-ai-plate` | HyperLPR3 v20230229 | 车牌号 + 10 类判型 + 颜色 | Apache 2.0 | ✅ |
 | 📐 文档版面分析 | `mica-ai-layout` | PP-DocLayoutV3 | **25 类版面区域** + V3 阅读顺序 | Apache 2.0 | ✅ |
 | ✂️ 通用抠图 | `mica-ai-matting` | U²-Net 族（`u2netp` 入库 / `u2net` / `u2net_human_seg` 可外置替换） | 原尺寸 alpha 掩码（透明底 / 纯色底 / 二值） | Apache 2.0 | ✅ |
+| 🔤 文本行方向分类 | `mica-ai-textline` | PP-LCNet_x1_0_textline_ori（`x0_25` 轻量版可外置替换） | **0° / 180°** + softmax 置信度 + 转正角度 | Apache 2.0 | ✅ |
 
 ### 整体架构
 
@@ -60,7 +61,8 @@
                                    ▼
         ┌──────────────────────────────────────────────────────┐
         │                    mica-ai-starters                  │
-        │  face 🎭  filetype 📄  plate 🚗  layout 📐  matting ✂️ │
+        │  face 🎭 filetype 📄 plate 🚗 layout 📐 matting ✂️    │
+        │  textline 🔤                                          │
         └──────────────────────────┬───────────────────────────┘
                                    │
                                    ▼
@@ -70,9 +72,11 @@
         │   YuNet + SFace 🎭    Magika 214 类 📄  HyperLPR3 🚗  │
         │   + 活体 MiniFASNet   + mime / group   + 车牌号 / 颜色│
         │   + 头像 / 证件卡片                                  │
-        │            mica-ai-layout      mica-ai-matting      │
-        │            PP-DocLayoutV3 📐   U²-Net 族 ✂️         │
-        │            25 类 + 阅读顺序     原尺寸 alpha 掩码      │
+        │         mica-ai-layout   mica-ai-matting            │
+        │         PP-DocLayoutV3 📐 U²-Net 族 ✂️              │
+        │         25 类 + 阅读顺序   原尺寸 alpha 掩码           │
+        │                mica-ai-textline                     │
+        │                PP-LCNet 🔤 0° / 180° + 转正         │
         └──────────────────────────┬───────────────────────────┘
                                    │
                                    ▼
@@ -131,6 +135,11 @@
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-matting</artifactId>           <!-- 通用抠图（u2netp 4.36MB 随仓库分发；u2net/u2net_human_seg 可外置替换） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-textline</artifactId>          <!-- 文本行方向分类（0°/180° 判定 + 转正，模型 6.46MB 随仓库分发） -->
     <version>${mica-ai.version}</version>
 </dependency>
 ```
@@ -213,6 +222,7 @@ public class FaceEnrollService {
 | [mica-ai-plate-spring-boot-starter](mica-ai-starters/mica-ai-plate-spring-boot-starter/README.md) | `mica.ai.plate` | HyperLPR3 中国车牌识别（检测 + CRNN 识别 + 颜色分类 + 10 类判型） |
 | [mica-ai-layout-spring-boot-starter](mica-ai-starters/mica-ai-layout-spring-boot-starter/README.md) | `mica.ai.layout` | PP-DocLayoutV3 文档版面分析（25 类 + V3 阅读顺序；模型 125MB 不随仓库分发，需本地放模型） |
 | [mica-ai-matting-spring-boot-starter](mica-ai-starters/mica-ai-matting-spring-boot-starter/README.md) | `mica.ai.matting` | U²-Net 族通用抠图（透明底 / 纯色底 / 二值掩码；`u2netp` 4.36MB 入库，`u2net` / `u2net_human_seg` 走 `model-path` 外置切换） |
+| [mica-ai-textline-spring-boot-starter](mica-ai-starters/mica-ai-textline-spring-boot-starter/README.md) | `mica.ai.textline` | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正；`x1_0` 6.46MB 入库，`x0_25` 轻量版走 `model-path` 外置切换） |
 
 只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用。
 
@@ -229,20 +239,23 @@ mica-ai/
 │   ├── mica-ai-filetype/           #   📄 Google Magika 文件类型识别
 │   ├── mica-ai-plate/              #   🚗 HyperLPR3 中国车牌识别
 │   ├── mica-ai-layout/             #   📐 PP-DocLayoutV3 文档版面分析
-│   └── mica-ai-matting/            #   ✂️ U²-Net 族通用抠图
+│   ├── mica-ai-matting/            #   ✂️ U²-Net 族通用抠图
+│   └── mica-ai-textline/           #   🔤 PP-LCNet 文本行方向分类（0° / 180°）
 ├── mica-ai-starters/               # Spring Boot 2 Starter
 │   ├── mica-ai-face-spring-boot-starter/
 │   ├── mica-ai-filetype-spring-boot-starter/
 │   ├── mica-ai-plate-spring-boot-starter/
 │   ├── mica-ai-layout-spring-boot-starter/
-│   └── mica-ai-matting-spring-boot-starter/
+│   ├── mica-ai-matting-spring-boot-starter/
+│   └── mica-ai-textline-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产（直接入库，均 <50MB）
     ├── face/models/                #   YuNet + SFace + MiniFASNetV2
     ├── filetype/models/            #   Magika standard_v3_3
     ├── plate/models/               #   HyperLPR3 v20230229
     ├── layout/models/              #   PP-DocLayoutV3（125MB，⚠️ 不随仓库分发）
-    └── matting/models/             #   U²-Net u2netp（4.36MB，入库；u2net/u2net_human_seg 168MB 不入库）
+    ├── matting/models/             #   U²-Net u2netp（4.36MB，入库；u2net/u2net_human_seg 168MB 不入库）
+    └── textline/models/            #   PP-LCNet_x1_0_textline_ori（6.46MB，入库；x0_25 轻量版不入库）
 ```
 
 ---
@@ -271,6 +284,7 @@ mica-ai/
 | 🚗 **停车场 / 道闸 / 智慧出行** | `mica-ai-plate` 的 `PlatePipeline` + 颜色分类兜底 |
 | 📐 **PDF / 文档预处理 / 阅读顺序** | `mica-ai-layout` 的 `LayoutPipeline` — 25 类版面 + V3 阅读顺序 |
 | ✂️ **商品图 / 人像去背 / 证件照换底** | `mica-ai-matting` 的 `MattingEngine` — 透明底 PNG / 纯色底合成 / 二值掩码 |
+| 🔤 **OCR 前置转正 / 扫描件倒置行纠正** | `mica-ai-textline` 的 `TextLineEngine` — 单行 0° / 180° 判定 + `uprightBytes` 一键转正（配合 `mica-ppocr` 做文本行定位） |
 
 ---
 
@@ -284,7 +298,7 @@ mica-ai/
 
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
-- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR)
+- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR) · [PaddleX](https://github.com/PaddlePaddle/PaddleX) · [U²-Net](https://github.com/xuebinqin/U-2-Net)
 - 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">

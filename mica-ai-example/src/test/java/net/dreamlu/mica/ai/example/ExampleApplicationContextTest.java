@@ -20,6 +20,8 @@ import net.dreamlu.mica.ai.face.autoconfigure.FaceAutoConfiguration;
 import net.dreamlu.mica.ai.face.model.ModelManager;
 import net.dreamlu.mica.ai.matting.MattingEngine;
 import net.dreamlu.mica.ai.matting.autoconfigure.MattingAutoConfiguration;
+import net.dreamlu.mica.ai.textline.TextLineEngine;
+import net.dreamlu.mica.ai.textline.autoconfigure.TextLineAutoConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringBootConfiguration;
@@ -97,6 +99,38 @@ class ExampleApplicationContextTest {
 				MattingEngine engine = ctx.getBean(MattingEngine.class);
 				assertThat(engine.modelInputSize()).isEqualTo(320);
 				assertThat(engine.outputCount()).isEqualTo(7);
+			});
+	}
+
+	@Test
+	@DisplayName("TextLine 关闭时不应创建 TextLineEngine，且不会因缺模型而启动失败")
+	void textlineDisabledShouldNotCreateEngine() {
+		runner(TextLineAutoConfiguration.class)
+			.withPropertyValues("mica.ai.textline.enabled=false")
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).doesNotHaveBean(TextLineEngine.class);
+			});
+	}
+
+	@Test
+	@DisplayName("TextLine 指向真实 PP-LCNet 模型时应装配出可用的 TextLineEngine")
+	void textlineShouldWireEngineAgainstRealModel() {
+		Path model = locateRepoFile(
+			"model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx");
+		if (model == null) {
+			// 模型未入库的场景下跳过，不阻塞新克隆仓库的构建
+			return;
+		}
+		runner(TextLineAutoConfiguration.class)
+			.withPropertyValues("mica.ai.textline.model-path=" + model.toAbsolutePath())
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).hasSingleBean(TextLineEngine.class);
+				TextLineEngine engine = ctx.getBean(TextLineEngine.class);
+				assertThat(engine.modelInputWidth()).isEqualTo(160);
+				assertThat(engine.modelInputHeight()).isEqualTo(80);
+				assertThat(engine.classCount()).isEqualTo(2);
 			});
 	}
 

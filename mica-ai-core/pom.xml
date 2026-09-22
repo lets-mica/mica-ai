@@ -22,5 +22,6 @@
         <module>mica-ai-plate</module>
         <module>mica-ai-layout</module>
         <module>mica-ai-matting</module>
+        <module>mica-ai-textline</module>
     </modules>
 </project>
