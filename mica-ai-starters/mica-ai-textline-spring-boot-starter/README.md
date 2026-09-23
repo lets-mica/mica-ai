@@ -39,7 +39,7 @@ mica:
       mean: [0.485, 0.456, 0.406]         # PaddleX NormalizeImage 默认值
       std:  [0.229, 0.224, 0.225]
       onnx:
-        device: cpu                       # cpu / gpu
+        device: CPU                       # CPU / GPU（枚举）
         intra-op-num-threads: 0           # 0 = ORT 默认
         inter-op-num-threads: 0
 ```
@@ -56,7 +56,7 @@ mica:
 | `interpolation` | `LINEAR` | 缩放到模型尺寸的插值：`LINEAR` / `NEAREST` / `CUBIC` |
 | `upside-down-threshold` | `0.5` | 判定为「倒置」的最低概率。**实测真实扫描件上倒置态仅得 `p≈0.58`**（合成图可达 0.73），误旋转代价高时建议调到 `0.6~0.7` |
 | `output-is-probability` | `false` | 模型输出是否已是 softmax 后的概率；官方导出为**裸 logits**，需本模块 softmax |
-| `onnx.device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
+| `onnx.device` | `CPU` | `CPU` / `GPU`（枚举，GPU 需 classpath 换 `onnxruntime_gpu`） |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 

@@ -34,9 +34,13 @@ mica:
       detection-input-size: 320                              # 320 / 640
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5
+      recognition-input-height: 48                          # HyperLPR3 默认
+      recognition-input-width: 160                          # HyperLPR3 默认
+      classification-input-size: 96                         # HyperLPR3 默认
       max-plates: 5
       onnx:
-        intra-op-num-threads: 0                              # 0 = ORT 默认
+        device: CPU                                         # CPU / GPU（枚举）
+        intra-op-num-threads: 0                             # 0 = ORT 默认
         inter-op-num-threads: 0
         cuda-device-id: 0
 ```

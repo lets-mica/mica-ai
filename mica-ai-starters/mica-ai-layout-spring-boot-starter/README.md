@@ -58,6 +58,7 @@ mica:
       mean: [0.8286, 0.8281, 0.8282]
       std:  [0.1889, 0.1889, 0.1889]
       onnx:
+        device: CPU                                          # CPU / GPU（枚举）
         intra-op-num-threads: 0                              # 0 = ORT 默认
         inter-op-num-threads: 0
 ```
@@ -79,6 +80,7 @@ mica:
 | `mean` / `std` | `[0.8286,0.8281,0.8282]` / `[0.1889,0.1889,0.1889]` | 归一化参数（**非专家不要改**，与训练时保持一致） |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
+| `onnx.device` | `CPU` | `CPU` / `GPU`（枚举） |
 
 > `enabled=false` 时不装配 `LayoutPipeline` Bean；`model-path` 缺失启动会 **fail-fast**。
 

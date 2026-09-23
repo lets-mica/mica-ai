@@ -50,8 +50,13 @@ mica:
           path: model-tools/face/models/face_recognition_sface_2021dec.onnx
         liveness:
           path: model-tools/face/models/2.7_80x80_MiniFASNetV2.onnx
+      detection:                        # 阈值配置在 detection 块下
+        threshold: 0.9
+        nms-threshold: 0.3
       liveness:
         enabled: true                   # 活体默认 true，关闭请显式设 false
+        threshold: 0.85
+        crop-scale: 2.7
     filetype:
       enabled: true
       model-path: model-tools/filetype/models/model.onnx

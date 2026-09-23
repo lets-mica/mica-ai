@@ -38,7 +38,7 @@ mica:
       mean: [0.485, 0.456, 0.406]                          # ImageNet，RGB 顺序
       std:  [0.229, 0.224, 0.225]
       onnx:
-        device: cpu                                        # cpu / gpu
+        device: CPU                                        # CPU / GPU（枚举）
         intra-op-num-threads: 0                            # 0 = ORT 默认
         inter-op-num-threads: 0
 ```
@@ -55,7 +55,7 @@ mica:
 | `binary-threshold` | `0.5` | 二值掩码阈值（0~1），仅二值输出接口使用 |
 | `min-max-normalize` | `true` | 是否把 d0 min-max 拉伸到 `[0,1]`（rembg 参考行为）；低对比度输入差别巨大 |
 | `background-color` | `[255,255,255]` | 纯色底输出的默认底色（RGB） |
-| `onnx.device` | `cpu` | `cpu` / `gpu`（GPU 需 classpath 换 `onnxruntime_gpu`） |
+| `onnx.device` | `CPU` | `CPU` / `GPU`（枚举，GPU 需 classpath 换 `onnxruntime_gpu`） |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 

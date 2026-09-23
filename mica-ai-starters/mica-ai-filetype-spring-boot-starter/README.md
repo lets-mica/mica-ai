@@ -33,6 +33,7 @@ mica:
       content-types-path: classpath:mica-ai/models/filetype/standard_v3_3/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE # HIGH_CONFIDENCE / MEDIUM_CONFIDENCE / BEST_GUESS
       onnx:
+        device: CPU                       # CPU / GPU（枚举）
         intra-op-num-threads: 0        # 0 = ORT 自适应
         inter-op-num-threads: 0
         cuda-device-id: 0

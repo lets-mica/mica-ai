@@ -174,27 +174,34 @@ try (ModelManager manager = ModelManager.create(config)) {
 mica:
   ai:
     face:
-      enabled: true
-      device: cpu
+      enabled: true                       # 总开关，默认 true
+      model:                              # ⚠️ 模型路径统一挂在 model 下
+        detection:
+          path: classpath:models/face_detection_yunet_2023mar.onnx       # 必填
+        recognition:
+          path: classpath:models/face_recognition_sface_2021dec.onnx     # 必填
+        liveness:
+          path: classpath:models/2.7_80x80_MiniFASNetV2.onnx             # liveness.enabled=true 时必填
       detection:
-        model-path: classpath:models/face_detection_yunet_2023mar.onnx
-        threshold: 0.9
-        nms-threshold: 0.3
-      recognition:
-        model-path: classpath:models/face_recognition_sface_2021dec.onnx
+        threshold: 0.9                    # 检测置信度阈值
+        nms-threshold: 0.3                # NMS IoU 阈值
       liveness:
-        enabled: false
-        model-path: classpath:models/2.7_80x80_MiniFASNetV2.onnx
+        enabled: true                     # 活体开关，默认 true；关闭请显式设 false
+        threshold: 0.85
+        crop-scale: 2.7
       verify:
-        threshold: 0.35
+        threshold: 0.35                   # 1:1 比对阈值
+        strategy: LARGEST_AREA            # 多脸选脸：LARGEST_AREA / LARGEST_SCORE / REJECT
       avatar:
         size: 256
       card:
         output-width: 1011
         output-height: 638
       onnx:
-        intra-op-num-threads: 0
-        graph-optimization-level: ORT_ENABLE_ALL
+        device: CPU                       # CPU / GPU（枚举）
+        intra-op-num-threads: 0           # 0 = ORT 默认
+        inter-op-num-threads: 0
+        graph-optimization-level: ENABLE_ALL   # DISABLE_ALL / ENABLE_BASIC / ENABLE_EXTENDED / ENABLE_ALL
 ```
 
 ```java

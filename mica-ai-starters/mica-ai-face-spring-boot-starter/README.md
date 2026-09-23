@@ -50,10 +50,10 @@ mica:
         output-width: 1011
         output-height: 638
       onnx:
+        device: CPU                       # CPU / GPU（枚举）
         intra-op-num-threads: 0           # 0 = ORT 默认
         inter-op-num-threads: 0
-        device: cpu                       # cpu / gpu
-        graph-optimization-level: ORT_ENABLE_ALL
+        graph-optimization-level: ENABLE_ALL   # DISABLE_ALL / ENABLE_BASIC / ENABLE_EXTENDED / ENABLE_ALL
 ```
 
 | 配置 | 默认 | 说明 |
@@ -74,7 +74,7 @@ mica:
 | `mica.ai.face.card.output-height` | `638` | 卡片输出高 |
 | `mica.ai.face.onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `mica.ai.face.onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
-| `mica.ai.face.onnx.device` | `cpu` | `cpu` / `gpu` |
+| `mica.ai.face.onnx.device` | `CPU` | `CPU` / `GPU`（枚举） |
 
 > `enabled=false` 时不装配任何 face Bean；`model.detection.path` / `model.recognition.path` 缺失时启动会 **fail-fast**。
 > ⚠️ 活体默认**开启**，因此只配检测 / 识别路径会因活体模型缺失而启动失败；不需要活体请显式设 `mica.ai.face.liveness.enabled=false`。
