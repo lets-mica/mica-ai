@@ -22,6 +22,15 @@
   - 输出名 `fetch_name_0` 是 Paddle2ONNX 自动命名，**不可硬编码**：先按名称提示（`fetch_name_0`/`logits`/`output`/`prob`/`softmax`）匹配，再回落「唯一的 2 维 float 输出」结构判定
   - `uprightBytes` 在方向正常时**原样返回输入字节**（不重编码、零画质损失），实测 `isSameAs` 为真；`rotateIfUpsideDown` 同理返回**入参本身**
 - 🔌 `mica-ai-textline-spring-boot-starter`（`mica.ai.textline` 前缀）：`@Bean(destroyMethod = "close")` + `@ConditionalOnMissingBean`；`TextLinePropertiesTest` 覆盖配置绑定与默认值一致性，并通过 `TextLineAutoConfiguration#toConfig` 校验**真实装配链**（已用「删掉一行 `.upsideDownThreshold(...)` 即测试失败」验证过该测试确实有牙）
+- 🔐 `mica-ai-captcha` —— ddddocr 通用验证码识别（CRNN + CTC）：`CaptchaEngine` 提供「只要文本」（`recognize*`）与「带置信度」（`recognizeDetailed*` → `CaptchaResult`）两组能力，支持字节 / base64 / 文件路径三种入参
+  - 模型 `ddddocr.onnx` **12.98 MB** + `charset.txt`（MIT，[sml2h3/ddddocr](https://github.com/sml2h3/ddddocr)），**随仓库分发但不打包进 jar** —— 走**外置配置**（`model-path` / `charset-path` 必填，缺任一项启动即 fail-fast）
+  - I/O 实测（2026-10-22）：输入 `input1 [1,1,64,W]` float32；输出 `387` **运行时**形状 `[23,1,8210]` float32 **原始 logits**（未 softmax）
+  - ⚠️ **输出节点的声明形状是错的**：ONNX 元信息写 `[1, seqlen]`，运行时实际是 `[seqlen,1,num_classes]`（该模型为动态量化版，`DynamicQuantizeLinear` + `ConvInteger`）。因此**不读声明形状**，一律按运行时数组维度归一化，兼容 `[seq][1][cls]` / `[1][seq][cls]` / `[seq][cls]` 三种布局
+  - ⚠️ **字符集是索引映射表，刻意不去重**：8209 个字符 + 1 个 blank = 8210 类，与模型输出维度严格相等；去重会让后续索引整体错位、识别结果变乱码。字符集大小与模型类别数不一致时**首次推理即抛异常**，而不是打 warning 后输出乱码
+  - 预处理与 ddddocr Python 原版严格对齐：等比缩放到高 64（宽 = `(int)(w*64/h)`）→ 灰度化（`0.299R+0.587G+0.114B`，同 PIL `convert('L')`）→ 归一化
+  - 归一化 `DIV_255`（默认）与 `MEAN_0_5`（对齐 Python 原版）**实测等价**：同一张样例图解码结果同为 `SHTP`，平均置信度 0.99960 vs 0.99943 —— 动态量化模型按实际 min/max 量化，对输入绝对尺度不敏感
+  - 核心模块**零 Spring、零 OpenCV 原生库**，只用 JDK 的 `javax.imageio` / `java.awt`
+- 🔌 `mica-ai-captcha-spring-boot-starter`（`mica.ai.captcha` 前缀）：`@Bean(destroyMethod = "close")` + `@ConditionalOnMissingBean`；`CaptchaPropertiesTest` 覆盖配置绑定与默认值一致性，并通过 `CaptchaAutoConfiguration#toConfig` 校验**真实装配链**
 
 ### 🔧 模型可插拔
 
@@ -32,10 +41,15 @@
 - **切换 PP-LCNet 文本行方向模型同样无需改 Java 代码**：轻量版 `PP-LCNet_x0_25_textline_ori`（约 0.96MB，未入库）与内置 `x1_0` 版 I/O 契约一致（同 `x [N,3,80,160]` 输入、同 `[N,2]` 输出、同归一化、同类别语义），仅需改 `model-path`
   - 新增 `model-tools/textline/scripts/probe_contract.py`：只读契约探针，打印 I/O 签名与 `sha256`，并核验**类别语义**（索引 0 = `0_degree`）、**通道顺序敏感性**（BGR vs RGB）、**退化输入鲁棒性**（缩小 / 模糊 / JPEG q30）—— 换导出 / 排查判定异常时先跑它
 
+- **切换验证码模型无需改 Java 代码**：凡「CRNN + CTC、输出类别数与字符集一一对应」的 ONNX，都只需改 `model-path` + `charset-path`；契约差异（输入高度、归一化方式）已显式化为 `input-height` / `normalization` / `interpolation` 配置项
+  - ⚠️ **模型与字符集必须成对**：字符集类别数与模型输出类别数不一致时模块直接抛异常
+  - 集成测试支持 `-Dmica.ai.captcha.externalModel=<path>` + `-Dmica.ai.captcha.externalCharset=<path>` 用外置模型跑同一套断言（不传则该项自动跳过）
+
 ### 🧪 测试
 
 - `MattingIntegrationTest`：15 项真模型集成测试，覆盖 I/O 契约（1 输入 / 7 输出 / 320 边长）、掩码尺寸回填（含 640×120 极端长宽比，防 OpenCV `Size(宽,高)` 写反）、alpha 语义、min-max 边界、BGRA/纯色底/二值三种输出形态、缺文件与空输入兜底、`output-select` 策略实际生效（`D0` 在数字命名导出上必须快速失败）、外置模型可加载
 - `TextLineIntegrationTest`：16 项真模型集成测试，覆盖 I/O 契约（1 输入 / 160×80 / 2 类）、**宽高写反必须快速失败**、类别索引语义（索引 1 = 180°，写反即「把正的转成倒的」）、前景极性无影响、窄长行（700×60，宽高比 11.7:1）仍判定正确、**真实数据置信度区间断言**（`isBetween(0.55, 0.72)`，而非照抄合成图的 0.7311）、通道顺序不改变结论、转正后复检闭环、`uprightBytes` 在方向正常时零拷贝返回（`isSameAs`）、阈值确实生效（阈值 1.0 时不判倒置）、路径入参与缺失文件兜底、null / 空图返回 null、外置模型可加载
+- `CaptchaIntegrationTest`：6 项真模型集成测试，覆盖 **I/O 契约**（1 输入 / 高 64 / 8210 类）、**CTC blank 索引**（索引 0 必须是 blank，否则每个字符都被重复输出）、**字符集与模型类别数对齐**、识别文本与置信度区间（样例图 `SHTP`，平均置信度 > 0.9）、base64 入参与字节入参结果一致、**两种归一化解码结果一致**、输入高度不匹配必须快速失败；另有 `CaptchaImageUtilsTest`（10 项，含「字符集刻意不去重」守卫）与 `CaptchaConfigTest`（6 项）
 
 ---
 

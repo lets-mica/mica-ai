@@ -15,6 +15,8 @@
  */
 package net.dreamlu.mica.ai.example;
 
+import net.dreamlu.mica.ai.captcha.CaptchaEngine;
+import net.dreamlu.mica.ai.captcha.autoconfigure.CaptchaAutoConfiguration;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.autoconfigure.FaceAutoConfiguration;
 import net.dreamlu.mica.ai.face.model.ModelManager;
@@ -131,6 +133,54 @@ class ExampleApplicationContextTest {
 				assertThat(engine.modelInputWidth()).isEqualTo(160);
 				assertThat(engine.modelInputHeight()).isEqualTo(80);
 				assertThat(engine.classCount()).isEqualTo(2);
+			});
+	}
+
+	@Test
+	@DisplayName("Captcha 关闭时不应创建 CaptchaEngine，且不会因缺模型而启动失败")
+	void captchaDisabledShouldNotCreateEngine() {
+		runner(CaptchaAutoConfiguration.class)
+			.withPropertyValues("mica.ai.captcha.enabled=false")
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).doesNotHaveBean(CaptchaEngine.class);
+			});
+	}
+
+	@Test
+	@DisplayName("Captcha 缺少必填模型路径时应 fail-fast 抛 MicaAiException（模型外置配置）")
+	void captchaEnabledButMissingRequiredShouldFailFast() {
+		runner(CaptchaAutoConfiguration.class)
+			.withPropertyValues(
+				"mica.ai.captcha.model-path=",
+				"mica.ai.captcha.charset-path=")
+			.run(ctx -> {
+				assertThat(ctx).hasFailed();
+				assertThat(ctx.getStartupFailure())
+					.hasRootCauseInstanceOf(MicaAiException.class);
+			});
+	}
+
+	@Test
+	@DisplayName("Captcha 指向真实 ddddocr 模型时应装配出可用的 CaptchaEngine")
+	void captchaShouldWireEngineAgainstRealModel() {
+		Path model = locateRepoFile("model-tools/captcha/models/ddddocr.onnx");
+		Path charset = locateRepoFile("model-tools/captcha/models/charset.txt");
+		if (model == null || charset == null) {
+			// 模型未入库的场景下跳过，不阻塞新克隆仓库的构建
+			return;
+		}
+		runner(CaptchaAutoConfiguration.class)
+			.withPropertyValues(
+				"mica.ai.captcha.model-path=" + model.toAbsolutePath(),
+				"mica.ai.captcha.charset-path=" + charset.toAbsolutePath())
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).hasSingleBean(CaptchaEngine.class);
+				CaptchaEngine engine = ctx.getBean(CaptchaEngine.class);
+				assertThat(engine.modelInputHeight()).isEqualTo(64);
+				// 8209 个字符 + 1 个 blank
+				assertThat(engine.charsetSize()).isEqualTo(8210);
 			});
 	}
 

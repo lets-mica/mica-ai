@@ -1,11 +1,11 @@
 # mica-ai-example
 
-> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout + Matting + TextLine Starter 的可运行示例与集成测试。
+> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout + Matting + TextLine + Captcha Starter 的可运行示例与集成测试。
 
 本模块面向集成测试场景：
 
 1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype /
-   plate / layout / matting / textline 能力。
+   plate / layout / matting / textline / captcha 能力。
 2. **Starter 自动装配测试**：覆盖 `enabled` 开关、fail-fast、Bean 注入（基于轻量级
    `ApplicationContextRunner`，非 `@SpringBootTest`）。
 
@@ -18,7 +18,7 @@
 | JDK         | **8+**                                                  | 推荐 Temurin / Azul Zulu 8、11、17 |
 | Maven       | 3.6+                                                    | 多模块构建                          |
 | Spring Boot | 2.7.x                                                   | 由根 BOM 引入                      |
-| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 + U²-Net + PP-LCNet | 见各能力 README；layout 模型需自行获取     |
+| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 + U²-Net + PP-LCNet + ddddocr | 见各能力 README；layout 模型需自行获取     |
 
 ---
 
@@ -73,9 +73,14 @@ mica:
     textline:
       enabled: true
       model-path: model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx
+    captcha:
+      enabled: true
+      # ⚠️ 模型与字符集都是外置配置，两项必填且必须成对
+      model-path: model-tools/captcha/models/ddddocr.onnx
+      charset-path: model-tools/captcha/models/charset.txt
 ```
 
-> matting（`u2netp` 4.36MB）/ textline（`PP-LCNet_x1_0` 6.46MB）模型均已入库，默认 `enabled: true` 即可用，
+> matting（`u2netp` 4.36MB）/ textline（`PP-LCNet_x1_0` 6.46MB）/ captcha（`ddddocr` 12.98MB）模型均已入库，默认 `enabled: true` 即可用，
 > 无需像 layout 那样兜底关闭。
 
 > ⚠️ 当 `enabled=true` 但必填项缺失时，应用启动会 **fail-fast** 抛出 `MicaAiException`。
@@ -120,6 +125,7 @@ mvn -pl mica-ai-example -am test
 | `/matting/mask` | POST multipart | 上传图片，返回二值掩码 PNG（单通道 0/255） |
 | `/textline/classify` | POST multipart | 上传**单行文本图**，返回 orientation / label / score / upsideDown / angle（JSON） |
 | `/textline/upright` | POST multipart | 上传单行文本图，倒置则旋转 180° 输出 PNG，正常则原样回传 |
+| `/captcha/recognize` | POST multipart | 上传验证码图片，返回 text（识别文本）/ confidence（平均置信度）/ charConfidences（逐字符置信度） |
 
 > layout 能力已提供 REST 端点（`LayoutController`），但因模型 125MB 不随仓库分发，本示例默认
 > `mica.ai.layout.enabled=false` ⇒ 该端点**未装配**，访问会 404；本地放好模型后置 `true` 即可启用。
@@ -147,7 +153,8 @@ mica-ai-example/
 │       ├── PlateController.java                     # /plate/recognize
 │       ├── LayoutController.java                    # /layout/detect + /layout/detect-bytes
 │       ├── MattingController.java                   # /matting/cutout + /cutout-on-color + /mask
-│       └── TextLineController.java                  # /textline/classify + /textline/upright
+│       ├── TextLineController.java                  # /textline/classify + /textline/upright
+│       └── CaptchaController.java                   # /captcha/recognize
 ├── src/main/resources/
 │   ├── application.yml                              # 各能力示例配置
 │   └── logback-spring.xml

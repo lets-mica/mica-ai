@@ -31,6 +31,9 @@ model-tools/
     ├── textline_rot180_demo.jpg # PaddleX 官方 180° 样例图
     ├── models/                 # PP-LCNet_x1_0_textline_ori（6.46MB，随仓库分发）
     └── scripts/                # 契约探针（probe_contract.py）
+└── captcha/                    # 对应 mica-ai-captcha
+    ├── README.md
+    └── models/                 # ddddocr CRNN（12.98MB，随仓库分发；不打包进 jar）
 ```
 
 ## 🧩 模型清单与 License
@@ -44,6 +47,7 @@ model-tools/
 | layout | `model.onnx`（125MB，⚠️ 不随仓库分发） | [PaddleOCR PP-DocLayoutV3](https://github.com/PaddlePaddle/PaddleOCR) | Apache-2.0 ✅ |
 | matting | `u2netp.onnx`（4.36MB，随仓库分发） | [danielgatis/rembg](https://github.com/danielgatis/rembg) 打包 [xuebinqin/U-2-Net](https://github.com/xuebinqin/U-2-Net) | Apache-2.0 ✅ |
 | textline | `PP-LCNet_x1_0_textline_ori.onnx`（6.46MB，随仓库分发） | [PaddlePaddle/PaddleX](https://github.com/PaddlePaddle/PaddleX) 文本行方向分类（paddle2onnx 转换产物） | Apache-2.0 ✅ |
+| captcha | `ddddocr.onnx` + `charset.txt`（12.98MB，随仓库分发；**不打包进 jar**） | [sml2h3/ddddocr](https://github.com/sml2h3/ddddocr) `common.onnx`（动态量化衍生版）+ 字符集 | MIT ✅ |
 
 > 活体模型默认**关闭**（`mica.ai.face.liveness.enabled=true` 显式启用），但 `2.7_80x80_MiniFASNetV2.onnx`（MIT）已随仓库分发，启用时无须额外下载。
 >
@@ -75,6 +79,7 @@ mica:
 - [`mica-ai-core/mica-ai-layout/README.md`](../mica-ai-core/mica-ai-layout/README.md)
 - [`mica-ai-core/mica-ai-matting/README.md`](../mica-ai-core/mica-ai-matting/README.md)
 - [`mica-ai-core/mica-ai-textline/README.md`](../mica-ai-core/mica-ai-textline/README.md)
+- [`mica-ai-core/mica-ai-captcha/README.md`](../mica-ai-core/mica-ai-captcha/README.md)
 
 模型完整性由各能力模块的集成测试覆盖（加载真 ONNX 跑一遍完整推理，全程离线、不连外网）：
 

@@ -23,5 +23,6 @@
         <module>mica-ai-layout</module>
         <module>mica-ai-matting</module>
         <module>mica-ai-textline</module>
+        <module>mica-ai-captcha</module>
     </modules>
 </project>

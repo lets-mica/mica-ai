@@ -189,6 +189,31 @@ mica:
         # enable-cpu-mem-arena: false
         # enable-memory-pattern: false
         # symbolic-dimension-values: { }
+    # ============================================================
+    #  🔐 Captcha —— ddddocr 通用验证码识别（MIT）
+    #  模型 12.98MB，已入库（model-tools/captcha/models/ddddocr.onnx），
+    #  但**不打包进 jar**，必须指向本地文件；charset-path 为配套字符集，必须与模型成对。
+    #  normalization：DIV_255（默认）/ MEAN_0_5（对齐 ddddocr Python 原版）。
+    #  实测本动态量化模型对两者不敏感，两者解码结果一致。
+    # ============================================================
+    captcha:
+      enabled: true
+      model-path: model-tools/captcha/models/ddddocr.onnx
+      charset-path: model-tools/captcha/models/charset.txt
+      input-height: 64
+      normalization: DIV_255
+      interpolation: BILINEAR
+      png-fix: true
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
 
 logging:
   level:
