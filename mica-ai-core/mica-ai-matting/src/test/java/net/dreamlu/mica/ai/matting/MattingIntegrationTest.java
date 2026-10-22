@@ -52,12 +52,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p><b>模型缺失时整个测试类跳过</b>（{@code Assumptions}）：模型 4.4MB 虽在 <50MB 约定内，
  * 但新克隆仓库若未拉取大文件仍可能缺失，跳过时报告会打印提示。
  *
- * <p>OpenCV 原生库由 openpnp 的 {@code nu.pattern.OpenCV.loadShared()} 在静态块中加载。
+ * <p>OpenCV 原生库由 openpnp 的 {@code nu.pattern.OpenCV.loadLocally()} 在静态块中加载，
+ * 避开 Surefire forkCount=0 下 native 库多次加载的路径问题。
  */
 class MattingIntegrationTest {
 
 	static {
-		nu.pattern.OpenCV.loadShared();
+		nu.pattern.OpenCV.loadLocally();
 	}
 
 	private static final String MODEL_RELATIVE = "model-tools/matting/models/u2netp.onnx";

@@ -51,6 +51,10 @@
 - `TextLineIntegrationTest`：16 项真模型集成测试，覆盖 I/O 契约（1 输入 / 160×80 / 2 类）、**宽高写反必须快速失败**、类别索引语义（索引 1 = 180°，写反即「把正的转成倒的」）、前景极性无影响、窄长行（700×60，宽高比 11.7:1）仍判定正确、**真实数据置信度区间断言**（`isBetween(0.55, 0.72)`，而非照抄合成图的 0.7311）、通道顺序不改变结论、转正后复检闭环、`uprightBytes` 在方向正常时零拷贝返回（`isSameAs`）、阈值确实生效（阈值 1.0 时不判倒置）、路径入参与缺失文件兜底、null / 空图返回 null、外置模型可加载
 - `CaptchaIntegrationTest`：6 项真模型集成测试，覆盖 **I/O 契约**（1 输入 / 高 64 / 8210 类）、**CTC blank 索引**（索引 0 必须是 blank，否则每个字符都被重复输出）、**字符集与模型类别数对齐**、识别文本与置信度区间（样例图 `SHTP`，平均置信度 > 0.9）、base64 入参与字节入参结果一致、**两种归一化解码结果一致**、输入高度不匹配必须快速失败；另有 `CaptchaImageUtilsTest`（10 项，含「字符集刻意不去重」守卫）与 `CaptchaConfigTest`（6 项）
 
+### 🐛 修复
+
+- **Java 8 CI 挂 `UnsatisfiedLinkError: Native Library ... already loaded in another classloader`**：`matting` / `textline` / `layout` 三个集成测试原先用 `nu.pattern.OpenCV.loadShared()` 加载原生库。该方法在 **Java 8** 会把解压目录写进**全局** `ClassLoader.usr_paths`，而 Surefire `forkCount=0` 让全仓测试共用同一个 JVM、每个模块各有一个 ClassLoader —— 于是第二个 `loadShared()` 调用者（`matting`）通过 `System.loadLibrary` 解析到**同一个** `.so` 文件，被 JVM 的全局 native 注册表拒绝（Java 12+ 因 `loadShared()` 内部回退到 `loadLocally()` 而侥幸不暴露）。三处统一改为 `loadLocally()`（每次解压到独立临时目录，`face` / `plate` 原本就是此写法），Java 8 / 17 / 21 三个 CI job 均可通过
+
 ---
 
 ## [1.0.0] - 2026-09-19

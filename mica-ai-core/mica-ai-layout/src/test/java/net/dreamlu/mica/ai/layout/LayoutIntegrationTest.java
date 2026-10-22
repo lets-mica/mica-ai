@@ -44,12 +44,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * AGENTS.md §6.2 的「&lt;50MB 入库」约定，入库方式待决策，因此新克隆的仓库里可能没有它。
  * 跳过时会在报告里打印提示，不会让构建变绿而掩盖真实回归。
  *
- * <p>OpenCV 原生库由 openpnp 的 {@code nu.pattern.OpenCV.loadShared()} 在静态块中释放并加载。
+ * <p>OpenCV 原生库由 openpnp 的 {@code nu.pattern.OpenCV.loadLocally()} 在静态块中加载，
+ * 避开 Surefire forkCount=0 下 native 库多次加载的路径问题。
  */
 class LayoutIntegrationTest {
 
 	static {
-		nu.pattern.OpenCV.loadShared();
+		nu.pattern.OpenCV.loadLocally();
 	}
 
 	private static final String MODEL_RELATIVE = "model-tools/layout/models/model.onnx";

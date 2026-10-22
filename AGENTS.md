@@ -74,6 +74,8 @@ mvn -pl mica-ai-core/mica-ai-face -am test    # 仅测 face
 
 JDK：**8+**（推荐 Temurin / Azul Zulu 8/11/17；源码兼容到 JDK 17）。Surefire 已配 `-Djdk.net.URLClassPath.disableClassPathURLCheck=true` + `forkCount=0`，规避 Windows 跨盘符 fork 问题。
 
+> `forkCount=0` 意味着**全仓测试共用同一个 JVM**（但每个模块各有一个 ClassLoader），涉及 OpenCV 原生库的集成测试**必须**用 `loadLocally()` 而不是 `loadShared()`（见 §7）。
+
 ### 3.2 模型资产
 
 模型已直接入库（各能力子目录 `models/`），**无需下载 / 转换脚本**；替换模型时直接覆盖对应文件。
@@ -185,6 +187,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
 | 新增分类/方向能力（文本行方向这类 N 类分类） | `mica-ai-textline/detection/TextLineDetector.java` | **先拿到官方 `inference.yml` 确认 `label_list` 顺序与预处理契约，不要凭 ONNX 输出维度猜类别语义**（写反 = 正的判成倒的）→ 校验「配置的输入宽高 == 模型形状」并快速失败 → 复核 `Imgproc.resize` 的 `Size` 是 **(宽, 高)** → 集成测试断言类别语义 + 真实数据置信度区间 |
 | **模型 + 配套资源一起外置**（如 `mica-ai-captcha` 的模型 + 字符集） | 该能力 README 的「模型规格」一节 | 模型与**强耦合的配套资源**（字符集 / 词表 / 类别映射）**必须成对配置**：`model-path` 与 `charset-path` 都是必填，缺任一项启动即 fail-fast → 类别数与资源条目数不一致时**在首次推理时直接抛异常**（不是打 warning 后输出乱码）→ 资源文件**刻意不去重**（去重会让索引整体错位）→ 该能力**不提供 classpath 兜底**（模型不打包进 jar，就不要留一个指向不存在资源的默认路径） |
+| **新增需要 OpenCV 原生库的集成测试** | 该能力集成测试的静态块 | **用 `nu.pattern.OpenCV.loadLocally()`，不要用 `loadShared()`**。`forkCount=0` 下全仓测试共用一个 JVM，但每个模块各有一个 ClassLoader；`loadShared()` 在 **Java 8** 会把解压出的原生库目录写进**全局** `ClassLoader.usr_paths`，于是后一个模块通过 `System.loadLibrary` 解析到**同一个** .so 文件 → JVM 抛 `UnsatisfiedLinkError: Native Library ... already loaded in another classloader`（Java 8 的 CI 必挂，Java 12+ 因 `loadShared()` 内部回退到 `loadLocally()` 而侥幸不挂）。`loadLocally()` 每次解压到独立临时目录，天然规避 |
 
 ---
 

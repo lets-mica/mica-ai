@@ -181,7 +181,7 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 - [x] 9. 重写 `LayoutPostProcessor` → 7 列解析 + 反 letterbox + clip + 阈值 + NMS + 整页框过滤 + 阅读顺序
 - [x] 10. `readingOrder` 改为按 col[6] 解码（原 win-accumulation 方案作废）
 - [x] 11. 同步 starter `LayoutProperties`、`LayoutAutoConfiguration`
-- [x] 12. 重写 `LayoutIntegrationTest`（真模型 + `OpenCV.loadShared()` + 可选外部文档图）
+- [x] 12. 重写 `LayoutIntegrationTest`（真模型 + `OpenCV.loadLocally()` + 可选外部文档图）
 - [x] 13. 更新 `mica-ai-layout/README.md` 与 `model-tools/layout/README.md`
 - [x] 14. `mvn test`（layout 26 用例全绿，含 1 个按设计跳过的可选外部图用例）+ 全量 install
 - [x] 15. **修 Java 端 BGR/RGB 双转换 bug**（见下）
@@ -207,7 +207,7 @@ Apache-2.0，PaddleOCR 官方仓库 LICENSE：[github.com/PaddlePaddle/PaddleOCR
 | `fetch_name_1` count 恒为 300 | 无效框太多拖慢 NMS | 先按 `scoreThreshold` 过滤再 NMS，最后 `maxDetections` 截断 |
 | 模型固有 3.7% 越界框（x2 超出原图宽） | 输出坐标非法 | ✅ 反算后已 clip 到 `[0,w]x[0,h]`；越界量与 `scale_factor` 无关，是模型自身行为 |
 | ~~`fetch_name_2` order 索引语义不明~~ | ~~readingOrder 可能错误~~ | ✅ 已闭环：col[6] 即 order 键（PaddleX 7 列分支），`fetch_name_2` 不消费（2.2 节） |
-| Java 端 OpenCV native 加载 | 集成测试跑不起来 | ✅ 已解决：`nu.pattern.OpenCV.loadShared()`（openpnp jar 自带 4.9.0 原生库）；测试可正常解码图片 |
+| Java 端 OpenCV native 加载 | 集成测试跑不起来 | ✅ 已解决：`nu.pattern.OpenCV.loadLocally()`（openpnp jar 自带 4.9.0 原生库）；测试可正常解码图片。**注意用 `loadLocally()` 而非 `loadShared()`**：`forkCount=0` 下多模块共用一个 JVM，`loadShared()` 在 Java 8 会让后一个模块重复加载同一个 .so 而抛 `UnsatisfiedLinkError` |
 | WSL `/tmp` 是 tmpfs，VM 停止即清空 | 探针脚本缓存/中间产物丢失 | ✅ 探针缓存已改 `~/.cache/mica-ai-layout/`；模型改放仓库内 `model-tools/layout/models/`（注意：**该文件未提交**，见 7.2） |
 | Windows paddle2onnx wheel 缺 `common.dll` | 无法在 Win 端直接转 | 走 WSL 转换路线（已验证可行） |
 | `model.onnx` 125MB 超出 AGENTS.md「单文件 <50MB」约定 | 仓库体积 / 平台硬限 | ✅ **已决策（2026-09-18）：暂不入库、不随仓库分发**。核实平台配额后「维持入库」与「Git LFS」均不可行：GitHub >100MB **硬阻断整个 push**、Gitee 社区版单文件 ≤50MB、Gitee 免费版**无 LFS 配额**（企业版标准版起才有）⇒ 三远端方案在 Gitee 断裂。获取方式与 sha256 见 [`model-tools/layout/README.md`](../model-tools/layout/README.md) 的「分发状态」 |

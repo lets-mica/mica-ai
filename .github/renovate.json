@@ -6,9 +6,11 @@
   "packageRules": [
     {
       "matchPackagePatterns": [
+        "^org.junit:junit-bom$",
         "^net.dreamlu:mica-auto$",
         "^com.microsoft.onnxruntime:onnxruntime$",
-        "^org.springframework.boot:spring-boot-dependencies$"
+        "^org.springframework.boot:spring-boot-dependencies$",
+        "^org.springframework.boot:spring-boot-maven-plugin$"
       ],
       "enabled": false
     }
