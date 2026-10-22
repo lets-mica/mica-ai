@@ -56,7 +56,7 @@ mica:
       # 单图多脸时的选脸策略：LARGEST_AREA（默认，面积最大）/ LARGEST_SCORE / REJECT（多脸直接拒绝）
       strategy: LARGEST_AREA
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0   # 0 = ORT 自适应，按物理核数设置可获最佳 CPU 吞吐
         # inter-op-num-threads: 0
@@ -78,7 +78,7 @@ mica:
       content-types-path: model-tools/filetype/models/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0
         # inter-op-num-threads: 0
@@ -101,7 +101,7 @@ mica:
       detection-nms-threshold: 0.5
       max-plates: 5
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0
         # inter-op-num-threads: 0
@@ -128,7 +128,7 @@ mica:
       score-ratio: 0.6
       max-detections: 100
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0
         # inter-op-num-threads: 0
@@ -154,7 +154,7 @@ mica:
       min-max-normalize: true
       background-color: [ 255, 255, 255 ]
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0
         # inter-op-num-threads: 0
@@ -180,7 +180,7 @@ mica:
       channel-order: BGR
       upside-down-threshold: 0.5
       onnx:
-        # device: CPU
+        device: CPU
         # cuda-device-id: 0
         # intra-op-num-threads: 0
         # inter-op-num-threads: 0
