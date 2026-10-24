@@ -43,7 +43,7 @@ public class CaptchaAutoConfiguration {
 	 * @param properties 验证码识别配置属性
 	 * @return CaptchaEngine 实例
 	 */
-	@Bean(destroyMethod = "close")
+	@Bean
 	@ConditionalOnMissingBean
 	public CaptchaEngine captchaEngine(CaptchaProperties properties) {
 		return CaptchaEngine.create(toConfig(properties));
