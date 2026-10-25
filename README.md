@@ -9,7 +9,7 @@
 [![ONNX Runtime](https://img.shields.io/badge/ONNX%20Runtime-1.18.0-blue?style=flat-square&logo=onnx)](https://onnxruntime.ai/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.9.0-red?style=flat-square&logo=opencv)](https://github.com/openpnp/openpnp-vision)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![Maven Central](https://img.shields.io/badge/Maven-1.0.0-red?style=flat-square&logo=apache-maven)](https://mvnrepository.com/artifact/net.dreamlu/mica-ai)
+[![Mica Maven release](https://img.shields.io/maven-central/v/net.dreamlu/mica-ai-common.svg?style=flat-square)](https://central.sonatype.com/artifact/net.dreamlu/mica-ai-common/versions)
 
 > 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 通用抠图 + 文本行方向分类 + 通用验证码识别 开箱即用
 >
