@@ -32,7 +32,7 @@
     </licenses>
 
     <properties>
-        <revision>1.0.1</revision>
+        <revision>1.0.2-SNAPSHOT</revision>
         <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -189,6 +189,46 @@
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-matting-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-humanseg</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-humanseg-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-docalign</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-docalign-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-enhance</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-enhance-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-detect</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-detect-spring-boot-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

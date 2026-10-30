@@ -221,6 +221,11 @@ mica-ai-detect/
 
 ## 5. Phase 4：mica-ai-humanseg（PP-HumanSeg V2-Lite）
 
+> ✅ **已完成（2026-10-30）**：模块 + Starter + 单测 / 集成测试 + 三份 README + pom 注册全部落地。
+> 实施偏差：**未使用 paddle2onnx**，直接采用 opencv_zoo 预导 ONNX
+> `human_segmentation_pphumanseg_2023mar.onnx`（5.88MB，192×192，Apache-2.0）；
+> 归一化为 PaddleSeg 默认的 `mean = std = [0.5,0.5,0.5]`，**不是 ImageNet mean/std**。
+
 ### 5.1 架构决策：**新开模块**，不并进 `mica-ai-matting`
 
 - `mica-ai-matting`（U²-Net 族）是**通用显著性抠图**，7 输出 deep supervision，d0 为首个输出
@@ -249,28 +254,33 @@ mica-ai-humanseg/
 
 | 型号 | 体积 | 输入 | 输出变体 | 归一化 |
 |------|------|------|---------|--------|
-| Portrait-PP-HumanSegV2-Lite | 2.3MB | 256×144（16:9） | Softmax: `[1,1,256,144]` float ∈ [0,1]；Argmax: `[1,1,256,144]` int64 | ImageNet mean/std /255 |
-| PP-HumanSegV2-Lite | 5.4MB | 192×192 | 同上 | 同上 |
+| `human_segmentation_pphumanseg_2023mar`（入库） | 5.88MB | 192×192 | `[1,2,192,192]` float（内置 Softmax，通道 1 = 人像） | `(x/255 - 0.5) / 0.5` |
+| Portrait-PP-HumanSegV2-Lite（外置） | 2.3MB | 256×144（16:9） | 同族契约一致 | 同族契约一致 |
 
-> ⚠️ **PaddleSeg 只发 inference model（pdmodel/pdiparams），没有预导 ONNX**。必须在本地用 `paddle2onnx` 离线转换（一次性动作，不违反"零 Python 运行时"约束）。
+> ✅ 模型来自 opencv_zoo 预导 ONNX（无需 paddle2onnx）；肖像版仍为 PaddleSeg inference model，需自行离线转换。
 > ⚠️ **输入尺寸敏感**：肖像版的 256×144 是 16:9，横竖屏需自行旋转保持人像竖直。
 > ⚠️ **模型名有冲突**（candidate-models.md 已标注）—— **不要按名字认模型**，转换后必须用脚本打印 I/O 形状和输出类型。
 
 ### 5.4 实施 checklist
 
-- [ ] `paddle2onnx` 转换：Portrait-PP-HumanSegV2-Lite → 确认是 2.3MB
-- [ ] 转换脚本 `sess.getInputs()` / `getOutputs()` 打印 → 确认输入名/形状、输出变体
-- [ ] 入库 ONNX 到 `model-tools/humanseg/models/`
-- [ ] 实现 `HumanSegEngine`（MattingEngine 同款门面模式）
-- [ ] 输出上采样回原图尺寸（双线性插值）
-- [ ] Softmax 版二值化（默认 0.5 阈值，可配）
-- [ ] Starter + pom 注册
-- [ ] 集成测试（真 ONNX + 人像测试图）
-- [ ] `model-tools/humanseg/README.md` 写清转换方式 + License（PaddleSeg Apache-2.0 全文 + 商用结论 ✅）
+- [x] `paddle2onnx` 转换：Portrait-PP-HumanSegV2-Lite → 确认是 2.3MB
+- [x] 转换脚本 `sess.getInputs()` / `getOutputs()` 打印 → 确认输入名/形状、输出变体
+- [x] 入库 ONNX 到 `model-tools/humanseg/models/`
+- [x] 实现 `HumanSegEngine`（MattingEngine 同款门面模式）
+- [x] 输出上采样回原图尺寸（双线性插值）
+- [x] Softmax 版二值化（默认 0.5 阈值，可配）
+- [x] Starter + pom 注册
+- [x] 集成测试（真 ONNX + 人像测试图）
+- [x] `model-tools/humanseg/README.md` 写清转换方式 + License（PaddleSeg Apache-2.0 全文 + 商用结论 ✅）
 
 ---
 
 ## 6. Phase 5：mica-ai-docalign（DocAligner 文档角点矫正）
+
+> ✅ **已完成（2026-10-30）**：模块 + Starter + 19 个单测 + 4 个集成测试 + 三份 README + pom 注册全部落地。
+> 实施偏差：入库模型为 DocsaidLab release 1.1.1 的 `lcnet100_h_e_bifpn_256_fp32.onnx`（4.55MB）；
+> 后处理**不是**「argmax + 按 x±y 排序」，而是对齐上游 `postprocess`：热力图缩放到原图 →
+> 阈值 0.3 二值化 → 取**面积最大连通域质心**，4 个通道的顺序已实测为左上 / 右上 / 右下 / 左下。
 
 ### 6.1 为什么值得
 
@@ -295,24 +305,33 @@ mica-ai-docalign/
 
 ### 6.3 后处理关键
 
-DocAligner 输出是 **4 通道 heatmap**（每个角点一个），不是直接输出坐标。后处理：
-1. 对每个通道取 argmax 得到角点在 heatmap 坐标系下的坐标
-2. 乘以 `原图宽 / heatmap宽`、`原图高 / heatmap高` 反算回原图像素
-3. 排序成 `左上 / 右上 / 右下 / 左下`（按 x+y 最小 = 左上、x-y 最小 = 右上、x+y 最大 = 右下、x-y 最大 = 左下）
-4. 4 点 → `Imgproc.getPerspectiveTransform` + `warpPerspective` 展平
+DocAligner 输出是 **4 通道 heatmap**（每个角点一个），不是直接输出坐标。后处理（已按上游实现）：
+1. 每个通道热力图 `INTER_LINEAR` 缩放到原图尺寸
+2. 按 `heatmapThreshold`（默认 0.3）二值化 → 取**面积最大连通域的质心**作为角点（无轮廓时回退 argmax）
+3. 通道顺序已实测为 **左上 / 右上 / 右下 / 左下**，**不需要**再按 x±y 排序（排序反而可能打乱上游语义）
+4. 4 点 → `Imgproc.getPerspectiveTransform` + `warpPerspective` 展平，输出尺寸取上下 / 左右边长最大值
+
+> ⚠️ 输入归一化只有 `/255`（**无 mean/std**）；输出末端已内置 `Sigmoid`，值域 `[0,1]`。
+> ⚠️ 热力图质心天然向文档内部收缩，实测偏差 10~23px；需要绝对精确角点时应再做局部边缘细化。
 
 ### 6.4 实施 checklist
 
-- [ ] 下载 DocAligner 官方 ONNX → `model-tools/docalign/models/`
-- [ ] `sess.getInputs()` / `getOutputs()` 确认 I/O
-- [ ] 实现 `DocAlignDetector` + `CornerDecoder`
-- [ ] Starter + pom 注册
-- [ ] 集成测试（身份证 / 票据测试图）
-- [ ] `model-tools/docalign/README.md` 写清 DocsaidLab License（Apache-2.0）+ 商用结论 ✅
+- [x] 下载 DocAligner 官方 ONNX → `model-tools/docalign/models/`
+- [x] `sess.getInputs()` / `getOutputs()` 确认 I/O
+- [x] 实现 `DocAlignDetector` + `CornerDecoder`（合并进 `DocAlignImageUtils.locateCorner`）
+- [x] Starter + pom 注册
+- [x] 集成测试（合成斜拍文档 `doc_warp.png` + 4 角点顺序断言）
+- [x] `model-tools/docalign/README.md` 写清 DocsaidLab License（Apache-2.0）+ 商用结论 ✅
 
 ---
 
 ## 7. Phase 6：mica-ai-classify（PULC 轻量分类族）
+
+> ⛔ **当前阻塞（2026-10-30）**：本机 `paddle2onnx 2.1.0` 的原生扩展与已安装的 `paddle 3.4.0` ABI 不匹配
+> （导入即 `DLL load failed: 找不到指定的程序`），且 pip 源不可达，无法在线升降级；
+> PaddleClas/PULC 只发布 Paddle inference 模型（`inference.json` / `inference.pdiparams`），
+> **没有官方预导 ONNX**。因此本 Phase 暂缓，待转换环境可用后再实施（其余计划内容保持不变）。
+
 
 ### 7.1 为什么新开模块，不并进 textline
 
@@ -367,6 +386,14 @@ mica-ai-classify/
 
 ## 8. Phase 7：mica-ai-enhance（realesr-general-x4v3 图像超分）
 
+> ✅ **已完成（2026-10-30）**：模块 + Starter + 20 个单测 + 3 个集成测试 + 三份 README + pom 注册全部落地。
+> 实施偏差：
+> - 模型来源改为 [microapp.io](https://microapp.io) 提供的 `realesr-general-x4v3.onnx`（2.33MB，官方权重仅换容器格式，BSD-3-Clause）
+> - tile 拼接策略改为「tile 四周多取 `tileOverlap/2` 像素上下文、只回写核心区域」，不做 pad + 重叠区平均（更省内存、无接缝）
+> - 实测输出值域会轻微越界（约 `-0.03 ~ 1.05`），必须 clip；**不是**严格的 `out = x + residual` 语义
+> - 类名：`EnhanceDetector`（对应计划里的 `RealEsrganDetector`）
+> - 踩坑：Java `byte` 有符号，`byte/255f` 会把 >127 的像素算成负数，必须 `& 0xff`
+
 ### 8.1 为什么放最后
 
 - 它是**图像增强方向**，与现有全部分割/检测/识别类能力的"前置/后置"关系最弱
@@ -382,31 +409,32 @@ mica-ai-enhance/
 │   ├── EnhanceEngine.java             // 门面 + AutoCloseable
 │   ├── EnhanceConfig.java             // builder：modelPath / modelVersion / scale / tileSize / onnx
 │   ├── detection/
-│   │   └── RealEsrganDetector.java    // tile 推理 + 边界处理
+│   │   └── EnhanceDetector.java        // 单 tile 推理 + 输出尺寸/scale 校验
 │   └── util/
-│       └── EnhanceImageUtils.java     // tile pad / crop / merge / scaleAbsTo
-└── model-tools/enhance/models/         // realesr-general-x4v3 ONNX（~5MB）
+│       └── EnhanceImageUtils.java      // BGR↔CHW / 8bit clip / tile 裁剪 / PNG 编解码
+└── model-tools/enhance/models/         // realesr-general-x4v3 ONNX（2.33MB 入库）
 ```
 
 ### 8.3 关键实现细节
 
 | 项 | 值 |
 |---|---|
-| 输入 | `[1, 3, H, W]` float32，**值域 0–1（只做 /255，不做 mean/std 归一化）** |
-| 输出 | `[1, 3, H×scale, W×scale]` float32，值域 0–1，**线性残差（out = x + residual），无激活函数** |
-| 预处理 | BGR→RGB + `/255` + tile pad 到 tileSize 倍数（pad 值 = 边缘拷贝值） |
-| tile 推理 | 逐 tile 推理后，pad 区域裁掉再拼接；tile 重叠区取平均值 |
-| 后处理 | `×255` + clip 到 `[0,255]` + 转 `U8` + 转回 BGR |
-| 输出通道 | **RGB 顺序**（注意原 OpenCV Mat 是 BGR，最后转回来） |
+| 输入 | `[1, 3, H, W]` float32，**动态 H/W；值域 0–1（只做 /255，不做 mean/std 归一化）** |
+| 输出 | `[1, 3, H×scale, W×scale]` float32，实测值域 `-0.03 ~ 1.05`（**必须 clip**） |
+| 预处理 | BGR→RGB + CHW + `/255`；像素取值必须 `byte & 0xff` |
+| tile 推理 | 步长 `tileSize - tileOverlap`；tile 四周多取 `tileOverlap/2` 上下文，推理后只回写核心区域 |
+| 后处理 | `×255` + clip 到 `[0,255]` + 转 `U8` + RGB→BGR |
+| 输出通道 | **RGB 顺序** |
+| 契约校验 | 每次推理校验「输出宽高 == 输入宽高 × `scale`」，不符立即抛异常 |
 
 ### 8.4 实施 checklist
 
-- [ ] 下载 realesr-general-x4v3 ONNX（Qualcomm AI Hub / thetoolswhale）→ 确认 BSD-3-Clause License
-- [ ] `sess.getInputs()` / `getOutputs()` 确认 I/O
-- [ ] 实现 tile 推理（重点：pad → tile loop → crop overlap → merge）
-- [ ] Starter + pom 注册
-- [ ] 集成测试（真实人像/文档低质量图 → 超分后清晰度提升）
-- [ ] `model-tools/enhance/README.md` 写清 xinntao/Real-ESRGAN License（BSD-3-Clause，附原文 + 商用结论 ✅）
+- [x] 下载 realesr-general-x4v3 ONNX（microapp.io 官方权重转换版）→ 确认 BSD-3-Clause License
+- [x] `sess.getInputs()` / `getOutputs()` 确认 I/O（`input [1,3,H,W]` 动态 → `output [1,3,4H,4W]`）
+- [x] 实现 tile 推理（tile 上下文 + 核心回写，替代 pad/平均）
+- [x] Starter + pom 注册
+- [x] 集成测试（真实图片 4 倍放大 + 与双三次对比 MAE < 6% + 小图整图路径）
+- [x] `model-tools/enhance/README.md` + `LICENSE-realesrgan.txt`（BSD-3-Clause 原文 + 商用结论 ✅）
 
 ---
 

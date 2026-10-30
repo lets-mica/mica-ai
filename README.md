@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Mica Maven release](https://img.shields.io/maven-central/v/net.dreamlu/mica-ai-common.svg?style=flat-square)](https://central.sonatype.com/artifact/net.dreamlu/mica-ai-common/versions)
 
-> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 通用抠图 + 文本行方向分类 + 通用验证码识别 开箱即用
+> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 文档版面分析 + 通用抠图 + 人像分割 + 通用目标检测 + 多目标跟踪 + 文档角点矫正 + 图像超分 + 文本行方向分类 + 通用验证码识别 开箱即用
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
@@ -49,6 +49,11 @@
 | 🚗 中国车牌识别 | `mica-ai-plate` | HyperLPR3 v20230229 | 车牌号 + 10 类判型 + 颜色 | Apache 2.0 | ✅ |
 | 📐 文档版面分析 | `mica-ai-layout` | PP-DocLayoutV3 | **25 类版面区域** + V3 阅读顺序 | Apache 2.0 | ✅ |
 | ✂️ 通用抠图 | `mica-ai-matting` | U²-Net 族（`u2netp` 入库 / `u2net` / `u2net_human_seg` 可外置替换） | 原尺寸 alpha 掩码（透明底 / 纯色底 / 二值） | Apache 2.0 | ✅ |
+| 👤 人像分割 | `mica-ai-humanseg` | PP-HumanSeg V2-Lite（`192×192` 入库，竖版同族可外置替换） | 原尺寸人像 alpha 掩码（透明底 / 纯色底 / 二值） | Apache 2.0 | ✅ |
+| 🎯 通用目标检测 | `mica-ai-detect` | NanoDet-Plus（默认 / 416×416）/ YOLOX-s（640×640） | COCO **80 类** + 置信度 | Apache 2.0 | ✅ |
+| 🧭 多目标跟踪 | `mica-ai-track` | ByteTrack（Kalman + 匈牙利匹配，**纯算法零模型**） | 稳定 track id + 轨迹年龄 | MIT | ✅ |
+| 📸 文档角点矫正 | `mica-ai-docalign` | DocAligner `lcnet100_h_e_bifpn_256_fp32`（4.55MB 入库，fastvit 同族可外置替换） | 4 个角点（左上 / 右上 / 右下 / 左下）+ 拉平 PNG | Apache 2.0 | ✅ |
+| ✨ 图像超分 | `mica-ai-enhance` | Real-ESRGAN `realesr-general-x4v3`（2.33MB 入库，动态尺寸 + tile 推理） | **4 倍**放大后的 PNG / Mat | BSD-3-Clause | ✅ |
 | 🔤 文本行方向分类 | `mica-ai-textline` | PP-LCNet_x1_0_textline_ori（`x0_25` 轻量版可外置替换） | **0° / 180°** + softmax 置信度 + 转正角度 | Apache 2.0 | ✅ |
 | 🔐 通用验证码识别 | `mica-ai-captcha` | ddddocr CRNN + CTC（**8210 类**字符集，模型外置配置） | 验证码文本 + 逐字符置信度 | MIT | ✅ |
 
@@ -63,7 +68,8 @@
         ┌──────────────────────────────────────────────────────┐
         │                    mica-ai-starters                  │
         │  face 🎭 filetype 📄 plate 🚗 layout 📐 matting ✂️    │
-        │  textline 🔤 captcha 🔐                                 │
+        │  humanseg 👤 detect 🎯 track 🧭 docalign 📸         │
+        │  enhance ✨ textline 🔤 captcha 🔐                 │
         └──────────────────────────┬───────────────────────────┘
                                    │
                                    ▼
@@ -76,6 +82,12 @@
         │         mica-ai-layout   mica-ai-matting            │
         │         PP-DocLayoutV3 📐 U²-Net 族 ✂️              │
         │         25 类 + 阅读顺序   原尺寸 alpha 掩码           │
+        │      mica-ai-humanseg   mica-ai-detect  mica-ai-track│
+        │      PP-HumanSeg 👤     NanoDet/YOLOX 🎯 ByteTrack 🧭│
+        │              mica-ai-docalign                       │
+        │              DocAligner 📸 4 角点 + 透视矫正         │
+        │              mica-ai-enhance                        │
+        │              Real-ESRGAN ✨ 4 倍超分（tile）         │
         │                mica-ai-textline                     │
         │                PP-LCNet 🔤 0° / 180° + 转正         │
         │                mica-ai-captcha                      │
@@ -138,6 +150,31 @@
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-matting</artifactId>           <!-- 通用抠图（u2netp 4.36MB 随仓库分发；u2net/u2net_human_seg 可外置替换） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-humanseg</artifactId>          <!-- 人像分割（PP-HumanSeg V2-Lite 5.88MB 随仓库分发） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-detect</artifactId>            <!-- 通用目标检测（NanoDet-Plus 3.62MB / YOLOX-s 34.2MB 随仓库分发） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-track</artifactId>             <!-- 多目标跟踪（ByteTrack 纯算法，零模型） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-docalign</artifactId>          <!-- 文档角点矫正（DocAligner 4.55MB 随仓库分发） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-enhance</artifactId>           <!-- 图像超分（Real-ESRGAN 2.33MB 随仓库分发，4 倍放大 + tile 推理） -->
     <version>${mica-ai.version}</version>
 </dependency>
 <dependency>
@@ -237,6 +274,11 @@ public class FaceEnrollService {
 | [mica-ai-plate-spring-boot-starter](mica-ai-starters/mica-ai-plate-spring-boot-starter/README.md) | `mica.ai.plate` | HyperLPR3 中国车牌识别（检测 + CRNN 识别 + 颜色分类 + 10 类判型） |
 | [mica-ai-layout-spring-boot-starter](mica-ai-starters/mica-ai-layout-spring-boot-starter/README.md) | `mica.ai.layout` | PP-DocLayoutV3 文档版面分析（25 类 + V3 阅读顺序；模型 125MB 不随仓库分发，需本地放模型） |
 | [mica-ai-matting-spring-boot-starter](mica-ai-starters/mica-ai-matting-spring-boot-starter/README.md) | `mica.ai.matting` | U²-Net 族通用抠图（透明底 / 纯色底 / 二值掩码；`u2netp` 4.36MB 入库，`u2net` / `u2net_human_seg` 走 `model-path` 外置切换） |
+| [mica-ai-humanseg-spring-boot-starter](mica-ai-starters/mica-ai-humanseg-spring-boot-starter/README.md) | `mica.ai.humanseg` | PP-HumanSeg V2-Lite 人像分割（透明底 / 纯色底 / 二值掩码；`192×192` 5.88MB 入库，竖版同族走 `model-path` 外置切换） |
+| [mica-ai-detect-spring-boot-starter](mica-ai-starters/mica-ai-detect-spring-boot-starter/README.md) | `mica.ai.detect` | NanoDet-Plus / YOLOX-s 通用目标检测（COCO 80 类；两种模型族切换只改 `family` + `input-size`） |
+| [mica-ai-track-spring-boot-starter](mica-ai-starters/mica-ai-track-spring-boot-starter/README.md) | `mica.ai.track` | ByteTrack 多目标跟踪（纯算法零模型，输入任意检测框序列，输出稳定 track id） |
+| [mica-ai-docalign-spring-boot-starter](mica-ai-starters/mica-ai-docalign-spring-boot-starter/README.md) | `mica.ai.docalign` | DocAligner 文档角点检测 + 透视矫正（4 角点 + 一键拉平；4.55MB 入库，fastvit 同族走 `model-path` 外置切换） |
+| [mica-ai-enhance-spring-boot-starter](mica-ai-starters/mica-ai-enhance-spring-boot-starter/README.md) | `mica.ai.enhance` | Real-ESRGAN 4 倍图像超分（2.33MB 入库；大图自动 tile 切分，`tile-size` / `tile-overlap` 可调） |
 | [mica-ai-textline-spring-boot-starter](mica-ai-starters/mica-ai-textline-spring-boot-starter/README.md) | `mica.ai.textline` | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正；`x1_0` 6.46MB 入库，`x0_25` 轻量版走 `model-path` 外置切换） |
 | [mica-ai-captcha-spring-boot-starter](mica-ai-starters/mica-ai-captcha-spring-boot-starter/README.md) | `mica.ai.captcha` | ddddocr 通用验证码识别（CRNN + CTC，8210 类字符集；**模型与字符集外置配置**，`model-path` / `charset-path` 必填） |
 
@@ -256,6 +298,11 @@ mica-ai/
 │   ├── mica-ai-plate/              #   🚗 HyperLPR3 中国车牌识别
 │   ├── mica-ai-layout/             #   📐 PP-DocLayoutV3 文档版面分析
 │   ├── mica-ai-matting/            #   ✂️ U²-Net 族通用抠图
+│   ├── mica-ai-humanseg/           #   👤 PP-HumanSeg 人像分割
+│   ├── mica-ai-detect/             #   🎯 NanoDet-Plus / YOLOX-s 通用目标检测
+│   ├── mica-ai-track/              #   🧭 ByteTrack 多目标跟踪（纯算法零模型）
+│   ├── mica-ai-docalign/           #   📸 DocAligner 文档角点检测 + 透视矫正
+│   ├── mica-ai-enhance/            #   ✨ Real-ESRGAN 4 倍图像超分（tile 推理）
 │   ├── mica-ai-textline/           #   🔤 PP-LCNet 文本行方向分类（0° / 180°）
 │   └── mica-ai-captcha/            #   🔐 ddddocr 通用验证码识别（CRNN + CTC）
 ├── mica-ai-starters/               # Spring Boot 2 Starter
@@ -264,15 +311,24 @@ mica-ai/
 │   ├── mica-ai-plate-spring-boot-starter/
 │   ├── mica-ai-layout-spring-boot-starter/
 │   ├── mica-ai-matting-spring-boot-starter/
+│   ├── mica-ai-humanseg-spring-boot-starter/
+│   ├── mica-ai-detect-spring-boot-starter/
+│   ├── mica-ai-track-spring-boot-starter/
+│   ├── mica-ai-docalign-spring-boot-starter/
+│   ├── mica-ai-enhance-spring-boot-starter/
 │   ├── mica-ai-textline-spring-boot-starter/
 │   └── mica-ai-captcha-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产（直接入库，均 <50MB）
-    ├── face/models/                #   YuNet + SFace + MiniFASNetV2
+    ├── face/models/                #   YuNet + SFace + MiniFASNetV2 + EDFFIQA + 表情识别
     ├── filetype/models/            #   Magika standard_v3_3
     ├── plate/models/               #   HyperLPR3 v20230229
     ├── layout/models/              #   PP-DocLayoutV3（125MB，⚠️ 不随仓库分发）
     ├── matting/models/             #   U²-Net u2netp（4.36MB，入库；u2net/u2net_human_seg 168MB 不入库）
+    ├── humanseg/models/            #   PP-HumanSeg V2-Lite（5.88MB，入库）
+    ├── detect/models/              #   NanoDet-Plus 3.62MB + YOLOX-s 34.2MB（入库）
+    ├── docalign/models/            #   DocAligner lcnet100 4.55MB（入库；fastvit 同族不入库）
+    ├── enhance/models/             #   Real-ESRGAN realesr-general-x4v3 2.33MB（入库，含 BSD-3 许可证原文）
     ├── textline/models/            #   PP-LCNet_x1_0_textline_ori（6.46MB，入库；x0_25 轻量版不入库）
     └── captcha/models/             #   ddddocr ddddocr.onnx + charset.txt（12.98MB，入库；不打包进 jar）
 ```
@@ -303,6 +359,10 @@ mica-ai/
 | 🚗 **停车场 / 道闸 / 智慧出行** | `mica-ai-plate` 的 `PlatePipeline` + 颜色分类兜底 |
 | 📐 **PDF / 文档预处理 / 阅读顺序** | `mica-ai-layout` 的 `LayoutPipeline` — 25 类版面 + V3 阅读顺序 |
 | ✂️ **商品图 / 人像去背 / 证件照换底** | `mica-ai-matting` 的 `MattingEngine` — 透明底 PNG / 纯色底合成 / 二值掩码 |
+| 👤 **直播 / 短视频人像抠像 / 绿幕替代** | `mica-ai-humanseg` 的 `HumanSegEngine` — 人像专用语义分割，`192×192` 输入，透明底 / 纯色底一键输出 |
+| 🎯 **通用物体检测 / 视频结构化** | `mica-ai-detect` 的 `DetectEngine` + `mica-ai-track` 的 `ByteTracker` — 检测框 + 稳定 track id 组成最小可用流水线 |
+| 📸 **手机拍文档 / 扫描件摆正** | `mica-ai-docalign` 的 `DocAlignEngine` — 4 角点检测 + 透视拉平，接 `mica-ai-layout` / `mica-ppocr` 前先摆正 |
+| ✨ **低清图 / 缩略图放大** | `mica-ai-enhance` 的 `EnhanceEngine` — 4 倍超分，大图走 tile 推理；适合头像、商品图、证件照清晰化 |
 | 🔤 **OCR 前置转正 / 扫描件倒置行纠正** | `mica-ai-textline` 的 `TextLineEngine` — 单行 0° / 180° 判定 + `uprightBytes` 一键转正（配合 `mica-ppocr` 做文本行定位） |
 | 🔐 **验证码自动识别 / 自动化测试填码** | `mica-ai-captcha` 的 `CaptchaEngine` — 文本 + 逐字符置信度，低置信度可转人工 |
 
@@ -318,7 +378,7 @@ mica-ai/
 
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
-- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR) · [PaddleX](https://github.com/PaddlePaddle/PaddleX) · [U²-Net](https://github.com/xuebinqin/U-2-Net) · [ddddocr](https://github.com/sml2h3/ddddocr)
+- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR) · [PaddleX](https://github.com/PaddlePaddle/PaddleX) · [U²-Net](https://github.com/xuebinqin/U-2-Net) · [DocAligner](https://github.com/DocsaidLab/DocAligner) · [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) · [ddddocr](https://github.com/sml2h3/ddddocr)
 - 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">

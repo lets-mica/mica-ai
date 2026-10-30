@@ -21,6 +21,10 @@
         <module>mica-ai-plate-spring-boot-starter</module>
         <module>mica-ai-layout-spring-boot-starter</module>
         <module>mica-ai-matting-spring-boot-starter</module>
+        <module>mica-ai-humanseg-spring-boot-starter</module>
+        <module>mica-ai-docalign-spring-boot-starter</module>
+        <module>mica-ai-enhance-spring-boot-starter</module>
+        <module>mica-ai-detect-spring-boot-starter</module>
         <module>mica-ai-track-spring-boot-starter</module>
         <module>mica-ai-textline-spring-boot-starter</module>
         <module>mica-ai-captcha-spring-boot-starter</module>

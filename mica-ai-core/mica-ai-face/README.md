@@ -171,6 +171,43 @@ CardResult card = cardExtractor.extract(idCardImage);
 // card.getImage() 透视矫正 + USM/CLAHE 增强后的证件卡面
 ```
 
+### 4.7 人脸图像质量评估（eDifFIQA）
+
+输入必须是 **对齐后的 112×112 人脸**（先用 `FaceAligner` 对齐），输出一个 `[0,1]` 质量分，越高越好。
+
+```java
+try (FaceQualityAssessor assessor = FaceQualityAssessor.create(
+        FaceQualityConfig.builder()
+            .modelPath("model-tools/face/models/ediffiqa_tiny_jun2024.onnx")
+            .threshold(0.5f)
+            .build())) {
+    FaceQualityResult result = assessor.assess(alignedFace112);
+    if (!result.passed(0.5f)) {
+        // 质量过低：拒绝入库 / 提示重拍（模糊、侧脸、遮挡、过曝）
+    }
+}
+```
+
+### 4.8 人脸表情识别（7 类，RAF-DB）
+
+同样输入 **对齐后的 112×112 人脸**，输出 7 类概率并在内部取 argmax。
+
+```java
+try (ExpressionRecognizer recognizer = ExpressionRecognizer.create(
+        ExpressionConfig.builder()
+            .modelPath("model-tools/face/models/facial_expression_recognition_mobilefacenet_2022july.onnx")
+            .build())) {
+    ExpressionResult result = recognizer.recognize(alignedFace112);
+    ExpressionType type = result.getExpression();   // HAPPY / NEUTRAL / SAD / ...
+    String desc = type.getDesc();                    // 中文：开心 / 平静 / 悲伤 ...
+    float confidence = result.getScore();
+}
+```
+
+> 两个模型均可商用：表情模型 **Apache-2.0**；质量模型 **CC-BY-4.0**，分发需保留署名
+> （详见 `model-tools/face/README.md` 与 `AGENTS.md` §6.1）。
+> Spring Boot 下分别由 `mica.ai.face.quality.enabled` / `mica.ai.face.expression.enabled` 控制装配。
+
 ---
 
 ## 5. 核心组件

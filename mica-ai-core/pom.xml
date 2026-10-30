@@ -22,6 +22,10 @@
         <module>mica-ai-plate</module>
         <module>mica-ai-layout</module>
         <module>mica-ai-matting</module>
+        <module>mica-ai-humanseg</module>
+        <module>mica-ai-docalign</module>
+        <module>mica-ai-enhance</module>
+        <module>mica-ai-detect</module>
         <module>mica-ai-track</module>
         <module>mica-ai-textline</module>
         <module>mica-ai-captcha</module>
