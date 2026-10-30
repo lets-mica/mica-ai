@@ -18,6 +18,12 @@
 - 本次新增能力依赖的模型全部随仓库分发且单文件 <50MB：NanoDet-Plus 3.62MB、YOLOX-s 34.2MB、PP-HumanSeg V2-Lite 5.88MB、DocAligner lcnet100 4.55MB、Real-ESRGAN x4v3 2.33MB、PULC 4 个 4.14–6.79MB；多目标跟踪不引入任何模型
 - 换模型一律走 `model-path` 外置、Java 侧无需改动：fastvit、realesr 完整版等未入库同族直接指向本地路径，其余 PULC 模型先用 `paddle2onnx` 离线转换再外置
 
+### 🧪 示例与集成
+
+- `mica-ai-example` 聚合全部 13 个 Starter，新增 detect / track / humanseg / docalign / enhance / classify 六个控制器（目标检测与调试图、跟踪与检测+跟踪、人像抠图与换底、文档角点与拉平、4 倍超分、PULC 分类），并给 face 补上人脸质量评估与表情识别端点；`application.yml` 同步补齐各能力配置，内置示例页新增对应能力卡片
+- 分类能力演示 PULC 多模型用法：starter 一个引擎只绑一个模型 + 一份 label_list，示例用自有前缀 `mica.example.classify.models` 声明另外 3 个模型并按需懒加载，`/classify/classify` 传 `model` 参数即可切换
+- Starter 自动装配测试从 9 项扩到 22 项，新增能力全部覆盖「关闭时不装配」「指向真模型时装配出可用引擎」「模型与配套 label_list 缺一即 fail-fast」三类断言
+
 ## [1.0.1] - 2026-10-24
 
 ### ✨ 新增能力
