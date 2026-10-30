@@ -24,6 +24,9 @@ a{color:var(--brand)}
 .panel{display:none}
 .panel.active{display:block}
 .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.group{margin-bottom:26px}
+.group-title{margin:0 0 12px;font-size:14px;font-weight:600;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.group-title small{font-weight:400;color:var(--muted);font-size:12px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
 .card h2{margin:0 0 4px;font-size:15px;font-weight:600}
 .card .desc{color:var(--muted);font-size:12px;margin:0 0 12px}
@@ -66,6 +69,40 @@ input[type=file]{padding:6px}
 .inline{display:flex;gap:10px;flex-wrap:wrap}
 .inline .field{flex:1 1 140px;margin-bottom:0}
 .hintbox{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--muted);font-size:12px;margin-bottom:12px}
+
+/* ===== 图像超分（独立功能） ===== */
+.up-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px}
+@media (max-width:980px){.up-grid{grid-template-columns:minmax(0,1fr)}}
+.cmp-viewport{position:relative;overflow:auto;background:#0e1116;border-radius:var(--radius);border:1px solid var(--border);width:fit-content;max-width:100%;max-height:540px}
+.cmp-empty{display:flex;align-items:center;justify-content:center;min-width:280px;height:200px;color:var(--muted);font-size:13px}
+.cmp-viewport.has-image .cmp-empty{display:none}
+.cmp-canvas{position:relative;transform-origin:0 0;display:none}
+.cmp-canvas.ready{display:block}
+.cmp-img{position:absolute;left:0;top:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.cmp-before{clip-path:inset(0 calc(100% - var(--split,50%)) 0 0)}
+.cmp-pending{position:absolute;top:0;bottom:0;left:var(--split,50%);right:0;display:none;align-items:center;justify-content:center;background:rgba(14,17,22,.78);z-index:2;pointer-events:none}
+.cmp-pending.show{display:flex}
+.cmp-pending span{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 12px;text-align:center}
+.cmp-handle{position:absolute;top:0;bottom:0;left:var(--split,50%);width:0;z-index:3}
+.cmp-handle i{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid var(--brand);box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:ew-resize;touch-action:none}
+.cmp-handle i::before,.cmp-handle i::after{content:'';position:absolute;top:50%;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.cmp-handle i::before{left:5px;margin-top:-5px;border-right:6px solid var(--brand)}
+.cmp-handle i::after{right:5px;margin-top:-5px;border-left:6px solid var(--brand)}
+.cmp-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.cmp-tag{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px 12px}
+.cmp-zooms{display:flex;gap:6px;flex-wrap:wrap}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn.sm.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.drop{border:2px dashed var(--border);border-radius:var(--radius);padding:26px 16px;text-align:center;transition:.15s;position:relative}
+.drop.over{border-color:var(--brand);background:var(--brand-soft)}
+.drop-icon{width:56px;height:56px;border-radius:16px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px}
+.drop-title{font-size:15px;font-weight:600;color:var(--brand);margin:0 0 4px}
+.drop-hint{color:var(--muted);font-size:12px;margin:10px 0 0}
+.drop-file{margin-top:12px;font-size:12px;color:var(--muted);word-break:break-all}
+.drop-file-input{width:100%;margin-top:12px;padding:6px;font-size:12px}
+select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
+.up-dl{display:inline-block;margin-top:10px;font-size:13px}
+.up-dl[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -80,6 +117,8 @@ input[type=file]{padding:6px}
 
   <div class="tabs">
     <button class="tab active" data-tab="auth">人脸认证</button>
+    <button class="tab" data-tab="upscale">图像超分</button>
+    <button class="tab" data-tab="scenario">组合场景</button>
     <button class="tab" data-tab="face">人脸能力</button>
     <button class="tab" data-tab="other">其他能力</button>
   </div>
@@ -121,6 +160,80 @@ input[type=file]{padding:6px}
     </div>
   </section>
 
+  <!-- 图像超分 -->
+  <section class="panel" id="panel-upscale">
+    <div class="up-grid">
+      <div class="card">
+        <h2>对比查看</h2>
+        <p class="desc">上传后立即按原图实际像素大小展示；拖动中间的分割条对比「送入模型的原图」与「超分输出」。百分比以原图为基准，400% 时超分图约 1:1，可看到像素级差异。</p>
+        <div class="cmp">
+          <div class="cmp-viewport" id="cmpViewport">
+            <div class="cmp-empty" id="cmpEmpty">选择图片后在此预览原图</div>
+            <div class="cmp-canvas" id="cmpCanvas">
+              <img class="cmp-img" id="cmpAfter" alt="超分输出" draggable="false">
+              <img class="cmp-img cmp-before" id="cmpBefore" alt="原图" draggable="false">
+              <div class="cmp-pending" id="cmpPending"><span>点击「开始超分」生成结果</span></div>
+              <div class="cmp-handle" id="cmpHandle"><i></i></div>
+            </div>
+          </div>
+          <div class="cmp-bar">
+            <span class="cmp-tag" id="cmpLeftTag">原图</span>
+            <div class="cmp-zooms" id="cmpZooms">
+              <button class="btn sm active" type="button" data-zoom="orig">原图大小</button>
+              <button class="btn sm" type="button" data-zoom="fit">适应窗口</button>
+              <button class="btn sm" type="button" data-zoom="2">200%</button>
+              <button class="btn sm" type="button" data-zoom="4">400%</button>
+              <button class="btn sm" type="button" data-zoom="8">800%</button>
+            </div>
+            <span class="cmp-tag" id="cmpRightTag">超分结果</span>
+          </div>
+        </div>
+        <div class="status" id="upStatus"></div>
+        <div class="meta" id="upMeta"></div>
+      </div>
+
+      <div class="card">
+        <h2>上传图片</h2>
+        <p class="desc">支持的格式：png / jpg / jpeg / webp / bmp</p>
+        <div class="drop" id="upDrop">
+          <div class="drop-icon">⬆</div>
+          <p class="drop-title">选择图片上传</p>
+          <p class="drop-hint">或将图片拖拽到此处</p>
+          <input type="file" id="upFile" class="drop-file-input" accept="image/png,image/jpeg,image/webp,image/bmp">
+          <p class="drop-file" id="upFileName"></p>
+        </div>
+        <label class="field"><span>输出倍率</span>
+          <select id="upOutScale">
+            <option value="2">2×（先 4× 推理再降采样）</option>
+            <option value="3">3×（先 4× 推理再降采样）</option>
+            <option value="4" selected>4×（模型原生）</option>
+          </select>
+        </label>
+        <label class="field"><span>处理档位（分块大小）</span>
+          <select id="upTile">
+            <option value="128">省内存 · 128</option>
+            <option value="256" selected>标准 · 256</option>
+            <option value="512">快速 · 512（内存占用高）</option>
+          </select>
+        </label>
+        <button class="btn primary" type="button" id="upRun" style="width:100%;margin-top:4px">开始超分</button>
+        <a class="up-dl" id="upDownload" hidden>下载超分结果</a>
+        <div class="hintbox" style="margin-top:14px">
+          Real-ESRGAN 是<b>超分</b>模型：重建高频细节、把小图放大，但<b>不是</b>生成式修复——
+          撕裂、污损、缺失的部分它补不回来，严重老旧或破损照片的效果有限。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 组合场景 -->
+  <section class="panel" id="panel-scenario">
+    <div class="hintbox">
+      组合场景 = 多个模型能力编排成一条完整业务链路。单个能力的演示在「人脸能力 / 其他能力」标签页。
+    </div>
+    <div class="grid" id="scenarioCaps"></div>
+  </section>
+
   <!-- 人脸能力 -->
   <section class="panel" id="panel-face">
     <div class="grid" id="faceCaps"></div>
@@ -128,7 +241,25 @@ input[type=file]{padding:6px}
 
   <!-- 其他能力 -->
   <section class="panel" id="panel-other">
-    <div class="grid" id="otherCaps"></div>
+    <div class="hintbox">
+      按<b>任务性质</b>分组，不按模块分：同一组的能力通常会出现在同一条业务链路上。
+    </div>
+    <div class="group">
+      <h3 class="group-title">📄 文档处理 <small>版面分析 · 角点矫正 · 文本行方向</small></h3>
+      <div class="grid" id="capsDoc"></div>
+    </div>
+    <div class="group">
+      <h3 class="group-title">🖼️ 图像处理 <small>抠图 · 分割 · 换底 · 超分 · 分类</small></h3>
+      <div class="grid" id="capsImage"></div>
+    </div>
+    <div class="group">
+      <h3 class="group-title">🎯 检测与跟踪 <small>通用目标检测 · ByteTrack 稳定 track id</small></h3>
+      <div class="grid" id="capsDetect"></div>
+    </div>
+    <div class="group">
+      <h3 class="group-title">🔍 识别与校验 <small>车牌 · 文件类型 · 验证码</small></h3>
+      <div class="grid" id="capsMisc"></div>
+    </div>
   </section>
 </div>
 
@@ -186,39 +317,68 @@ const FACE_CAPS = [
     f: [{k: 'file', l: '人脸图片', y: 'file'}]}
 ];
 
-const OTHER_CAPS = [
-  {t: '文件类型识别', p: '/filetype/detect', d: 'Google Magika 214 类', o: 'json',
-    f: [{k: 'file', l: '任意文件', y: 'file', any: true}]},
-  {t: '车牌识别', p: '/plate/recognize', d: 'HyperLPR3 中国车牌', o: 'json',
-    f: [{k: 'file', l: '车辆图片', y: 'file'}]},
+/* 其他能力：按任务性质分 4 组 */
+const DOC_CAPS = [
   {t: '版面分析', p: '/layout/detect', d: 'PP-DocLayoutV3（需本地模型并开启）', o: 'json',
     f: [{k: 'file', l: '文档图片', y: 'file'}]},
+  {t: '文档角点矫正', p: '/docalign/align', d: 'DocAligner 透视拉平', o: 'image',
+    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
+  {t: '文档角点坐标', p: '/docalign/corners', d: '返回 4 个角点与置信度', o: 'json',
+    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
+  {t: '文本行方向', p: '/textline/classify', d: '0° / 180° 分类', o: 'json',
+    f: [{k: 'file', l: '单行文本图', y: 'file'}]},
+  {t: '文本行转正', p: '/textline/upright', d: '倒置则旋转 180°', o: 'image',
+    f: [{k: 'file', l: '单行文本图', y: 'file'}]}
+];
+
+const IMAGE_CAPS = [
   {t: '通用抠图', p: '/matting/cutout', d: 'U²-Net 透明底 PNG', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '通用抠图换底', p: '/matting/cutout-on-color', d: 'U²-Net 抠图 + 纯色底合成', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}, {k: 'color', l: '底色 RGB（如 0,0,255）', y: 'text', v: '255,255,255'}]},
+  {t: '抠图掩码', p: '/matting/mask', d: 'U²-Net 二值掩码（0/255 单通道）', o: 'image',
     f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '人像分割', p: '/humanseg/cutout', d: 'PP-HumanSeg 透明底 PNG', o: 'image',
     f: [{k: 'file', l: '人像图片', y: 'file'}]},
   {t: '人像换底色', p: '/humanseg/cutout-on-color', d: '人像抠图 + 纯色底合成', o: 'image',
     f: [{k: 'file', l: '人像图片', y: 'file'}, {k: 'color', l: '底色 RGB（如 0,0,255）', y: 'text', v: '255,255,255'}]},
+  {t: '人像掩码', p: '/humanseg/mask', d: 'PP-HumanSeg 二值掩码（0/255 单通道）', o: 'image',
+    f: [{k: 'file', l: '人像图片', y: 'file'}]},
+  {t: '图像超分', p: '/enhance/upscale', d: 'Real-ESRGAN 4 倍放大', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '图像分类', p: '/classify/classify', d: 'PULC 分类（默认整图方向）', o: 'json',
+    f: [{k: 'file', l: '图片', y: 'file'}, {k: 'model', l: '模型（留空=默认 / clarity / person / table）', y: 'text', v: ''}]}
+];
+
+const DETECT_CAPS = [
   {t: '目标检测', p: '/detect/detect', d: 'NanoDet / YOLOX · COCO 80 类', o: 'json',
     f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '目标检测调试图', p: '/detect/annotate', d: '画出检测框与类别名', o: 'image',
     f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '检测 + 跟踪', p: '/track/detect-and-track', d: 'ByteTrack 输出稳定 track id', o: 'json',
-    f: [{k: 'file', l: '视频帧图片', y: 'file'}]},
-  {t: '文档角点矫正', p: '/docalign/align', d: 'DocAligner 透视拉平', o: 'image',
-    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
-  {t: '文档角点坐标', p: '/docalign/corners', d: '返回 4 个角点与置信度', o: 'json',
-    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
-  {t: '图像超分', p: '/enhance/upscale', d: 'Real-ESRGAN 4 倍放大', o: 'image',
-    f: [{k: 'file', l: '图片', y: 'file'}]},
-  {t: '图像分类', p: '/classify/classify', d: 'PULC 分类（默认整图方向）', o: 'json',
-    f: [{k: 'file', l: '图片', y: 'file'}, {k: 'model', l: '模型（留空=默认 / clarity / person / table）', y: 'text', v: ''}]},
-  {t: '文本行方向', p: '/textline/classify', d: '0° / 180° 分类', o: 'json',
-    f: [{k: 'file', l: '单行文本图', y: 'file'}]},
-  {t: '文本行转正', p: '/textline/upright', d: '倒置则旋转 180°', o: 'image',
-    f: [{k: 'file', l: '单行文本图', y: 'file'}]},
+    f: [{k: 'file', l: '视频帧图片', y: 'file'}]}
+];
+
+const MISC_CAPS = [
+  {t: '车牌识别', p: '/plate/recognize', d: 'HyperLPR3 中国车牌', o: 'json',
+    f: [{k: 'file', l: '车辆图片', y: 'file'}]},
+  {t: '文件类型识别', p: '/filetype/detect', d: 'Google Magika 214 类', o: 'json',
+    f: [{k: 'file', l: '任意文件', y: 'file', any: true}]},
   {t: '验证码识别', p: '/captcha/recognize', d: 'ddddocr CRNN + CTC', o: 'json',
     f: [{k: 'file', l: '验证码图片', y: 'file'}]}
+];
+
+/* 组合场景：多模型能力编排成完整业务链路，返回 JSON 报告 + 成片 base64 */
+const SCENARIO_CAPS = [
+  {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 版面 → 文本块转正 → 超分', o: 'scenario',
+    f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
+  {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
+    f: [{k: 'file', l: '人像照片', y: 'file'},
+        {k: 'spec', l: '规格（ONE / TWO / SMALL_ONE / LARGE_ONE / SMALL_TWO / LARGE_TWO）', y: 'text', v: 'ONE'},
+        {k: 'background', l: '底色（WHITE / BLUE / RED）', y: 'text', v: 'WHITE'},
+        {k: 'maskSource', l: '掩码来源（MATTING / HUMANSEG）', y: 'text', v: 'MATTING'},
+        {k: 'qualityGate', l: '质量门控（true=不达标拒收 / false=放行）', y: 'text', v: 'false'},
+        {k: 'minQuality', l: '质量门限（0~1，仅门控开启时生效）', y: 'text', v: '0.5'}]}
 ];
 
 function renderCards(list, target) {
@@ -238,6 +398,9 @@ function renderCards(list, target) {
 }
 
 async function runCap(card) {
+  if (card.dataset.out === 'scenario') {
+    return runScenario(card);
+  }
   const fd = new FormData();
   let missing = null;
   card.querySelectorAll('input').forEach(input => {
@@ -280,8 +443,56 @@ async function runCap(card) {
   }
 }
 
+/* 组合场景：返回 JSON 报告，成片用 base64 内联 */
+async function runScenario(card) {
+  const fd = new FormData();
+  let missing = null;
+  card.querySelectorAll('input').forEach(input => {
+    if (input.type === 'file') {
+      if (input.files[0]) {
+        fd.append(input.name, input.files[0]);
+      } else if (!missing) {
+        missing = input.closest('.field').querySelector('span').textContent;
+      }
+    } else if (input.value.trim()) {
+      fd.append(input.name, input.value.trim());
+    }
+  });
+  const out = $('.out', card);
+  if (missing) {
+    out.innerHTML = '<pre>请先选择：' + missing + '</pre>';
+    return;
+  }
+  const btn = $('.run', card);
+  btn.disabled = true;
+  out.innerHTML = '<pre>调用中…（组合场景会跑多次模型推理，请稍候）</pre>';
+  try {
+    const res = await fetch(card.dataset.path, {method: 'POST', body: fd});
+    const data = await res.json();
+    const img = data.imageBase64;
+    const report = {};
+    Object.keys(data).forEach(k => {
+      if (k !== 'imageBase64') {
+        report[k] = data[k];
+      }
+    });
+    const preview = img
+      ? '<div><img class="preview" src="' + img + '" alt="result"></div>'
+      : '';
+    out.innerHTML = preview + '<pre>' + JSON.stringify(report, null, 2) + '</pre>';
+  } catch (e) {
+    out.innerHTML = '<pre>调用失败：' + e.message + '</pre>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 renderCards(FACE_CAPS, $('#faceCaps'));
-renderCards(OTHER_CAPS, $('#otherCaps'));
+renderCards(DOC_CAPS, $('#capsDoc'));
+renderCards(IMAGE_CAPS, $('#capsImage'));
+renderCards(DETECT_CAPS, $('#capsDetect'));
+renderCards(MISC_CAPS, $('#capsMisc'));
+renderCards(SCENARIO_CAPS, $('#scenarioCaps'));
 document.querySelectorAll('.panel').forEach(panel => {
   panel.addEventListener('click', e => {
     const btn = e.target.closest('.run');
@@ -290,6 +501,219 @@ document.querySelectorAll('.panel').forEach(panel => {
     }
   });
 });
+
+/* ===================== 图像超分（独立功能） ===================== */
+const upState = {file: null, origW: 0, origH: 0, outW: 0, outH: 0, zoomMode: 'orig', zoom: 1, previewUrl: null};
+
+function upStatus(text, kind) {
+  const el = $('#upStatus');
+  el.textContent = text || '';
+  el.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+function upSetZoomMode(mode) {
+  upState.zoomMode = mode;
+  document.querySelectorAll('#cmpZooms button').forEach(b => {
+    b.classList.toggle('active', b.dataset.zoom === mode);
+  });
+}
+
+// 画布盒子以「原图像素」为基准：原图层 1:1 时盒子就是原图大小，
+// 超分层按同一盒子铺开，滑块左右两侧始终对齐同一块内容
+function upApplyZoom() {
+  const baseW = upState.origW || upState.outW;
+  const baseH = upState.origH || upState.outH;
+  if (!baseW) {
+    return;
+  }
+  const vp = $('#cmpViewport');
+  let z;
+  if (upState.zoomMode === 'fit') {
+    // 视口宽度会跟着画布收缩，不能用它算自身缩放，否则死循环：
+    // 可用宽高取父容器（卡片内容宽）与视口自身上限，并扣掉边框与内边距，
+    // 否则画布会比视口内容区宽几个像素，多出一条横向滚动条
+    const cs = getComputedStyle(vp);
+    const padX = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)
+      + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth)
+      + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const availW = Math.max(40, vp.parentElement.clientWidth - padX);
+    const availH = Math.max(40, (parseFloat(cs.maxHeight) || 540) - padY);
+    z = Math.min(availW / baseW, availH / baseH);
+  } else if (upState.zoomMode === 'orig') {
+    z = 1;
+  } else {
+    z = Number(upState.zoomMode);
+  }
+  z = Math.max(0.02, Math.min(z, 32));
+  upState.zoom = z;
+  const canvas = $('#cmpCanvas');
+  canvas.style.width = Math.round(baseW * z) + 'px';
+  canvas.style.height = Math.round(baseH * z) + 'px';
+}
+
+function upSetSplit(clientX) {
+  const canvas = $('#cmpCanvas');
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width) {
+    return;
+  }
+  let pct = (clientX - rect.left) / rect.width * 100;
+  pct = Math.max(0, Math.min(100, pct));
+  canvas.style.setProperty('--split', pct.toFixed(2) + '%');
+}
+
+function upPickFile(file) {
+  if (!file) {
+    return;
+  }
+  if (!/^image\//.test(file.type)) {
+    upStatus('请选择图片文件（png / jpg / jpeg / webp / bmp）', 'fail');
+    return;
+  }
+  upState.file = file;
+  $('#upFileName').textContent = '已选择：' + file.name;
+  const url = URL.createObjectURL(file);
+  if (upState.previewUrl) {
+    URL.revokeObjectURL(upState.previewUrl);
+  }
+  upState.previewUrl = url;
+  const probe = new Image();
+  probe.onload = () => {
+    upState.origW = probe.naturalWidth;
+    upState.origH = probe.naturalHeight;
+    upState.outW = 0;
+    upState.outH = 0;
+    $('#upDownload').hidden = true;
+    $('#upMeta').textContent = '';
+    // 立刻展示原图：两层先都放原图，右侧半边盖一层「待生成」提示
+    $('#cmpBefore').src = url;
+    $('#cmpAfter').src = url;
+    $('#cmpPending').classList.add('show');
+    $('#cmpCanvas').classList.add('ready');
+    $('#cmpViewport').classList.add('has-image');
+    // 保留当前缩放档位，按新图重新算尺寸
+    upApplyZoom();
+    $('#cmpLeftTag').textContent = '原图 ' + upState.origW + '×' + upState.origH;
+    $('#cmpRightTag').textContent = '待生成';
+    upStatus('原图已加载（' + upState.origW + '×' + upState.origH + '），点击「开始超分」生成超分结果', 'ok');
+  };
+  probe.onerror = () => {
+    upStatus('图片解码失败，请换一张图片', 'fail');
+  };
+  probe.src = url;
+}
+
+$('#upFile').addEventListener('change', e => upPickFile(e.target.files[0]));
+['dragenter', 'dragover'].forEach(t => $('#upDrop').addEventListener(t, e => {
+  e.preventDefault();
+  $('#upDrop').classList.add('over');
+}));
+['dragleave', 'drop'].forEach(t => $('#upDrop').addEventListener(t, e => {
+  e.preventDefault();
+  $('#upDrop').classList.remove('over');
+}));
+$('#upDrop').addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  upPickFile(f);
+});
+
+$('#cmpZooms').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-zoom]');
+  if (!btn) {
+    return;
+  }
+  upSetZoomMode(btn.dataset.zoom);
+  upApplyZoom();
+});
+
+const cmpCanvas = $('#cmpCanvas');
+let cmpDragging = false;
+function cmpStopDrag(e) {
+  cmpDragging = false;
+  if (e && e.pointerId !== undefined && cmpCanvas.hasPointerCapture(e.pointerId)) {
+    cmpCanvas.releasePointerCapture(e.pointerId);
+  }
+}
+cmpCanvas.addEventListener('pointerdown', e => {
+  // 触摸设备只在分割条上起手，其余区域留给视口滚动
+  if (e.pointerType !== 'mouse' && !e.target.closest('.cmp-handle')) {
+    return;
+  }
+  cmpDragging = true;
+  cmpCanvas.setPointerCapture(e.pointerId);
+  upSetSplit(e.clientX);
+});
+cmpCanvas.addEventListener('pointermove', e => {
+  if (cmpDragging) {
+    upSetSplit(e.clientX);
+  }
+});
+// 必须释放指针捕获，否则捕获期间的所有指针事件都会被重定向到 canvas，页面其它控件会点不动
+cmpCanvas.addEventListener('pointerup', cmpStopDrag);
+cmpCanvas.addEventListener('pointercancel', cmpStopDrag);
+cmpCanvas.addEventListener('lostpointercapture', cmpStopDrag);
+window.addEventListener('pointerup', cmpStopDrag);
+window.addEventListener('pointercancel', cmpStopDrag);
+window.addEventListener('blur', cmpStopDrag);
+window.addEventListener('resize', () => {
+  if (upState.zoomMode === 'fit') {
+    upApplyZoom();
+  }
+});
+
+$('#upRun').addEventListener('click', async () => {
+  if (!upState.file) {
+    upStatus('请先选择图片', 'fail');
+    return;
+  }
+  const btn = $('#upRun');
+  btn.disabled = true;
+  upStatus('超分中…（4 倍推理 + 分块拼接，CPU 上可能需要十几秒）');
+  const fd = new FormData();
+  fd.append('file', upState.file);
+  fd.append('outScale', $('#upOutScale').value);
+  fd.append('tileSize', $('#upTile').value);
+  try {
+    const res = await fetch('/enhance/upscale-detail', {method: 'POST', body: fd});
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || ('HTTP ' + res.status));
+    }
+    upState.outW = data.outputWidth;
+    upState.outH = data.outputHeight;
+    $('#cmpBefore').src = data.originalBase64;
+    $('#cmpAfter').src = data.outputBase64;
+    $('#cmpPending').classList.remove('show');
+    $('#cmpCanvas').classList.add('ready');
+    upApplyZoom();
+    $('#cmpRightTag').textContent = '超分 ' + data.outScale + '×';
+    $('#cmpLeftTag').textContent = data.preDownscaled ? '预处理后原图' : '原图';
+    const rows = [
+      '原图 ' + data.sourceWidth + '×' + data.sourceHeight,
+      '送入模型 ' + data.originalWidth + '×' + data.originalHeight,
+      '输出 ' + data.outputWidth + '×' + data.outputHeight + '（' + data.outScale + '×）',
+      '模型 ' + data.model,
+      'tile ' + data.tileSize,
+      '耗时 ' + (data.elapsedMs / 1000).toFixed(2) + ' s'
+    ];
+    if (data.preDownscaled) {
+      rows.push('原图超过输入长边上限，已先缩小再超分');
+    }
+    $('#upMeta').innerHTML = rows.join(' · ');
+    const dl = $('#upDownload');
+    dl.href = data.outputBase64;
+    dl.download = 'upscaled-' + data.outScale + 'x.png';
+    dl.hidden = false;
+    upStatus('完成', 'ok');
+  } catch (e) {
+    upStatus('超分失败：' + e.message, 'fail');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+upStatus('选择图片后立即预览原图，再点「开始超分」生成超分结果');
 
 /* ===================== 人脸认证闭环 ===================== */
 const auth = {sessionId: null, actions: [], running: false, frameIdx: 0, interval: 250, maxFrames: 60, stream: null};

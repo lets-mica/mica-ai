@@ -37,6 +37,34 @@ ToCHWImage
 > ⚠️ PULC 输出节点名（`softmax_1.tmp_0` / `sigmoid_2.tmp_0`）由 paddle2onnx 从 Paddle 算子名派生，
 > **每次导出可能变化**；模块按「名称提示 → float[N,classes] 结构兜底」定位，不硬编码。
 
+## 2.1 `text_image_orientation` 的标签语义（实测于 2026-10-30）
+
+> ⚠️ **标签 = 图片当前相对正立的「顺时针角度」，不是「需要旋转的角度」。**
+> 写反了会在 90° / 270° 上把图转反。
+
+实测（`mica-ai-classify` 集成测试用的 `rot0/90/180/270.jpg` 素材 + 回转验证）：
+
+| 图片被顺时针旋转 | 模型预测 | 按「转 `label` 度」修正后 | 按「转 `360 - label` 度」修正后 |
+|---|---|---|---|
+| 0° | `0` | `0` ✅ | `0` ✅ |
+| 90° | `90` | `180` ❌ | `0` ✅ |
+| 180° | `180` | `0` ✅ | `0` ✅ |
+| 270° | `270` | `180` ❌ | `0` ✅ |
+
+修正后重新分类回到 `0`，且置信度与正立原图逐位一致（说明是像素级还原，不是「差不多正」）。
+
+因此**修正动作 = 逆时针转 `label` 度**（等价于顺时针转 `360 - label` 度）：
+
+| label | 修正动作 | OpenCV Java |
+|-------|---------|------------|
+| `0` | 不动 | — |
+| `90` | 逆时针 90° | `Core.ROTATE_90_COUNTERCLOCKWISE` |
+| `180` | 旋转 180° | `Core.ROTATE_180` |
+| `270` | 顺时针 90° | `Core.ROTATE_90_CLOCKWISE` |
+
+参考实现见 `mica-ai-example` 的 `DocumentPipeline`（阶段「整图方向」），
+回归测试见 `DocumentScenarioIntegrationTest#orientationStageShouldStraightenRotatedImage`。
+
 ## 3. 来源与许可
 
 - 上游仓库：[PaddlePaddle/PaddleClas](https://github.com/PaddlePaddle/PaddleClas)

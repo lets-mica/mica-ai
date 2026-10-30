@@ -378,6 +378,14 @@ mica-ai/
 | 🔤 **OCR 前置转正 / 扫描件倒置行纠正** | `mica-ai-textline` 的 `TextLineEngine` — 单行 0° / 180° 判定 + `uprightBytes` 一键转正（配合 `mica-ppocr` 做文本行定位） |
 | 🔐 **验证码自动识别 / 自动化测试填码** | `mica-ai-captcha` 的 `CaptchaEngine` — 文本 + 逐字符置信度，低置信度可转人工 |
 
+> 以上是**单能力**场景。多个能力编排成完整业务链路的组合示例见
+> [`mica-ai-example`](mica-ai-example/README.md)：
+>
+> | 组合场景 | 能力链路 |
+> |---------|---------|
+> | 📄 **智能文档流水线**（手机拍文档 → 可读结构化） | `docalign` 拉正 → `classify` 整图方向 → `layout` 版面/阅读顺序 → `textline` 文本块转正 → `enhance` 超分 |
+> | 🪪 **证件照一键生成**（随手拍 → 合规证件照） | `face` 检人脸 → `face` 质量评估 → `matting`/`humanseg` 抠像换底 → 按规格裁剪 → `enhance` 超分 |
+
 ---
 
 ## 📄 License
