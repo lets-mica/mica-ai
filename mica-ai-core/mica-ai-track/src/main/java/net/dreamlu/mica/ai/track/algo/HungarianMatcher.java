@@ -15,6 +15,8 @@
  */
 package net.dreamlu.mica.ai.track.algo;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,16 +46,11 @@ public class HungarianMatcher {
 
 	public static final double INF = 1e9;
 
+	@RequiredArgsConstructor
 	public static class Result {
 		public final int[][] matched;
 		public final int[] unmatchedDets;
 		public final int[] unmatchedTrks;
-
-		public Result(int[][] matched, int[] unmatchedDets, int[] unmatchedTrks) {
-			this.matched = matched;
-			this.unmatchedDets = unmatchedDets;
-			this.unmatchedTrks = unmatchedTrks;
-		}
 	}
 
 	public static Result match(double[][] costMatrix, double threshold) {

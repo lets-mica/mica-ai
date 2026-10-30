@@ -15,8 +15,8 @@
  */
 package net.dreamlu.mica.ai.track.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 检测器吐出的单帧检测框（x1, y1, x2, y2 左上角 / 右下角，score 置信度）。
@@ -24,7 +24,7 @@ import lombok.Getter;
  * <p>不可变。
  */
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class BBox {
 
 	private final float x1;

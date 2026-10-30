@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.track.core;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.track.algo.HungarianMatcher;
 import net.dreamlu.mica.ai.track.config.ByteTrackConfig;
@@ -55,6 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ByteTracker {
 
+	@Getter
 	private final ByteTrackConfig config;
 	private final AtomicInteger nextId = new AtomicInteger(1);
 
@@ -207,10 +209,6 @@ public class ByteTracker {
 			unmatched.add(dets.get(detIdx));
 		}
 		return unmatched;
-	}
-
-	public ByteTrackConfig getConfig() {
-		return config;
 	}
 
 	public int trackCount() {
