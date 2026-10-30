@@ -32,8 +32,12 @@ a{color:var(--brand)}
 .card .desc{color:var(--muted);font-size:12px;margin:0 0 12px}
 .field{display:block;margin-bottom:10px}
 .field span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
-input[type=text],input[type=file]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
+input[type=text],input[type=file],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
 input[type=file]{padding:6px}
+select{cursor:pointer}
+input[type=range]{width:100%;height:22px;margin:0;accent-color:var(--brand);cursor:pointer}
+input[type=range]:disabled{opacity:.45;cursor:not-allowed}
+.field .val{float:right;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
 .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer}
 .btn:hover{border-color:var(--brand);color:var(--brand)}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -165,7 +169,7 @@ select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:
     <div class="up-grid">
       <div class="card">
         <h2>对比查看</h2>
-        <p class="desc">上传后立即按原图实际像素大小展示；拖动中间的分割条对比「送入模型的原图」与「超分输出」。百分比以原图为基准，400% 时超分图约 1:1，可看到像素级差异。</p>
+        <p class="desc">上传后立即预览原图（默认适应窗口，可切「原图大小」按原始像素查看）；拖动中间的分割条对比「送入模型的原图」与「超分输出」。百分比以原图为基准，400% 时超分图约 1:1，可看到像素级差异。</p>
         <div class="cmp">
           <div class="cmp-viewport" id="cmpViewport">
             <div class="cmp-empty" id="cmpEmpty">选择图片后在此预览原图</div>
@@ -179,8 +183,8 @@ select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:
           <div class="cmp-bar">
             <span class="cmp-tag" id="cmpLeftTag">原图</span>
             <div class="cmp-zooms" id="cmpZooms">
-              <button class="btn sm active" type="button" data-zoom="orig">原图大小</button>
-              <button class="btn sm" type="button" data-zoom="fit">适应窗口</button>
+              <button class="btn sm" type="button" data-zoom="orig">原图大小</button>
+              <button class="btn sm active" type="button" data-zoom="fit">适应窗口</button>
               <button class="btn sm" type="button" data-zoom="2">200%</button>
               <button class="btn sm" type="button" data-zoom="4">400%</button>
               <button class="btn sm" type="button" data-zoom="8">800%</button>
@@ -374,12 +378,32 @@ const SCENARIO_CAPS = [
     f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
   {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
     f: [{k: 'file', l: '人像照片', y: 'file'},
-        {k: 'spec', l: '规格（ONE / TWO / SMALL_ONE / LARGE_ONE / SMALL_TWO / LARGE_TWO）', y: 'text', v: 'ONE'},
-        {k: 'background', l: '底色（WHITE / BLUE / RED）', y: 'text', v: 'WHITE'},
-        {k: 'maskSource', l: '掩码来源（MATTING / HUMANSEG）', y: 'text', v: 'MATTING'},
-        {k: 'qualityGate', l: '质量门控（true=不达标拒收 / false=放行）', y: 'text', v: 'false'},
-        {k: 'minQuality', l: '质量门限（0~1，仅门控开启时生效）', y: 'text', v: '0.5'}]}
+        {k: 'spec', l: '尺寸规格', y: 'select', v: 'ONE',
+          opts: [{v: 'SMALL_ONE', l: '小一寸 22×32mm · 260×378px'},
+                 {v: 'ONE', l: '一寸 25×35mm · 295×413px'},
+                 {v: 'LARGE_ONE', l: '大一寸 33×48mm · 390×567px'},
+                 {v: 'SMALL_TWO', l: '小二寸 35×45mm · 413×531px'},
+                 {v: 'TWO', l: '二寸 35×49mm · 413×579px'},
+                 {v: 'LARGE_TWO', l: '大两寸 35×53mm · 413×626px'}]},
+        {k: 'background', l: '底色', y: 'select', v: 'WHITE',
+          opts: [{v: 'WHITE', l: '白底 255,255,255'},
+                 {v: 'BLUE', l: '蓝底 67,142,219'},
+                 {v: 'RED', l: '红底 255,0,0'}]},
+        {k: 'maskSource', l: '掩码来源', y: 'select', v: 'MATTING',
+          opts: [{v: 'MATTING', l: '通用抠图 U²-Net（发丝边缘更精细）'},
+                 {v: 'HUMANSEG', l: '人像分割 PP-HumanSeg'}]},
+        {k: 'qualityGate', l: '质量门控', y: 'select', v: 'false',
+          opts: [{v: 'false', l: '放行 —— 不达标也出片，只在提示里说明'},
+                 {v: 'true', l: '拒收 —— 不达标直接不出片'}]},
+        {k: 'minQuality', l: '质量门限', y: 'range', v: '0.5', min: '0', max: '1', step: '0.05', requires: 'qualityGate'}]}
 ];
+
+function syncRangeGates(scope) {
+  scope.querySelectorAll('input[type=range][data-requires]').forEach(range => {
+    const gate = scope.querySelector('select[name="' + range.getAttribute('data-requires') + '"]');
+    range.disabled = !gate || gate.value !== 'true';
+  });
+}
 
 function renderCards(list, target) {
   target.innerHTML = list.map(cap => {
@@ -388,6 +412,15 @@ function renderCards(list, target) {
         const accept = f.any ? '' : ' accept="image/*"';
         return '<label class="field"><span>' + f.l + '</span><input type="file"' + accept + ' name="' + f.k + '"></label>';
       }
+      if (f.y === 'select') {
+        const opts = f.opts.map(o => '<option value="' + o.v + '"' + (o.v === f.v ? ' selected' : '') + '>' + o.l + '</option>').join('');
+        return '<label class="field"><span>' + f.l + '</span><select name="' + f.k + '">' + opts + '</select></label>';
+      }
+      if (f.y === 'range') {
+        return '<label class="field"><span>' + f.l + '<b class="val">' + f.v + '</b></span>' +
+          '<input type="range" name="' + f.k + '" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + f.v + '"' +
+          (f.requires ? ' data-requires="' + f.requires + '"' : '') + '></label>';
+      }
       return '<label class="field"><span>' + f.l + '</span><input type="text" name="' + f.k + '" value="' + (f.v || '') + '"></label>';
     }).join('');
     return '<div class="card cap" data-path="' + cap.p + '" data-out="' + cap.o + '">' +
@@ -395,6 +428,7 @@ function renderCards(list, target) {
       fields + '<button class="btn primary run" type="button">调用</button>' +
       '<div class="out"></div></div>';
   }).join('');
+  syncRangeGates(target);
 }
 
 async function runCap(card) {
@@ -403,15 +437,17 @@ async function runCap(card) {
   }
   const fd = new FormData();
   let missing = null;
-  card.querySelectorAll('input').forEach(input => {
-    if (input.type === 'file') {
-      if (input.files[0]) {
-        fd.append(input.name, input.files[0]);
+  card.querySelectorAll('input, select').forEach(el => {
+    if (el.type === 'file') {
+      if (el.files[0]) {
+        fd.append(el.name, el.files[0]);
       } else if (!missing) {
-        missing = input.closest('.field').querySelector('span').textContent;
+        missing = el.closest('.field').querySelector('span').textContent;
       }
-    } else if (input.value.trim()) {
-      fd.append(input.name, input.value.trim());
+    } else if (el.disabled) {
+      return;
+    } else if (el.value.trim()) {
+      fd.append(el.name, el.value.trim());
     }
   });
   const out = $('.out', card);
@@ -447,15 +483,17 @@ async function runCap(card) {
 async function runScenario(card) {
   const fd = new FormData();
   let missing = null;
-  card.querySelectorAll('input').forEach(input => {
-    if (input.type === 'file') {
-      if (input.files[0]) {
-        fd.append(input.name, input.files[0]);
+  card.querySelectorAll('input, select').forEach(el => {
+    if (el.type === 'file') {
+      if (el.files[0]) {
+        fd.append(el.name, el.files[0]);
       } else if (!missing) {
-        missing = input.closest('.field').querySelector('span').textContent;
+        missing = el.closest('.field').querySelector('span').textContent;
       }
-    } else if (input.value.trim()) {
-      fd.append(input.name, input.value.trim());
+    } else if (el.disabled) {
+      return;
+    } else if (el.value.trim()) {
+      fd.append(el.name, el.value.trim());
     }
   });
   const out = $('.out', card);
@@ -493,6 +531,22 @@ renderCards(IMAGE_CAPS, $('#capsImage'));
 renderCards(DETECT_CAPS, $('#capsDetect'));
 renderCards(MISC_CAPS, $('#capsMisc'));
 renderCards(SCENARIO_CAPS, $('#scenarioCaps'));
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.type !== 'range') {
+    return;
+  }
+  const val = el.closest('.field').querySelector('.val');
+  if (val) {
+    val.textContent = el.value;
+  }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.tagName === 'SELECT') {
+    syncRangeGates(el.closest('.cap') || document);
+  }
+});
 document.querySelectorAll('.panel').forEach(panel => {
   panel.addEventListener('click', e => {
     const btn = e.target.closest('.run');
@@ -503,7 +557,7 @@ document.querySelectorAll('.panel').forEach(panel => {
 });
 
 /* ===================== 图像超分（独立功能） ===================== */
-const upState = {file: null, origW: 0, origH: 0, outW: 0, outH: 0, zoomMode: 'orig', zoom: 1, previewUrl: null};
+const upState = {file: null, origW: 0, origH: 0, outW: 0, outH: 0, zoomMode: 'fit', zoom: 1, previewUrl: null};
 
 function upStatus(text, kind) {
   const el = $('#upStatus');
