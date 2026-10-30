@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mica-ai 能力示例</title>
+<style>
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#fafafa;
+  --text:#1b1f24; --muted:#6b7280; --border:#e3e6ea;
+  --brand:#0a9b5c; --brand-soft:#e8f8ef; --danger:#d64545; --warning:#b7791f;
+  --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 20px 56px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+h1{margin:0;font-size:22px;font-weight:600}
+header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+a{color:var(--brand)}
+.tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab{border:0;background:transparent;color:var(--muted);padding:8px 14px;border-radius:999px;cursor:pointer;font-size:14px}
+.tab.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.panel{display:none}
+.panel.active{display:block}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card h2{margin:0 0 4px;font-size:15px;font-weight:600}
+.card .desc{color:var(--muted);font-size:12px;margin:0 0 12px}
+.field{display:block;margin-bottom:10px}
+.field span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+input[type=text],input[type=file]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
+input[type=file]{padding:6px}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(.95);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.out{margin-top:12px}
+.out pre{margin:0;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all;max-height:320px;overflow:auto}
+.preview{display:block;max-width:100%;border-radius:8px;border:1px solid var(--border)}
+.checker{background-image:linear-gradient(45deg,#ddd 25%,transparent 25%),linear-gradient(-45deg,#ddd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ddd 75%),linear-gradient(-45deg,transparent 75%,#ddd 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;padding:8px;border-radius:8px}
+.auth-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.auth-grid{grid-template-columns:1fr}}
+.camera{position:relative;background:#0e1116;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/3}
+.camera video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.oval{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.oval i{display:block;width:56%;aspect-ratio:3/4;border:2px dashed rgba(255,255,255,.75);border-radius:50%}
+.cam-hint{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+.status{margin:10px 0;font-size:13px;color:var(--muted);min-height:20px}
+.status.ok{color:var(--brand)}
+.status.fail{color:var(--danger)}
+.action{margin-bottom:10px}
+.action .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.action .row b{font-weight:500}
+.bar{height:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .12s linear}
+.action.done .row b{color:var(--brand)}
+.meta{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:10px}
+.result{margin-top:14px;border-radius:var(--radius);padding:14px;border:1px solid var(--border);background:var(--surface-2);display:none}
+.result.show{display:block}
+.result.pass{border-color:var(--brand);background:var(--brand-soft)}
+.result.fail{border-color:var(--danger)}
+.result h3{margin:0 0 6px;font-size:15px}
+.result .kv{font-size:13px;color:var(--muted)}
+.inline{display:flex;gap:10px;flex-wrap:wrap}
+.inline .field{flex:1 1 140px;margin-bottom:0}
+.hintbox{background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--muted);font-size:12px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>mica-ai 能力示例</h1>
+      <p>纯 ONNX Runtime · 零 Python · 人脸认证为「自建内控级」演示，非银行开户级实名核身</p>
+    </div>
+    <a href="/swagger-ui.html" target="_blank">Swagger UI</a>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="auth">人脸认证</button>
+    <button class="tab" data-tab="face">人脸能力</button>
+    <button class="tab" data-tab="other">其他能力</button>
+  </div>
+
+  <!-- 人脸认证 -->
+  <section class="panel active" id="panel-auth">
+    <div class="auth-grid">
+      <div class="card">
+        <h2>认证会话</h2>
+        <p class="desc">服务端下发随机动作序列 → 逐帧上传 → 提交 1:1 判定，会话 120 秒过期且只能提交一次。</p>
+        <div class="inline">
+          <label class="field"><span>personId（已注册）</span><input type="text" id="personId" value="demo"></label>
+          <label class="field"><span>参考照（可选，优先于 personId）</span><input type="file" id="refFile" accept="image/*"></label>
+        </div>
+        <div class="inline" style="margin-top:10px">
+          <button class="btn" id="btnRegister">注册底库</button>
+          <button class="btn primary" id="btnStart">开始认证</button>
+          <button class="btn" id="btnStop">停止</button>
+        </div>
+        <div class="hintbox" style="margin-top:12px">
+          5 点关键点做不了眨眼与张口，本例用「左右转头 + 上下点头」的幅度做动作挑战；活体用 MiniFASNetV2 逐帧打分。
+        </div>
+        <div id="actions"></div>
+        <div class="status" id="authStatus"></div>
+        <div class="meta" id="authMeta"></div>
+        <div class="result" id="authResult"></div>
+      </div>
+
+      <div class="card">
+        <h2>取景</h2>
+        <p class="desc">请正对镜头，让脸部填满虚线椭圆；动作幅度不够时继续转/点头。</p>
+        <div class="camera">
+          <video id="video" playsinline muted></video>
+          <div class="oval"><i></i></div>
+          <div class="cam-hint" id="camHint">未开启摄像头</div>
+        </div>
+        <canvas id="shot" style="display:none"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 人脸能力 -->
+  <section class="panel" id="panel-face">
+    <div class="grid" id="faceCaps"></div>
+  </section>
+
+  <!-- 其他能力 -->
+  <section class="panel" id="panel-other">
+    <div class="grid" id="otherCaps"></div>
+  </section>
+</div>
+
+<script>
+const $ = (sel, root) => (root || document).querySelector(sel);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('#panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+async function postForm(url, formData) {
+  const res = await fetch(url, {method: 'POST', body: formData});
+  const type = res.headers.get('content-type') || '';
+  let data;
+  if (type.includes('application/json')) {
+    data = await res.json();
+  } else {
+    data = {message: await res.text()};
+  }
+  if (!res.ok) {
+    throw new Error(data.message || data.error || ('HTTP ' + res.status));
+  }
+  return data;
+}
+
+/* ===================== 通用能力示例 ===================== */
+const FACE_CAPS = [
+  {t: '人脸检测', p: '/face/detect', d: '返回人脸框、5 关键点与置信度', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]},
+  {t: '活体检测', p: '/face/liveness', d: '逐脸判断 real / print / replay', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]},
+  {t: '特征提取', p: '/face/extract', d: '输出 128d SFace 向量', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]},
+  {t: '1:1 比对', p: '/face/verify', d: '现场照 vs 参考照', o: 'json',
+    f: [{k: 'probe', l: '现场照', y: 'file'}, {k: 'reference', l: '参考照', y: 'file'}]},
+  {t: '注册人脸', p: '/face/register', d: '写入内存向量库（需活体通过）', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}, {k: 'personId', l: 'personId', y: 'text', v: 'demo'}]},
+  {t: '1:N 识别', p: '/face/recognize', d: '底库最相似人员', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]},
+  {t: '人证核验', p: '/face/identity-verify', d: '现场照 vs 已注册 personId', o: 'json',
+    f: [{k: 'probe', l: '现场照', y: 'file'}, {k: 'personId', l: 'personId', y: 'text', v: 'demo'}]},
+  {t: '头像提取', p: '/face/avatar', d: '正方形头像，自动摆正', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '证件卡片提取', p: '/face/card/extract', d: '透视矫正 + 增强', o: 'image',
+    f: [{k: 'file', l: '证件照', y: 'file'}]}
+];
+
+const OTHER_CAPS = [
+  {t: '文件类型识别', p: '/filetype/detect', d: 'Google Magika 214 类', o: 'json',
+    f: [{k: 'file', l: '任意文件', y: 'file', any: true}]},
+  {t: '车牌识别', p: '/plate/recognize', d: 'HyperLPR3 中国车牌', o: 'json',
+    f: [{k: 'file', l: '车辆图片', y: 'file'}]},
+  {t: '版面分析', p: '/layout/detect', d: 'PP-DocLayoutV3（需本地模型并开启）', o: 'json',
+    f: [{k: 'file', l: '文档图片', y: 'file'}]},
+  {t: '通用抠图', p: '/matting/cutout', d: 'U²-Net 透明底 PNG', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '文本行方向', p: '/textline/classify', d: '0° / 180° 分类', o: 'json',
+    f: [{k: 'file', l: '单行文本图', y: 'file'}]},
+  {t: '文本行转正', p: '/textline/upright', d: '倒置则旋转 180°', o: 'image',
+    f: [{k: 'file', l: '单行文本图', y: 'file'}]},
+  {t: '验证码识别', p: '/captcha/recognize', d: 'ddddocr CRNN + CTC', o: 'json',
+    f: [{k: 'file', l: '验证码图片', y: 'file'}]}
+];
+
+function renderCards(list, target) {
+  target.innerHTML = list.map(cap => {
+    const fields = cap.f.map(f => {
+      if (f.y === 'file') {
+        const accept = f.any ? '' : ' accept="image/*"';
+        return '<label class="field"><span>' + f.l + '</span><input type="file"' + accept + ' name="' + f.k + '"></label>';
+      }
+      return '<label class="field"><span>' + f.l + '</span><input type="text" name="' + f.k + '" value="' + (f.v || '') + '"></label>';
+    }).join('');
+    return '<div class="card cap" data-path="' + cap.p + '" data-out="' + cap.o + '">' +
+      '<h2>' + cap.t + '</h2><p class="desc">' + cap.d + ' · <code>' + cap.p + '</code></p>' +
+      fields + '<button class="btn primary run" type="button">调用</button>' +
+      '<div class="out"></div></div>';
+  }).join('');
+}
+
+async function runCap(card) {
+  const fd = new FormData();
+  let missing = null;
+  card.querySelectorAll('input').forEach(input => {
+    if (input.type === 'file') {
+      if (input.files[0]) {
+        fd.append(input.name, input.files[0]);
+      } else if (!missing) {
+        missing = input.closest('.field').querySelector('span').textContent;
+      }
+    } else if (input.value.trim()) {
+      fd.append(input.name, input.value.trim());
+    }
+  });
+  const out = $('.out', card);
+  if (missing) {
+    out.innerHTML = '<pre>请先选择：' + missing + '</pre>';
+    return;
+  }
+  const btn = $('.run', card);
+  btn.disabled = true;
+  out.innerHTML = '<pre>调用中…</pre>';
+  try {
+    const res = await fetch(card.dataset.path, {method: 'POST', body: fd});
+    const type = res.headers.get('content-type') || '';
+    if (type.startsWith('image/')) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const checker = card.dataset.path.indexOf('/matting/') === 0 ? ' checker' : '';
+      out.innerHTML = '<div class="' + (checker ? 'checker' : '') + '"><img class="preview" src="' + url + '" alt="result"></div>';
+    } else {
+      const data = await res.json();
+      out.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+    }
+  } catch (e) {
+    out.innerHTML = '<pre>调用失败：' + e.message + '</pre>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+renderCards(FACE_CAPS, $('#faceCaps'));
+renderCards(OTHER_CAPS, $('#otherCaps'));
+document.querySelectorAll('.panel').forEach(panel => {
+  panel.addEventListener('click', e => {
+    const btn = e.target.closest('.run');
+    if (btn) {
+      runCap(btn.closest('.cap'));
+    }
+  });
+});
+
+/* ===================== 人脸认证闭环 ===================== */
+const auth = {sessionId: null, actions: [], running: false, frameIdx: 0, interval: 250, maxFrames: 60, stream: null};
+
+function setStatus(text, kind) {
+  const el = $('#authStatus');
+  el.textContent = text || '';
+  el.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+function renderActions(actions) {
+  $('#actions').innerHTML = actions.map(a =>
+    '<div class="action" data-code="' + a.code + '">' +
+    '<div class="row"><b>' + a.label + '</b><span class="pct">0%</span></div>' +
+    '<div class="bar"><i></i></div></div>').join('');
+}
+
+function updateActions(actions) {
+  if (!actions) return;
+  actions.forEach(a => {
+    const row = $('.action[data-code="' + a.code + '"]');
+    if (!row) return;
+    row.classList.toggle('done', !!a.satisfied);
+    $('.pct', row).textContent = Math.round((a.progress || 0) * 100) + '%';
+    $('.bar i', row).style.width = Math.round((a.progress || 0) * 100) + '%';
+  });
+}
+
+async function openCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('当前环境不支持摄像头，请用 Chrome/Edge 并通过 localhost 访问');
+  }
+  auth.stream = await navigator.mediaDevices.getUserMedia({
+    video: {width: {ideal: 640}, height: {ideal: 480}, facingMode: 'user'},
+    audio: false
+  });
+  const video = $('#video');
+  video.srcObject = auth.stream;
+  await video.play();
+  $('#camHint').textContent = '请正对镜头，按提示完成动作';
+}
+
+function stopCamera() {
+  if (auth.stream) {
+    auth.stream.getTracks().forEach(t => t.stop());
+    auth.stream = null;
+  }
+  $('#video').srcObject = null;
+  $('#camHint').textContent = '已停止';
+}
+
+function grabFrame() {
+  const video = $('#video');
+  const canvas = $('#shot');
+  canvas.width = 640;
+  canvas.height = 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+}
+
+async function startAuth() {
+  if (auth.running) return;
+  try {
+    setStatus('正在创建认证会话…');
+    const s = await postForm('/face/auth/session', new FormData());
+    auth.sessionId = s.sessionId;
+    auth.actions = s.actions || [];
+    auth.frameIdx = 0;
+    auth.interval = s.frameIntervalMs || 250;
+    auth.maxFrames = s.maxFrames || 60;
+    renderActions(auth.actions);
+    $('#authResult').className = 'result';
+    $('#authResult').innerHTML = '';
+    await openCamera();
+    auth.running = true;
+    setStatus('请按提示完成动作');
+    captureLoop();
+  } catch (e) {
+    setStatus(e.message, 'fail');
+  }
+}
+
+async function captureLoop() {
+  while (auth.running) {
+    if (!$('#video').videoWidth) {
+      await sleep(120);
+      continue;
+    }
+    const blob = await grabFrame();
+    const fd = new FormData();
+    fd.append('file', blob, 'frame.jpg');
+    fd.append('sessionId', auth.sessionId);
+    fd.append('frameIndex', String(auth.frameIdx++));
+    let r;
+    try {
+      r = await postForm('/face/auth/frame', fd);
+    } catch (e) {
+      auth.running = false;
+      stopCamera();
+      setStatus(e.message, 'fail');
+      return;
+    }
+    renderFrame(r);
+    if (r.complete) {
+      auth.running = false;
+      await submitAuth();
+      return;
+    }
+    if (r.frames >= r.maxFrames) {
+      auth.running = false;
+      stopCamera();
+      setStatus('帧数已用完，请重新开始认证', 'fail');
+      return;
+    }
+    await sleep(auth.interval);
+  }
+}
+
+function renderFrame(r) {
+  updateActions(r.actions);
+  const meta = [];
+  if (r.quality) {
+    meta.push('清晰度 ' + r.quality.sharpness);
+    meta.push('人脸占比 ' + (Math.round((r.quality.faceRatio || 0) * 1000) / 10) + '%');
+  }
+  if (r.liveness) {
+    meta.push('活体分 ' + r.liveness.liveScore);
+  }
+  meta.push('帧 ' + r.frames + '/' + r.maxFrames);
+  $('#authMeta').textContent = meta.join(' · ');
+  setStatus(r.accepted ? (r.hint || '已采集') : (r.hint || r.reason), r.accepted ? 'ok' : 'fail');
+}
+
+async function submitAuth() {
+  setStatus('动作完成，正在比对…');
+  const fd = new FormData();
+  fd.append('sessionId', auth.sessionId);
+  const pid = $('#personId').value.trim();
+  const ref = $('#refFile').files[0];
+  if (pid) fd.append('personId', pid);
+  if (ref) fd.append('reference', ref);
+  try {
+    const r = await postForm('/face/auth/submit', fd);
+    showResult(r);
+  } catch (e) {
+    setStatus(e.message, 'fail');
+  } finally {
+    stopCamera();
+  }
+}
+
+function showResult(r) {
+  const box = $('#authResult');
+  box.className = 'result show ' + (r.passed ? 'pass' : 'fail');
+  const title = r.passed ? '认证通过' : '认证未通过';
+  const rows = [];
+  if (r.similarity !== undefined) rows.push('相似度 ' + r.similarity + ' / 阈值 ' + r.threshold);
+  if (r.livenessScore !== undefined) rows.push('活体分 ' + r.livenessScore);
+  if (r.reason) rows.push('结果码 ' + r.reason);
+  if (r.hint) rows.push(r.hint);
+  rows.push('帧数 ' + r.frames + ' · 耗时 ' + r.elapsedMs + 'ms');
+  box.innerHTML = '<h3>' + title + '</h3><div class="kv">' + rows.join('<br>') + '</div>';
+  setStatus(r.passed ? '认证通过' : '认证未通过', r.passed ? 'ok' : 'fail');
+}
+
+async function registerFace() {
+  const file = $('#refFile').files[0];
+  const pid = $('#personId').value.trim();
+  if (!file) {
+    setStatus('请先选择一张自拍照作为参考照', 'fail');
+    return;
+  }
+  if (!pid) {
+    setStatus('请填写 personId', 'fail');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('personId', pid);
+  setStatus('注册中…');
+  try {
+    const r = await postForm('/face/register', fd);
+    setStatus('注册成功：' + r.personId + '（score ' + r.score + '）', 'ok');
+  } catch (e) {
+    setStatus('注册失败：' + e.message, 'fail');
+  }
+}
+
+$('#btnStart').addEventListener('click', startAuth);
+$('#btnStop').addEventListener('click', () => {
+  auth.running = false;
+  stopCamera();
+  setStatus('已停止');
+});
+$('#btnRegister').addEventListener('click', registerFace);
+</script>
+</body>
+</html>

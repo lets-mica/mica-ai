@@ -28,10 +28,12 @@
 
 ```bash
 mvn -pl mica-ai-example -am -DskipTests clean install
-mvn -pl mica-ai-example spring-boot:run
+mvn -pl mica-ai-example spring-boot:run -Dspring-boot.run.workingDirectory=..
 ```
 
-启动后访问 `http://localhost:8181`。
+> 模型路径相对**仓库根目录**（`model-tools/...`），而 `spring-boot:run` 默认以模块目录为工作目录，因此需要显式指定 `workingDirectory=..`。
+
+启动后访问 `http://localhost:8181`，内置示例页 `src/main/resources/static/index.html`（人脸认证闭环 + 各能力上传演示）。
 
 ### 2.2 启用 face / filetype / plate
 
@@ -109,6 +111,9 @@ mvn -pl mica-ai-example -am test
 | `/face/recognize` | POST multipart | 上传图片，1:N 检索返回最相似 personId |
 | `/face/verify` | POST multipart | 上传两张图，1:1 比对 |
 | `/face/identity-verify` | POST multipart | 人证核验：现场照 vs 已注册 personId |
+| `/face/auth/session` | POST | 创建认证会话，返回 sessionId + 随机顺序的动作序列（120 秒过期、一次性） |
+| `/face/auth/frame` | POST multipart | 逐帧上传（`sessionId` + `file`），返回质量 / 活体 / 姿态 / 动作进度 |
+| `/face/auth/submit` | POST multipart | 动作完成后提交，用最佳帧特征与 `personId` 底库或 `reference` 参考照做 1:1 |
 | `/face/health` | GET | 健康检查：活体开关 / 阈值 / 各模型加载状态 |
 | `/face/avatar` | POST multipart | 单图提取头像（正方形，自动摆正） |
 | `/face/avatar/faces` | POST multipart | 多人图逐个提取头像 |
@@ -127,6 +132,10 @@ mvn -pl mica-ai-example -am test
 | `/textline/upright` | POST multipart | 上传单行文本图，倒置则旋转 180° 输出 PNG，正常则原样回传 |
 | `/captcha/recognize` | POST multipart | 上传验证码图片，返回 text（识别文本）/ confidence（平均置信度）/ charConfidences（逐字符置信度） |
 
+> `/face/auth/*` 是**自建内控级**最小闭环（App 登录二次核验 / 考勤 / 门禁），不是银行开户级实名核身：
+> YuNet 只有 5 点关键点，动作挑战用「左右转头 + 上下点头」的幅度，做不了眨眼与张口；MiniFASNetV2 也挡不住 3D 面具与深度伪造。
+> 会话存在内存（单机 Demo），多实例部署请换 Redis 并补齐设备指纹、频次限制与审计。
+
 > layout 能力已提供 REST 端点（`LayoutController`），但因模型 125MB 不随仓库分发，本示例默认
 > `mica.ai.layout.enabled=false` ⇒ 该端点**未装配**，访问会 404；本地放好模型后置 `true` 即可启用。
 
@@ -144,9 +153,14 @@ mica-ai-example/
 │   ├── config/OpenApiConfig.java
 │   ├── pipeline/FacePipeline.java                   # 检测 → 活体 → 对齐 → 特征 编排
 │   ├── repository/VectorRepository.java             # 向量库抽象 + SimpleMemoryRepository 内存实现
+│   ├── auth/
+│   │   ├── AuthAction.java                          # 动作挑战定义（转头 / 点头 + 所需幅度）
+│   │   ├── FaceAuthSession.java                     # 会话状态（姿态极差 + 最佳帧特征）
+│   │   └── FaceAuthStore.java                       # 内存会话存储（TTL + 一次性消费）
 │   └── controller/
 │       ├── FaceController.java                      # /face/detect + /liveness + /extract
 │       ├── FaceRecognitionController.java           # /face/register + /recognize + /verify + /identity-verify + /health
+│       ├── FaceAuthController.java                  # /face/auth/session + /frame + /submit
 │       ├── AvatarController.java                    # /face/avatar（单图 / 多图 / 标注）
 │       ├── CardController.java                      # /face/card/extract + /cards
 │       ├── FiletypeController.java                  # /filetype/detect + /filetype/detect-bytes
@@ -157,6 +171,7 @@ mica-ai-example/
 │       └── CaptchaController.java                   # /captcha/recognize
 ├── src/main/resources/
 │   ├── application.yml                              # 各能力示例配置
+│   ├── static/index.html                            # 示例页：人脸认证闭环 + 各能力上传演示
 │   └── logback-spring.xml
 └── src/test/java/net/dreamlu/mica/ai/example/
     ├── ExampleApplicationContextTest.java           # Starter 自动装配测试（ApplicationContextRunner）
