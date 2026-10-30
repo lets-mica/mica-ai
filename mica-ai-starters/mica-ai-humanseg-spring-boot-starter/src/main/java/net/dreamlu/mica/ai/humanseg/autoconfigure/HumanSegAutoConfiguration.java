@@ -16,7 +16,7 @@
 package net.dreamlu.mica.ai.humanseg.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.humanseg.HumanSegEngine;
+import net.dreamlu.mica.ai.humanseg.core.HumanSegEngine;
 import net.dreamlu.mica.ai.humanseg.config.HumanSegConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

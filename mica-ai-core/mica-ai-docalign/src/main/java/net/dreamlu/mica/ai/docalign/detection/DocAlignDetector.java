@@ -58,7 +58,7 @@ import java.util.Map;
  * 按 {@code heatmapThreshold} 二值化 → 取面积最大连通域的质心作为角点。
  *
  * <p>线程安全：ONNX session 线程安全，每次推理新建 1 个 {@code OnnxTensor}；
- * 通常由 {@link net.dreamlu.mica.ai.docalign.DocAlignEngine} 单例持有。
+ * 通常由 {@link net.dreamlu.mica.ai.docalign.core.DocAlignEngine} 单例持有。
  */
 @Slf4j
 public class DocAlignDetector implements AutoCloseable {

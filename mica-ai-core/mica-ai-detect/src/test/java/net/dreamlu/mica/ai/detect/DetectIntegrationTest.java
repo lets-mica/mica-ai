@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.detect;
 
 import net.dreamlu.mica.ai.detect.config.DetectConfig;
 import net.dreamlu.mica.ai.detect.config.DetectModelFamily;
+import net.dreamlu.mica.ai.detect.core.DetectEngine;
 import net.dreamlu.mica.ai.detect.model.DetectBox;
 import net.dreamlu.mica.ai.detect.model.DetectResult;
 import org.junit.jupiter.api.Assumptions;

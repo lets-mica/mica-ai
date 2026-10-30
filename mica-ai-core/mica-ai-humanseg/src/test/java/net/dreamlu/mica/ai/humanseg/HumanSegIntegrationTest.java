@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.humanseg;
 
 import net.dreamlu.mica.ai.humanseg.config.HumanSegConfig;
+import net.dreamlu.mica.ai.humanseg.core.HumanSegEngine;
 import net.dreamlu.mica.ai.humanseg.util.HumanSegImageUtils;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;

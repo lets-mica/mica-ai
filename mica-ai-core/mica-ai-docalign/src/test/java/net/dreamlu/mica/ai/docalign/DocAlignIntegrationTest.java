@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.docalign;
 
 import net.dreamlu.mica.ai.docalign.config.DocAlignConfig;
+import net.dreamlu.mica.ai.docalign.core.DocAlignEngine;
 import net.dreamlu.mica.ai.docalign.model.DocAlignResult;
 import net.dreamlu.mica.ai.docalign.model.DocCorner;
 import net.dreamlu.mica.ai.docalign.util.DocAlignImageUtils;

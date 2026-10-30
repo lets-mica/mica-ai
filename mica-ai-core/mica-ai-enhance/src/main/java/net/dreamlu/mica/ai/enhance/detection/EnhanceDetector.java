@@ -57,7 +57,7 @@ import java.util.Map;
  * 不匹配时快速失败。
  *
  * <p>线程安全：ONNX session 线程安全，每次推理新建 1 个 {@code OnnxTensor}；
- * 通常由 {@link net.dreamlu.mica.ai.enhance.EnhanceEngine} 单例持有。
+ * 通常由 {@link net.dreamlu.mica.ai.enhance.core.EnhanceEngine} 单例持有。
  */
 @Slf4j
 public class EnhanceDetector implements AutoCloseable {

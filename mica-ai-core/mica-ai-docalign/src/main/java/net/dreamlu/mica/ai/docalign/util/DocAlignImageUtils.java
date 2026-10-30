@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.docalign.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.docalign.model.DocAlignResult;
@@ -38,10 +39,8 @@ import java.util.List;
  *
  * <p>工具类，私有构造，线程安全（无状态）。
  */
-public final class DocAlignImageUtils {
-
-	private DocAlignImageUtils() {
-	}
+@UtilityClass
+public class DocAlignImageUtils {
 
 	/**
 	 * 把图像字节数组解码为 BGR {@link Mat}。

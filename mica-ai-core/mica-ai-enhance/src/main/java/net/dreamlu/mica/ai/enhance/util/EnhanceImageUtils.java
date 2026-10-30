@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.enhance.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import org.opencv.core.CvType;
@@ -30,10 +31,8 @@ import org.opencv.imgproc.Imgproc;
  * <p>归一化契约：输入只做 {@code /255}（<b>无 mean / std</b>），输出 {@code ×255} 后 clip 到
  * {@code [0,255]}。
  */
-public final class EnhanceImageUtils {
-
-	private EnhanceImageUtils() {
-	}
+@UtilityClass
+public class EnhanceImageUtils {
 
 	/**
 	 * 解码图像字节为 BGR Mat。
@@ -179,6 +178,6 @@ public final class EnhanceImageUtils {
 		if (scaled > 255f) {
 			return 255;
 		}
-		return (int) Math.round(scaled);
+		return Math.round(scaled);
 	}
 }

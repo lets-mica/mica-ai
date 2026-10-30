@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.detect.postprocess;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.detect.model.DetectBox;
 
 import java.util.ArrayList;
@@ -27,10 +28,8 @@ import java.util.List;
  *
  * <p>纯算法实现，不依赖 OpenCV，便于单测覆盖；线程安全（无状态）。
  */
-public final class Nms {
-
-	private Nms() {
-	}
+@UtilityClass
+public class Nms {
 
 	/**
 	 * 按得分降序做贪心 NMS。

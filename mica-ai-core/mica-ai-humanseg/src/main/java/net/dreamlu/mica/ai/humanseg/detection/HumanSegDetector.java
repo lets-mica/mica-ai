@@ -58,7 +58,7 @@ import java.util.Map;
  * 「有且仅有 1 个输出」的校验，不按名字查找；输入节点名按名称提示解析。
  *
  * <p>线程安全：ONNX session 线程安全，每次推理新建 1 个 {@code OnnxTensor}；
- * 通常由 {@link net.dreamlu.mica.ai.humanseg.HumanSegEngine} 单例持有。
+ * 通常由 {@link net.dreamlu.mica.ai.humanseg.core.HumanSegEngine} 单例持有。
  */
 @Slf4j
 public class HumanSegDetector implements AutoCloseable {

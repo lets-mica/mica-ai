@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.detect.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import org.opencv.core.Core;
@@ -30,10 +31,8 @@ import org.opencv.imgproc.Imgproc;
  *
  * <p>工具类，私有构造，线程安全（无状态）。
  */
-public final class DetectImageUtils {
-
-	private DetectImageUtils() {
-	}
+@UtilityClass
+public class DetectImageUtils {
 
 	/**
 	 * letterbox 结果：模型输入图 + 反算回原图所需的缩放 / 偏移。

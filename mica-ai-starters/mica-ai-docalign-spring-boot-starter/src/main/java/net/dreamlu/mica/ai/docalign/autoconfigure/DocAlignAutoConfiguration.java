@@ -16,7 +16,7 @@
 package net.dreamlu.mica.ai.docalign.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.docalign.DocAlignEngine;
+import net.dreamlu.mica.ai.docalign.core.DocAlignEngine;
 import net.dreamlu.mica.ai.docalign.config.DocAlignConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

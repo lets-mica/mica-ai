@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.enhance;
 
 import net.dreamlu.mica.ai.enhance.config.EnhanceConfig;
+import net.dreamlu.mica.ai.enhance.core.EnhanceEngine;
 import net.dreamlu.mica.ai.enhance.util.EnhanceImageUtils;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;

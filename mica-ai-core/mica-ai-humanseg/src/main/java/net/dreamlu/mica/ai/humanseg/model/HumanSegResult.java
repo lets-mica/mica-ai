@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.humanseg.model;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.opencv.core.Mat;
 
 /**
@@ -33,17 +34,12 @@ import org.opencv.core.Mat;
  * }</pre>
  */
 @Getter
+@RequiredArgsConstructor
 public class HumanSegResult implements AutoCloseable {
 
 	private final Mat alpha;
 	private final int width;
 	private final int height;
-
-	public HumanSegResult(Mat alpha, int width, int height) {
-		this.alpha = alpha;
-		this.width = width;
-		this.height = height;
-	}
 
 	/**
 	 * 释放底层 alpha {@link Mat}，可重复调用。

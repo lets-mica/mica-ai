@@ -16,7 +16,7 @@
 package net.dreamlu.mica.ai.enhance.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.enhance.EnhanceEngine;
+import net.dreamlu.mica.ai.enhance.core.EnhanceEngine;
 import net.dreamlu.mica.ai.enhance.config.EnhanceConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
