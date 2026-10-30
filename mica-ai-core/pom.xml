@@ -28,6 +28,7 @@
         <module>mica-ai-detect</module>
         <module>mica-ai-track</module>
         <module>mica-ai-textline</module>
+        <module>mica-ai-classify</module>
         <module>mica-ai-captcha</module>
     </modules>
 </project>

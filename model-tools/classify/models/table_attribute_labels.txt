@@ -1,0 +1,6 @@
+source
+number
+color
+clarity
+obstruction
+angle

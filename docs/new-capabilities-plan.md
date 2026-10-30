@@ -33,7 +33,7 @@
 | E | `mica-ai-detect` | **NanoDet-Plus / YOLOX-s 通用检测底座** | opencv_zoo 官方 ONNX | 3–9MB | Apache-2.0 | 无 |
 | F | `mica-ai-docalign` | **DocAligner 文档角点矫正** | DocsaidLab 官方直接发 ONNX | 小 | Apache-2.0 | 无 |
 | G | `mica-ai-enhance` | **realesr-general-x4v3 图像超分** | Qualcomm AI Hub / thetoolswhale | ~5MB | BSD-3-Clause | 无 |
-| H | `mica-ai-classify` | **PULC 轻量分类族（13 个模型）** | PaddleClas（需 `paddle2onnx` 离线转） | 7–8MB / 个 | Apache-2.0 | 无 |
+| H | `mica-ai-classify` | **PULC 轻量分类族（官方 12 个，首批入库 4 个）** | PaddleClas（需 `paddle2onnx` 离线转） | 4–8MB / 个 | Apache-2.0 | 无 |
 
 ### 1.3 实施顺序与里程碑
 
@@ -327,16 +327,19 @@ DocAligner 输出是 **4 通道 heatmap**（每个角点一个），不是直接
 
 ## 7. Phase 6：mica-ai-classify（PULC 轻量分类族）
 
-> ⛔ **当前阻塞（2026-10-30）**：本机 `paddle2onnx 2.1.0` 的原生扩展与已安装的 `paddle 3.4.0` ABI 不匹配
-> （导入即 `DLL load failed: 找不到指定的程序`），且 pip 源不可达，无法在线升降级；
-> PaddleClas/PULC 只发布 Paddle inference 模型（`inference.json` / `inference.pdiparams`），
-> **没有官方预导 ONNX**。因此本 Phase 暂缓，待转换环境可用后再实施（其余计划内容保持不变）。
+> ✅ **已完成（2026-10-30）**：模块 + Starter + 36 个单测 + 8 个集成测试（外置模型项跳过）+ 三份 README + pom 注册全部落地。
+> 实施偏差：
+> - **转换环境**：全局 `paddle 3.4.0 + paddle2onnx 2.1.0` ABI 不匹配（DLL 加载失败），改用独立 venv 安装 **`paddlepaddle 2.6.2` + `paddle2onnx 1.3.1`** 离线转换，转换后 ONNX 随仓库入库，运行期仍是纯 ONNX Runtime（不引入 Python）
+> - **首批 4 个模型**（均 Apache-2.0、均 <50MB）：`text_image_orientation` 6.78MB / `clarity_assessment` 4.14MB / `person_exists` 6.77MB / `table_attribute` 6.79MB
+> - **官方 PULC 实为 12 个**（`deploy/configs/PULC` 目录实测），计划早期写的「13 个」为估算，文档已按 12 记录
+> - **契约差异显式化为配置项**：`resizeShort`（默认 256 短边缩放 + 224 中心裁剪；`table_attribute` 置 0 直接 resize）、`multiLabel`（`table_attribute` 为 6 属性 sigmoid）、`outputIsProbability`（4 个模型输出均已内置 softmax/sigmoid）、`channelOrder`（PULC 为 RGB，与 textline 的 BGR 不同）
+> - 类名：`ClassifyEngine` / `PPClassificationDetector`；门面类按项目约定放在 `net.dreamlu.mica.ai.classify.core`
 
 
 ### 7.1 为什么新开模块，不并进 textline
 
 - textline 是**单一能力**（文本行方向 2 类），挂一个 PP-LCNet 模型
-- PULC 是**13 个模型的分类家族**（每个 7–8MB），共用 PP-LCNet backbone 契约
+- PULC 是**12 个模型的分类家族**（官方 `deploy/configs/PULC`，每个 4–8MB），共用 PP-LCNet backbone 契约（首批入库 4 个）
 - 定位不同：textline 是文档预处理链的一个环节，classify 是通用分类底座
 - 但**配置契约高度复用**—— `TextLineConfig` 的 `mean/std/inputWidth/inputHeight/outputIsProbability` 全部照抄
 
@@ -346,16 +349,23 @@ DocAligner 输出是 **4 通道 heatmap**（每个角点一个），不是直接
 mica-ai-classify/
 ├── pom.xml
 ├── src/main/java/net/dreamlu/mica/ai/classify/
-│   ├── ClassifyEngine.java            // 门面，多模型可插拔
-│   ├── ClassifyConfig.java            // builder：modelPath / modelVersion / inputWidth / inputHeight / mean / std / channelOrder / outputIsProbability / topK / onnx
+│   ├── core/
+│   │   └── ClassifyEngine.java        // 门面，多模型可插拔
+│   ├── config/
+│   │   ├── ClassifyConfig.java        // builder：modelPath / modelVersion / labelsPath / inputWidth / inputHeight / resizeShort / channelOrder / mean / std / interpolation / multiLabel / outputIsProbability / topK / onnx
+│   │   ├── ClassifyChannelOrder.java  // RGB（PULC 默认）/ BGR
+│   │   └── ClassifyInterpolation.java
 │   ├── detection/
 │   │   └── PPClassificationDetector.java
 │   ├── postprocess/
-│   │   └── ClassifyPostProcessor.java  // logits → softmax → topK
+│   │   └── ClassifyPostProcessor.java // logits → softmax/sigmoid → topK
+│   ├── util/
+│   │   ├── ClassifyImageUtils.java    // 短边缩放 + 中心裁剪 + RGB CHW 张量化
+│   │   └── ClassifyLabelUtils.java    // label_list 读取（保留重复标签）
 │   └── model/
-│       ├── ClassifyResult.java        // List<TopKItem(label, score)>
+│       ├── ClassifyResult.java        // topK + 全量 scores/labels
 │       └── ClassifyTopK.java
-└── model-tools/classify/models/        // 13 个 ONNX（paddle2onnx 转换）+ 各自 label_list 文件
+└── model-tools/classify/models/        // 首批 4 个 ONNX（venv paddle2onnx 转换）+ 各自 *_labels.txt
 ```
 
 ### 7.3 关键实现
@@ -373,14 +383,15 @@ mica-ai-classify/
 
 ### 7.5 实施 checklist
 
-- [ ] 选定首批 4 个 PULC 模型 → `paddle2onnx` 转换
-- [ ] 转换后打印 4 个模型的 I/O 契约 → 确认全部兼容 `3×224×224 + softmax/logits`
-- [ ] 每个模型配 label_list 文件 → `model-tools/classify/models/<name>_labels.txt`
-- [ ] 实现 `ClassifyEngine`（TextLineEngine 同款门面模式）
-- [ ] `ClassifyConfig` 加 `labelsPath` 必填字段 + 校验
-- [ ] Starter + pom 注册
-- [ ] 集成测试（每个模型各一张测试图 + label_list 加载）
-- [ ] `model-tools/classify/README.md` 写清 PaddleClas License（Apache-2.0）+ 商用结论 ✅ + 13 个模型清单
+- [x] 选定首批 4 个 PULC 模型 → `paddle2onnx` 转换
+- [x] 转换后打印 4 个模型的 I/O 契约 → 确认全部兼容 `3×224×224 + softmax/sigmoid`
+- [x] 每个模型配 label_list 文件 → `model-tools/classify/models/<name>_labels.txt`
+- [x] 实现 `ClassifyEngine`（TextLineEngine 同款门面模式，放在 `core` 子包）
+- [x] `ClassifyConfig` 加 `labelsPath` 必填字段 + 校验
+- [x] Starter + pom 注册
+- [x] 单元测试（Config / LabelUtils / PostProcessor / ImageUtils 共 36 个）
+- [x] 集成测试（每个模型各一张测试图 + label_list 加载，共 8 个，外置模型项跳过）
+- [x] `model-tools/classify/README.md` 写清 PaddleClas License（Apache-2.0）+ 商用结论 ✅ + 官方 12 个模型清单
 
 ---
 

@@ -253,6 +253,16 @@
             </dependency>
             <dependency>
                 <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-classify</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-classify-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-captcha</artifactId>
                 <version>${revision}</version>
             </dependency>

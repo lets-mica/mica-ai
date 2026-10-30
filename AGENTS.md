@@ -7,7 +7,7 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪**（纯算法零模型）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪**（纯算法零模型）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **PaddleClas PULC 通用图像分类**（`text_image_orientation` / `clarity_assessment` / `person_exists` / `table_attribute` 入库，Top-K + 多标签可插拔）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
 音频（TTS / ASR / 声纹）和通用文档 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含（**验证码识别**是专用场景，与通用文档 OCR 不同，保留在本仓库）。
 
@@ -34,6 +34,7 @@ mica-ai/
 │   ├── mica-ai-matting/            # ✂️ U²-Net 族（通用抠图，Apache-2.0）
 │   ├── mica-ai-humanseg/           # 👤 PP-HumanSeg V2-Lite（人像分割，Apache-2.0）
 │   ├── mica-ai-textline/           # 🔤 PP-LCNet（文本行 0°/180° 方向分类 + 转正，Apache-2.0）
+│   ├── mica-ai-classify/           # 🔎 PaddleClas PULC（通用图像分类 + Top-K / 多标签，Apache-2.0）
 │   ├── mica-ai-detect/             # 🎯 NanoDet-Plus / YOLOX-s（通用目标检测，COCO 80 类，Apache-2.0）
 │   ├── mica-ai-track/              # 🧭 ByteTrack（多目标跟踪，纯算法零模型，MIT）
 │   ├── mica-ai-docalign/           # 📸 DocAligner（文档角点检测 + 透视矫正，Apache-2.0）
@@ -47,6 +48,7 @@ mica-ai/
 │   ├── mica-ai-matting-spring-boot-starter/
 │   ├── mica-ai-humanseg-spring-boot-starter/
 │   ├── mica-ai-textline-spring-boot-starter/
+│   ├── mica-ai-classify-spring-boot-starter/
 │   ├── mica-ai-detect-spring-boot-starter/
 │   ├── mica-ai-track-spring-boot-starter/
 │   ├── mica-ai-docalign-spring-boot-starter/
@@ -61,6 +63,7 @@ mica-ai/
     ├── layout/models/              #   PP-DocLayoutV3（Apache-2.0，⚠️ 125MB 不随仓库分发）
     ├── matting/models/             #   U²-Net u2netp（Apache-2.0，4.36MB；u2net / u2net_human_seg 168MB 不随仓库分发）
     ├── textline/models/            #   PP-LCNet_x1_0_textline_ori（Apache-2.0，6.46MB；x0_25 轻量版不随仓库分发）
+    ├── classify/models/            #   PULC text_image_orientation / clarity_assessment / person_exists / table_attribute（Apache-2.0，4.14–6.79MB + label_list）
     ├── detect/models/              #   NanoDet-Plus 3.62MB + YOLOX-s 34.2MB（opencv_zoo，Apache-2.0）
     ├── humanseg/models/            #   PP-HumanSeg V2-Lite（opencv_zoo 导出，Apache-2.0，5.88MB；192×192 输入）
     ├── docalign/models/            #   DocAligner lcnet100（Apache-2.0，4.55MB；fastvit 同族 >50MB 不随仓库分发）
@@ -70,7 +73,7 @@ mica-ai/
 
 > **重要**：
 > - `mica-ai-core/mica-ai-<cap>/README.md` 是各能力"模型规格 / 核心组件 / I/O 格式"的事实来源
->   （`face` / `filetype` / `plate` / `layout` / `matting` / `humanseg` / `textline` / `detect` / `track` / `docalign` / `enhance` / `captcha` 各一份）
+>   （`face` / `filetype` / `plate` / `layout` / `matting` / `humanseg` / `textline` / `classify` / `detect` / `track` / `docalign` / `enhance` / `captcha` 各一份）
 >
 > Agent 在对应能力内做修改前**先读**对应 README。
 
@@ -159,6 +162,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
   | `mica-ai-layout` 版面检测 | PP-DocLayoutV3（PaddleOCR，paddle2onnx 转换产物） | Apache 2.0 | ✅ |
   | `mica-ai-matting` 抠图 | U²-Net 族 `u2netp`（入库 4.36MB）/ `u2net` / `u2net_human_seg`（外置 168MB）（xuebinqin/U-2-Net，danielgatis/rembg 打包 ONNX），三者 I/O 契约一致 | Apache 2.0 | ✅ |
   | `mica-ai-textline` 方向分类 | PP-LCNet_x1_0_textline_ori（入库 6.46MB）/ PP-LCNet_x0_25_textline_ori（外置 ~0.96MB）（PaddlePaddle/PaddleX，paddle2onnx 转换产物），两者 I/O 契约一致 | Apache 2.0 | ✅ |
+  | `mica-ai-classify` 通用分类 | PaddleClas PULC `text_image_orientation` 6.78MB / `clarity_assessment` 4.14MB / `person_exists` 6.77MB / `table_attribute` 6.79MB（均入库，paddle2onnx 转换产物，各带 label_list），其余 PULC 模型同契约可外置 | Apache 2.0 | ✅ |
   | `mica-ai-face` 图像质量 | EDFFIQA tiny（OpenCV Zoo `face_image_quality_assessment_ediffiqa`，4.12MB） | **CC-BY-4.0**（**项目 owner 显式批准例外**，分发需保留署名与许可声明） | ✅ |
   | `mica-ai-face` 表情识别 | facial_expression_recognition_mobilefacenet（OpenCV Zoo，4.57MB，RAF-DB 7 类） | Apache 2.0 | ✅ |
   | `mica-ai-detect` 目标检测 | NanoDet-Plus 3.62MB / YOLOX-s 34.2MB（OpenCV Zoo `object_detection_*`，COCO 80 类） | Apache 2.0 | ✅ |

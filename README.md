@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Mica Maven release](https://img.shields.io/maven-central/v/net.dreamlu/mica-ai-common.svg?style=flat-square)](https://central.sonatype.com/artifact/net.dreamlu/mica-ai-common/versions)
 
-> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 文档版面分析 + 通用抠图 + 人像分割 + 通用目标检测 + 多目标跟踪 + 文档角点矫正 + 图像超分 + 文本行方向分类 + 通用验证码识别 开箱即用
+> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 文档版面分析 + 通用抠图 + 人像分割 + 通用目标检测 + 多目标跟踪 + 文档角点矫正 + 图像超分 + 文本行方向分类 + 通用图像分类 + 通用验证码识别 开箱即用
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
@@ -55,6 +55,7 @@
 | 📸 文档角点矫正 | `mica-ai-docalign` | DocAligner `lcnet100_h_e_bifpn_256_fp32`（4.55MB 入库，fastvit 同族可外置替换） | 4 个角点（左上 / 右上 / 右下 / 左下）+ 拉平 PNG | Apache 2.0 | ✅ |
 | ✨ 图像超分 | `mica-ai-enhance` | Real-ESRGAN `realesr-general-x4v3`（2.33MB 入库，动态尺寸 + tile 推理） | **4 倍**放大后的 PNG / Mat | BSD-3-Clause | ✅ |
 | 🔤 文本行方向分类 | `mica-ai-textline` | PP-LCNet_x1_0_textline_ori（`x0_25` 轻量版可外置替换） | **0° / 180°** + softmax 置信度 + 转正角度 | Apache 2.0 | ✅ |
+| 🔎 通用图像分类 | `mica-ai-classify` | PaddleClas PULC（4 个入库：整图方向 / 清晰度 / 人物存在 / 表格 6 属性） | **Top-K** + 全量概率（单标签 / 多标签） | Apache 2.0 | ✅ |
 | 🔐 通用验证码识别 | `mica-ai-captcha` | ddddocr CRNN + CTC（**8210 类**字符集，模型外置配置） | 验证码文本 + 逐字符置信度 | MIT | ✅ |
 
 ### 整体架构
@@ -69,7 +70,7 @@
         │                    mica-ai-starters                  │
         │  face 🎭 filetype 📄 plate 🚗 layout 📐 matting ✂️    │
         │  humanseg 👤 detect 🎯 track 🧭 docalign 📸         │
-        │  enhance ✨ textline 🔤 captcha 🔐                 │
+        │  enhance ✨ textline 🔤 classify 🔎 captcha 🔐        │
         └──────────────────────────┬───────────────────────────┘
                                    │
                                    ▼
@@ -90,6 +91,8 @@
         │              Real-ESRGAN ✨ 4 倍超分（tile）         │
         │                mica-ai-textline                     │
         │                PP-LCNet 🔤 0° / 180° + 转正         │
+        │                mica-ai-classify                     │
+        │                PaddleClas PULC 🔎 Top-K / 多标签     │
         │                mica-ai-captcha                      │
         │                ddddocr CRNN 🔐 验证码 + 置信度       │
         └──────────────────────────┬───────────────────────────┘
@@ -180,6 +183,11 @@
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-textline</artifactId>          <!-- 文本行方向分类（0°/180° 判定 + 转正，模型 6.46MB 随仓库分发） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-classify</artifactId>          <!-- 通用图像分类（PULC，4 个模型 4.14–6.79MB 随仓库分发） -->
     <version>${mica-ai.version}</version>
 </dependency>
 <dependency>
@@ -280,6 +288,7 @@ public class FaceEnrollService {
 | [mica-ai-docalign-spring-boot-starter](mica-ai-starters/mica-ai-docalign-spring-boot-starter/README.md) | `mica.ai.docalign` | DocAligner 文档角点检测 + 透视矫正（4 角点 + 一键拉平；4.55MB 入库，fastvit 同族走 `model-path` 外置切换） |
 | [mica-ai-enhance-spring-boot-starter](mica-ai-starters/mica-ai-enhance-spring-boot-starter/README.md) | `mica.ai.enhance` | Real-ESRGAN 4 倍图像超分（2.33MB 入库；大图自动 tile 切分，`tile-size` / `tile-overlap` 可调） |
 | [mica-ai-textline-spring-boot-starter](mica-ai-starters/mica-ai-textline-spring-boot-starter/README.md) | `mica.ai.textline` | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正；`x1_0` 6.46MB 入库，`x0_25` 轻量版走 `model-path` 外置切换） |
+| [mica-ai-classify-spring-boot-starter](mica-ai-starters/mica-ai-classify-spring-boot-starter/README.md) | `mica.ai.classify` | PaddleClas PULC 通用图像分类（整图方向 / 清晰度 / 人物存在 / 表格 6 属性；`labels-path` 必填，多模型分别声明 Bean） |
 | [mica-ai-captcha-spring-boot-starter](mica-ai-starters/mica-ai-captcha-spring-boot-starter/README.md) | `mica.ai.captcha` | ddddocr 通用验证码识别（CRNN + CTC，8210 类字符集；**模型与字符集外置配置**，`model-path` / `charset-path` 必填） |
 
 只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用。
@@ -304,6 +313,7 @@ mica-ai/
 │   ├── mica-ai-docalign/           #   📸 DocAligner 文档角点检测 + 透视矫正
 │   ├── mica-ai-enhance/            #   ✨ Real-ESRGAN 4 倍图像超分（tile 推理）
 │   ├── mica-ai-textline/           #   🔤 PP-LCNet 文本行方向分类（0° / 180°）
+│   ├── mica-ai-classify/           #   🔎 PaddleClas PULC 通用图像分类
 │   └── mica-ai-captcha/            #   🔐 ddddocr 通用验证码识别（CRNN + CTC）
 ├── mica-ai-starters/               # Spring Boot 2 Starter
 │   ├── mica-ai-face-spring-boot-starter/
@@ -317,6 +327,7 @@ mica-ai/
 │   ├── mica-ai-docalign-spring-boot-starter/
 │   ├── mica-ai-enhance-spring-boot-starter/
 │   ├── mica-ai-textline-spring-boot-starter/
+│   ├── mica-ai-classify-spring-boot-starter/
 │   └── mica-ai-captcha-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产（直接入库，均 <50MB）
@@ -330,6 +341,7 @@ mica-ai/
     ├── docalign/models/            #   DocAligner lcnet100 4.55MB（入库；fastvit 同族不入库）
     ├── enhance/models/             #   Real-ESRGAN realesr-general-x4v3 2.33MB（入库，含 BSD-3 许可证原文）
     ├── textline/models/            #   PP-LCNet_x1_0_textline_ori（6.46MB，入库；x0_25 轻量版不入库）
+    ├── classify/models/            #   PULC 4 个模型（4.14–6.79MB，入库；各带 label_list）
     └── captcha/models/             #   ddddocr ddddocr.onnx + charset.txt（12.98MB，入库；不打包进 jar）
 ```
 
