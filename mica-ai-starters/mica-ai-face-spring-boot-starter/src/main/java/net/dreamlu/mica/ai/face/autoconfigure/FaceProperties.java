@@ -61,6 +61,16 @@ public class FaceProperties {
 	private Card card = new Card();
 
 	/**
+	 * 人脸质量评估（eDifFIQA）参数配置。
+	 */
+	private Quality quality = new Quality();
+
+	/**
+	 * 表情识别参数配置。
+	 */
+	private Expression expression = new Expression();
+
+	/**
 	 * ONNX Runtime 会话参数（线程数 / 设备等）。
 	 */
 	@NestedConfigurationProperty
@@ -84,6 +94,14 @@ public class FaceProperties {
 		 * 活体检测（MiniFASNetV2）模型路径。
 		 */
 		private ModelEntry liveness = new ModelEntry();
+		/**
+		 * 人脸质量评估（eDifFIQA-T）模型路径。
+		 */
+		private ModelEntry quality = new ModelEntry();
+		/**
+		 * 表情识别（MobileFaceNet）模型路径。
+		 */
+		private ModelEntry expression = new ModelEntry();
 	}
 
 	/**
@@ -247,5 +265,33 @@ public class FaceProperties {
 		 * 卡片最小边长（像素，小于该值的候选丢弃）。
 		 */
 		private int minCardSize = 400;
+	}
+
+	/**
+	 * 人脸质量评估（eDifFIQA）参数配置。
+	 */
+	@Getter
+	@Setter
+	public static class Quality {
+		/**
+		 * 是否在活体 / 比对前自动跑 eDifFIQA 质量门控。
+		 */
+		private boolean enabled = false;
+		/**
+		 * 质量判定阈值（0~1，低于该值直接拒绝）。
+		 */
+		private float threshold = 0.5f;
+	}
+
+	/**
+	 * 表情识别参数配置。
+	 */
+	@Getter
+	@Setter
+	public static class Expression {
+		/**
+		 * 是否启用表情识别。
+		 */
+		private boolean enabled = false;
 	}
 }

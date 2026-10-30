@@ -23,8 +23,12 @@ import net.dreamlu.mica.ai.face.card.CardExtractor;
 import net.dreamlu.mica.ai.face.card.CardOptions;
 import net.dreamlu.mica.ai.face.config.ModelConfig;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
+import net.dreamlu.mica.ai.face.config.ExpressionConfig;
+import net.dreamlu.mica.ai.face.expression.ExpressionRecognizer;
 import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
 import net.dreamlu.mica.ai.face.model.ModelManager;
+import net.dreamlu.mica.ai.face.quality.FaceQualityAssessor;
+import net.dreamlu.mica.ai.face.config.FaceQualityConfig;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.verification.FaceVerifier;
 import nu.pattern.OpenCV;
@@ -184,6 +188,44 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.minCardSize(c.getMinCardSize());
 		// 默认不注入 FaceDetector；需要 autoOrient 时由业务模块自行提供带检测器的 CardExtractor
 		return new CardExtractor(builder.build());
+	}
+
+	/**
+	 * 构造人脸质量评估器，仅在 {@code mica.ai.face.quality.enabled=true} 时装配。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return eDifFIQA 质量评估器
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "mica.ai.face.quality", name = "enabled", havingValue = "true")
+	public FaceQualityAssessor faceQualityAssessor(FaceProperties properties) {
+		FaceProperties.Quality q = properties.getQuality();
+		FaceProperties.ModelEntry qualityModel = properties.getModel().getQuality();
+		FaceQualityConfig config = FaceQualityConfig.builder()
+			.modelPath(qualityModel.getPath())
+			.threshold(q.getThreshold())
+			.onnx(properties.getOnnx())
+			.build();
+		return new FaceQualityAssessor(config);
+	}
+
+	/**
+	 * 构造表情识别器，仅在 {@code mica.ai.face.expression.enabled=true} 时装配。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return Progressive Teacher 表情识别器
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "mica.ai.face.expression", name = "enabled", havingValue = "true")
+	public ExpressionRecognizer expressionRecognizer(FaceProperties properties) {
+		FaceProperties.ModelEntry exprModel = properties.getModel().getExpression();
+		ExpressionConfig config = ExpressionConfig.builder()
+			.modelPath(exprModel.getPath())
+			.onnx(properties.getOnnx())
+			.build();
+		return new ExpressionRecognizer(config);
 	}
 
 	@Override
