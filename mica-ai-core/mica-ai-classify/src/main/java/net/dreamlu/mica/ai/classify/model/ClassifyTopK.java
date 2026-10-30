@@ -15,8 +15,9 @@
  */
 package net.dreamlu.mica.ai.classify.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 /**
  * Top-K 分类项：类别索引 + 标签 + 概率。
@@ -25,7 +26,8 @@ import lombok.Getter;
  * {@link #label} 是该索引对应的标签；{@link #score} 为 softmax / sigmoid 概率。
  */
 @Getter
-@AllArgsConstructor
+@ToString
+@RequiredArgsConstructor
 public class ClassifyTopK {
 
 	/**
@@ -41,8 +43,4 @@ public class ClassifyTopK {
 	 */
 	private final float score;
 
-	@Override
-	public String toString() {
-		return "ClassifyTopK{index=" + index + ", label='" + label + "', score=" + score + '}';
-	}
 }

@@ -15,20 +15,18 @@
  */
 package net.dreamlu.mica.ai.classify.postprocess;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.classify.model.ClassifyTopK;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
  * 分类后处理：softmax / sigmoid / Top-K，纯 Java，无状态。
  */
-public final class ClassifyPostProcessor {
-
-	private ClassifyPostProcessor() {
-	}
+@UtilityClass
+public class ClassifyPostProcessor {
 
 	/**
 	 * 对 logits 做数值稳定的 softmax。
@@ -93,12 +91,9 @@ public final class ClassifyPostProcessor {
 		for (int i = 0; i < scores.length; i++) {
 			indices.add(i);
 		}
-		Collections.sort(indices, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
-				int cmp = Float.compare(scores[b], scores[a]);
-				return cmp != 0 ? cmp : Integer.compare(a, b);
-			}
+		indices.sort((a, b) -> {
+			int cmp = Float.compare(scores[b], scores[a]);
+			return cmp != 0 ? cmp : Integer.compare(a, b);
 		});
 		List<ClassifyTopK> items = new ArrayList<>(size);
 		for (int i = 0; i < size; i++) {

@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.classify.core;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.classify.config.ClassifyConfig;
 import net.dreamlu.mica.ai.classify.detection.PPClassificationDetector;
@@ -56,6 +57,10 @@ import java.util.Objects;
 public class ClassifyEngine implements AutoCloseable {
 
 	private final PPClassificationDetector detector;
+	/**
+	 * 获取当前配置。
+	 */
+	@Getter
 	private final ClassifyConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
@@ -120,15 +125,6 @@ public class ClassifyEngine implements AutoCloseable {
 	 */
 	public ClassifyResult classifyPath(String imagePath) {
 		return detector.classifyBytes(readFile(imagePath));
-	}
-
-	/**
-	 * 获取当前配置。
-	 *
-	 * @return 构造时传入的 {@link ClassifyConfig}
-	 */
-	public ClassifyConfig getConfig() {
-		return config;
 	}
 
 	/**

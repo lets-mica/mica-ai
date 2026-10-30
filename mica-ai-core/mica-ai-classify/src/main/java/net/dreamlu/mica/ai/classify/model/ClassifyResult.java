@@ -40,7 +40,7 @@ public class ClassifyResult {
 
 	public ClassifyResult(List<ClassifyTopK> topK, float[] scores,
 						  String[] labels, boolean multiLabel) {
-		this.topK = topK == null ? Collections.<ClassifyTopK>emptyList() : topK;
+		this.topK = topK == null ? Collections.emptyList() : topK;
 		this.scores = scores;
 		this.labels = labels;
 		this.multiLabel = multiLabel;

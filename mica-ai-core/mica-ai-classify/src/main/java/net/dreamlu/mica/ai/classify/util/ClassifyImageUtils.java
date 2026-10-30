@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.classify.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.classify.config.ClassifyChannelOrder;
 import net.dreamlu.mica.ai.classify.config.ClassifyInterpolation;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
@@ -31,10 +32,8 @@ import org.opencv.imgproc.Imgproc;
  *
  * <p>工具类，私有构造，线程安全（无状态）。
  */
-public final class ClassifyImageUtils {
-
-	private ClassifyImageUtils() {
-	}
+@UtilityClass
+public class ClassifyImageUtils {
 
 	/**
 	 * 把图像字节数组解码为 BGR {@link Mat}。

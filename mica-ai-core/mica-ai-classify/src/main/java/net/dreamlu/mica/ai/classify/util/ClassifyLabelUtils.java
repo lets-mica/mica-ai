@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.classify.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
@@ -33,10 +34,8 @@ import java.util.List;
  * <b>重复标签保留</b>（去重会让索引整体错位，属于静默错误）。
  * 工具类，私有构造，线程安全（无状态）。
  */
-public final class ClassifyLabelUtils {
-
-	private ClassifyLabelUtils() {
-	}
+@UtilityClass
+public class ClassifyLabelUtils {
 
 	/**
 	 * 读取 label_list 文件。

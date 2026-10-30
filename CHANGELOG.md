@@ -2,6 +2,22 @@
 
 本项目的所有显著变更都会记录在此文件中。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [1.0.2] - 未发布
+
+### ✨ 新增能力
+
+- 🎯 `mica-ai-detect` —— 通用目标检测（COCO 80 类）：`DetectEngine` 输出带类别与置信度的检测框，默认走 NanoDet-Plus（416×416，3.62MB，CPU 友好），换 YOLOX-s（640×640，34.2MB，精度更高）只需成对改 `family` + `inputSize` 两个配置项；配套 `mica-ai-detect-spring-boot-starter`（`mica.ai.detect` 前缀）零配置注入
+- 🧭 `mica-ai-track` —— ByteTrack 多目标跟踪：**纯算法、零模型**，把逐帧检测框交给 `ByteTracker#update` 即得稳定 track id 与轨迹年龄，高低分双阈值可配；配套 `mica-ai-track-spring-boot-starter`（`mica.ai.track` 前缀）自动装配 `ByteTracker` Bean
+- 👤 `mica-ai-humanseg` —— PP-HumanSeg V2-Lite 人像分割（192×192，5.88MB）：输出人像 alpha 掩码，可直接取透明底 PNG、换底色合成或自取原尺寸掩码；与通用抠图 `mica-ai-matting` 拆成两个模块（人像语义 vs 通用显著性，模型契约不同不能互换），竖版同族模型可外置替换；配套 `mica-ai-humanseg-spring-boot-starter`（`mica.ai.humanseg` 前缀）
+- 📸 `mica-ai-docalign` —— DocAligner 文档角点检测 + 透视矫正：一步把手机拍的歪文档拉平成正视图，也可只取四角点自行处理，或按指定尺寸（如 A4 2480×3508）输出矫正图；`lcnet100` 4.55MB 入库，fastvit 同族可外置替换；配套 `mica-ai-docalign-spring-boot-starter`（`mica.ai.docalign` 前缀）
+- ✨ `mica-ai-enhance` —— Real-ESRGAN 图像超分：**4 倍**放大（480×360 → 1920×1440），大图自动 tile 切分推理后再拼接，tile 尺寸与重叠可调；`realesr-general-x4v3` 2.33MB 入库，同族完整版可外置替换；配套 `mica-ai-enhance-spring-boot-starter`（`mica.ai.enhance` 前缀）
+- 🔎 `mica-ai-classify` —— PaddleClas PULC 通用图像分类：一个 `ClassifyEngine` 绑定「一个模型 + 一份 label_list」，返回 Top-K 与全量概率，单标签与多标签（如表格 6 属性各自独立 sigmoid）都支持；首批 4 个模型入库 —— 整图方向 / 清晰度 / 人物存在 / 表格属性（4.14–6.79MB），label_list 与模型强耦合、缺失即启动失败，其余 PULC 模型同契约可外置；配套 `mica-ai-classify-spring-boot-starter`（`mica.ai.classify` 前缀，多模型各自声明 Bean）
+
+### 📦 模型与构建
+
+- 本次新增能力依赖的模型全部随仓库分发且单文件 <50MB：NanoDet-Plus 3.62MB、YOLOX-s 34.2MB、PP-HumanSeg V2-Lite 5.88MB、DocAligner lcnet100 4.55MB、Real-ESRGAN x4v3 2.33MB、PULC 4 个 4.14–6.79MB；多目标跟踪不引入任何模型
+- 换模型一律走 `model-path` 外置、Java 侧无需改动：fastvit、realesr 完整版等未入库同族直接指向本地路径，其余 PULC 模型先用 `paddle2onnx` 离线转换再外置
+
 ## [1.0.1] - 2026-10-24
 
 ### ✨ 新增能力
