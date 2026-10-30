@@ -156,6 +156,35 @@ public class ImageUtils {
 	}
 
 	/**
+	 * 把 BGR HWC byte Mat 转成 RGB CHW float，并按 {@code (x / 255 - mean) / std} 归一化。
+	 *
+	 * <p>与 OpenCV Zoo {@code facial_fer_model.py} / {@code ediffiqa.py} 官方管线一致：
+	 * BGR→RGB、归一化到 [-1, 1]、通道前置（{@code moveaxis(HWC, -1, 1)}）。
+	 *
+	 * @param bgr  待转换的 BGR Mat（{@code CV_8UC3}）
+	 * @param mean 每通道均值（<b>RGB</b> 顺序）
+	 * @param std  每通道标准差（<b>RGB</b> 顺序）
+	 * @return RGB CHW 布局的归一化 float 数组，长度 {@code 3 * h * w}
+	 */
+	public static float[] bgrHwcToRgbChwFloat(Mat bgr, float[] mean, float[] std) {
+		int h = bgr.rows();
+		int w = bgr.cols();
+		int hw = h * w;
+		byte[] pixels = new byte[hw * 3];
+		bgr.get(0, 0, pixels);
+		float[] data = new float[3 * hw];
+		for (int i = 0; i < hw; i++) {
+			int b = pixels[i * 3] & 0xFF;
+			int g = pixels[i * 3 + 1] & 0xFF;
+			int r = pixels[i * 3 + 2] & 0xFF;
+			data[i] = ((r / 255f) - mean[0]) / std[0];
+			data[hw + i] = ((g / 255f) - mean[1]) / std[1];
+			data[2 * hw + i] = ((b / 255f) - mean[2]) / std[2];
+		}
+		return data;
+	}
+
+	/**
 	 * 将 BGR 图像编码为指定格式的字节数组。
 	 *
 	 * @param bgr     BGR 输入图像

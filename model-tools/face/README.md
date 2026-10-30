@@ -10,7 +10,7 @@ OpenCV Zoo 人脸模型（Apache-2.0，可商用），**已直接入库**，无�
 | `face_recognition_sface_2021dec.onnx` | SFace 人脸特征（112×112 RGB → **128d** L2 归一化向量） |
 | `2.7_80x80_MiniFASNetV2.onnx` | MiniFASNetV2 静态活体检测（80×80 RGB → 真人/攻击二分类） |
 | `ediffiqa_tiny_jun2024.onnx` | EDFFIQA 人脸图像质量评估（112×112 RGB → 1 个质量分） |
-| `facial_expression_recognition_mobilefacenet_2022july.onnx` | 人脸表情识别（112×112 RGB → RAF-DB 7 类概率，argmax） |
+| `facial_expression_recognition_mobilefacenet_2022july.onnx` | 人脸表情识别（112×112 RGB → RAF-DB 7 类 logits，SDK 内 softmax 后取 argmax） |
 
 - 来源：<https://github.com/opencv/opencv_zoo>（`models/face_detection_yunet` / `models/face_recognition_sface` /
   `models/face_image_quality_assessment_ediffiqa` / `models/facial_expression_recognition`）
@@ -20,7 +20,13 @@ OpenCV Zoo 人脸模型（Apache-2.0，可商用），**已直接入库**，无�
   <https://github.com/opencv/opencv_zoo/tree/main/models/face_image_quality_assessment_ediffiqa>）；
   该例外已由项目 owner 显式批准，见 `AGENTS.md` §6.1
 - 表情模型来源：<https://github.com/opencv/opencv_zoo/tree/main/models/facial_expression_recognition>（Apache-2.0）
-- 两个新模型的预处理契约一致：BGR→RGB、`112×112`、`(x/255 - 0.5) / 0.5`（mean = std = 0.5）
+- 两个新模型的预处理契约一致：BGR→RGB、`112×112`、`(x/255 - 0.5) / 0.5`（mean = std = 0.5）、
+  **通道前置成 NCHW**（对齐官方 `ediffiqa.py` 的 `moveaxis(HWC, -1, 1)` 与
+  `facial_fer_model.py` 的 `blobFromImage`）
+- 表情模型的 7 类标签顺序以官方 `facial_fer_model.py` 的 `_expression_enum` 为准：
+  `angry, disgust, fearful, happy, neutral, sad, surprised`
+  （即 0 愤怒 / 1 厌恶 / 2 恐惧 / 3 开心 / 4 平静 / 5 悲伤 / 6 惊讶），
+  **不要凭输出维度猜类别语义**
 
 ## 使用
 

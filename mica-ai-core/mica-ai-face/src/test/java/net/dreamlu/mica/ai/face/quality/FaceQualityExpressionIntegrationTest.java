@@ -15,6 +15,10 @@
  */
 package net.dreamlu.mica.ai.face.quality;
 
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
 import net.dreamlu.mica.ai.face.config.ExpressionConfig;
 import net.dreamlu.mica.ai.face.config.FaceQualityConfig;
 import net.dreamlu.mica.ai.face.expression.ExpressionRecognizer;
@@ -26,9 +30,12 @@ import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -81,6 +88,100 @@ class FaceQualityExpressionIntegrationTest {
 		return img;
 	}
 
+	/**
+	 * 构造一张<b>空间与通道都不均匀</b>的彩色脸。
+	 *
+	 * <p>布局回归测试必须用这种输入：若整幅图三通道取值相同，
+	 * 通道反序与 HWC/CHW 错配都可能碰巧给出相同结果，测不出问题。
+	 */
+	private static Mat buildColorfulAlignedFace() {
+		Mat img = new Mat(112, 112, CvType.CV_8UC3, new Scalar(90, 140, 200));
+		Imgproc.rectangle(img, new org.opencv.core.Point(8, 8), new org.opencv.core.Point(52, 52),
+			new Scalar(30, 200, 70), -1);
+		Imgproc.circle(img, new org.opencv.core.Point(70, 40), 14, new Scalar(240, 60, 20), -1);
+		Imgproc.ellipse(img, new org.opencv.core.Point(56, 78), new org.opencv.core.Size(20, 9),
+			0, 0, 180, new Scalar(10, 20, 250), 3);
+		Imgproc.rectangle(img, new org.opencv.core.Point(0, 92), new org.opencv.core.Point(111, 111),
+			new Scalar(120, 130, 140), -1);
+		return img;
+	}
+
+	/**
+	 * 官方管线参考实现（<b>独立于生产代码</b>）。
+	 *
+	 * <p>对应 OpenCV Zoo {@code facial_fer_model.py} / {@code ediffiqa.py}：
+	 * BGR→RGB、{@code /255}、{@code (x - mean) / std}、通道前置成 CHW。
+	 * 写法（平面外层循环）与生产代码（像素外层循环）刻意不同，
+	 * 避免「同一种误解自证正确」。
+	 *
+	 * @param bgr  BGR 输入
+	 * @param mean 三通道均值（RGB 顺序）
+	 * @param std  三通道标准差（RGB 顺序）
+	 * @return CHW 布局的归一化 float 数组
+	 */
+	private static float[] officialChw(Mat bgr, float[] mean, float[] std) {
+		int h = bgr.rows();
+		int w = bgr.cols();
+		int hw = h * w;
+		byte[] raw = new byte[hw * 3];
+		bgr.get(0, 0, raw);
+		float[] chw = new float[3 * hw];
+		for (int c = 0; c < 3; c++) {
+			// BGR 输入里 R 是第 2 通道；输出 CHW 的平面顺序为 R、G、B
+			int srcChannel = 2 - c;
+			for (int i = 0; i < hw; i++) {
+				int v = raw[i * 3 + srcChannel] & 0xFF;
+				chw[c * hw + i] = ((v / 255f) - mean[c]) / std[c];
+			}
+		}
+		return chw;
+	}
+
+	private static float[] runExpressionOnnx(float[] chw) throws OrtException {
+		OrtEnvironment env = OrtEnvironment.getEnvironment();
+		try (OrtSession session = env.createSession(EXPRESSION_PATH.toString());
+			 OnnxTensor tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(chw),
+				 new long[]{1, 3, 112, 112})) {
+			Map<String, OnnxTensor> inputs = new HashMap<>();
+			inputs.put(session.getInputNames().iterator().next(), tensor);
+			try (OrtSession.Result result = session.run(inputs)) {
+				float[][] values = (float[][]) result.get(0).getValue();
+				return values[0];
+			}
+		}
+	}
+
+	private static float runQualityOnnx(float[] chw) throws OrtException {
+		OrtEnvironment env = OrtEnvironment.getEnvironment();
+		try (OrtSession session = env.createSession(QUALITY_PATH.toString());
+			 OnnxTensor tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(chw),
+				 new long[]{1, 3, 112, 112})) {
+			Map<String, OnnxTensor> inputs = new HashMap<>();
+			inputs.put(session.getInputNames().iterator().next(), tensor);
+			try (OrtSession.Result result = session.run(inputs)) {
+				float[][] values = (float[][]) result.get(0).getValue();
+				return values[0][0];
+			}
+		}
+	}
+
+	private static float[] softmax(float[] logits) {
+		float max = logits[0];
+		for (float v : logits) {
+			max = Math.max(max, v);
+		}
+		float[] exp = new float[logits.length];
+		float sum = 0f;
+		for (int i = 0; i < logits.length; i++) {
+			exp[i] = (float) Math.exp(logits[i] - max);
+			sum += exp[i];
+		}
+		for (int i = 0; i < logits.length; i++) {
+			exp[i] /= sum;
+		}
+		return exp;
+	}
+
 	@Test
 	void qualityAssessorLoadsRealModelAndScoresInUnitRange() {
 		Mat aligned = buildAlignedFaceStub();
@@ -120,5 +221,69 @@ class FaceQualityExpressionIntegrationTest {
 		} finally {
 			aligned.release();
 		}
+	}
+
+	/**
+	 * 表情识别的生产预处理必须与官方 OpenCV Zoo 管线<b>逐位一致</b>。
+	 *
+	 * <p>历史事故：生产侧按 HWC 填充内存却声明成 NCHW，模型收到被打乱的图像，
+	 * 输出退化成恒定的「平静」。本测试用官方管线的独立实现做对照，
+	 * 任何布局 / 通道序 / 归一化的偏差都会立刻暴露。
+	 */
+	@Test
+	void expressionPreprocessMatchesOfficialPipeline() throws OrtException {
+		Mat aligned = buildColorfulAlignedFace();
+		try (ExpressionRecognizer recognizer = ExpressionRecognizer.create(ExpressionConfig.builder()
+			.modelPath(EXPRESSION_PATH.toString())
+			.build())) {
+			ExpressionResult result = recognizer.recognize(aligned);
+
+			float[] reference = softmax(runExpressionOnnx(officialChw(
+				aligned, new float[]{0.5f, 0.5f, 0.5f}, new float[]{0.5f, 0.5f, 0.5f})));
+
+			float[] actual = result.getProbabilities();
+			assertThat(actual).hasSize(7);
+			for (int i = 0; i < 7; i++) {
+				assertThat(actual[i])
+					.as("第 %d 类概率应与官方管线一致", i)
+					.isCloseTo(reference[i], org.assertj.core.data.Offset.offset(1e-4f));
+			}
+			// 类别语义同样要对齐
+			assertThat(result.getExpression().getIndex())
+				.isEqualTo(indexOfMax(reference));
+		} finally {
+			aligned.release();
+		}
+	}
+
+	/**
+	 * 质量评估的生产预处理同样必须与官方管线逐位一致（与表情模型共用同一契约）。
+	 */
+	@Test
+	void qualityPreprocessMatchesOfficialPipeline() throws OrtException {
+		Mat aligned = buildColorfulAlignedFace();
+		try (FaceQualityAssessor assessor = FaceQualityAssessor.create(FaceQualityConfig.builder()
+			.modelPath(QUALITY_PATH.toString())
+			.threshold(0.5f)
+			.build())) {
+			FaceQualityResult result = assessor.assess(aligned);
+
+			float reference = runQualityOnnx(officialChw(
+				aligned, new float[]{0.5f, 0.5f, 0.5f}, new float[]{0.5f, 0.5f, 0.5f}));
+
+			assertThat(result.getScore()).isCloseTo(reference, org.assertj.core.data.Offset.offset(1e-4f));
+		} finally {
+			aligned.release();
+		}
+	}
+
+	private static int indexOfMax(float[] values) {
+		int idx = 0;
+		for (int i = 1; i < values.length; i++) {
+			if (values[i] > values[idx]) {
+				idx = i;
+			}
+		}
+		return idx;
 	}
 }

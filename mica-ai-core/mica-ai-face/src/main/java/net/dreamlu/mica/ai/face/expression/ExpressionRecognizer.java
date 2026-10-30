@@ -30,7 +30,7 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionFactory;
 import net.dreamlu.mica.ai.face.config.ExpressionConfig;
-import org.opencv.core.CvType;
+import net.dreamlu.mica.ai.face.util.ImageUtils;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -135,31 +135,12 @@ public class ExpressionRecognizer implements AutoCloseable {
 	}
 
 	private float[] preprocess(Mat alignedBgr) {
-		Mat rgb = new Mat();
 		Mat resized = new Mat();
-		Mat floatMat = new Mat();
 		try {
-			Imgproc.cvtColor(alignedBgr, rgb, Imgproc.COLOR_BGR2RGB);
-			Imgproc.resize(rgb, resized, new Size(config.getInputSize(), config.getInputSize()));
-			resized.convertTo(floatMat, CvType.CV_32FC3, 1.0 / 255.0);
-			float[] mean = config.getMean();
-			float[] std = config.getStd();
-			int total = floatMat.rows() * floatMat.cols() * 3;
-			float[] data = new float[total];
-			int idx = 0;
-			for (int y = 0; y < floatMat.rows(); y++) {
-				for (int x = 0; x < floatMat.cols(); x++) {
-					double[] pixel = floatMat.get(y, x);
-					for (int c = 0; c < 3; c++) {
-						data[idx++] = (float) ((pixel[c] - mean[c]) / std[c]);
-					}
-				}
-			}
-			return data;
+			Imgproc.resize(alignedBgr, resized, new Size(config.getInputSize(), config.getInputSize()));
+			return ImageUtils.bgrHwcToRgbChwFloat(resized, config.getMean(), config.getStd());
 		} finally {
-			rgb.release();
 			resized.release();
-			floatMat.release();
 		}
 	}
 

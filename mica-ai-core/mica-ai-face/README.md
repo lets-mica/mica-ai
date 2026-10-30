@@ -188,6 +188,10 @@ try (FaceQualityAssessor assessor = FaceQualityAssessor.create(
 }
 ```
 
+> **预处理契约**（与 OpenCV Zoo `models/face_image_quality_assessment_ediffiqa/ediffiqa.py` 一致）：
+> 输入张量为 `[1, 3, 112, 112]` 的 **NCHW** float32，
+> BGR→RGB → resize 112×112 → `(x / 255 - mean) / std`（mean = std = 0.5）→ 通道前置。
+
 ### 4.8 人脸表情识别（7 类，RAF-DB）
 
 同样输入 **对齐后的 112×112 人脸**，输出 7 类概率并在内部取 argmax。
@@ -203,6 +207,15 @@ try (ExpressionRecognizer recognizer = ExpressionRecognizer.create(
     float confidence = result.getScore();
 }
 ```
+
+> **7 类标签顺序**（与模型 argmax 索引严格对应，**不可调换**）：
+> `0 愤怒` / `1 厌恶` / `2 恐惧` / `3 开心` / `4 平静` / `5 悲伤` / `6 惊讶`。
+> 事实来源是 OpenCV Zoo `models/facial_expression_recognition/facial_fer_model.py` 的
+> `_expression_enum`，与官方 README 描述的
+> "angry, disgust, fearful, happy, neutral, sad, surprised" 一致 —— 不要凭输出维度猜类别语义。
+>
+> **预处理契约**与 4.7 节完全相同（NCHW、mean = std = 0.5），模型输出为**原始 logits**，
+> `ExpressionRecognizer` 内部再做 softmax 后取 argmax。
 
 > 两个模型均可商用：表情模型 **Apache-2.0**；质量模型 **CC-BY-4.0**，分发需保留署名
 > （详见 `model-tools/face/README.md` 与 `AGENTS.md` §6.1）。
