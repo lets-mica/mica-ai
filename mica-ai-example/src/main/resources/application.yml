@@ -44,6 +44,12 @@ mica:
           path: model-tools/face/models/face_recognition_sface_2021dec.onnx
         liveness:
           path: model-tools/face/models/2.7_80x80_MiniFASNetV2.onnx
+        # eDifFIQA-Tiny 人脸质量评估（CC-BY-4.0，署名即可商用）
+        quality:
+          path: model-tools/face/models/ediffiqa_tiny_jun2024.onnx
+        # Progressive Teacher 表情识别 7 类（Apache-2.0）
+        expression:
+          path: model-tools/face/models/facial_expression_recognition_mobilefacenet_2022july.onnx
       detection:
         threshold: 0.9
         nms-threshold: 0.3
@@ -55,6 +61,13 @@ mica:
         threshold: 0.35
       # 单图多脸时的选脸策略：LARGEST_AREA（默认，面积最大）/ LARGEST_SCORE / REJECT（多脸直接拒绝）
       strategy: LARGEST_AREA
+      # eDifFIQA 质量门控：低于阈值直接判为质量不合格
+      quality:
+        enabled: true
+        threshold: 0.5
+      # 表情识别：angry / disgust / fearful / happy / neutral / sad / surprised
+      expression:
+        enabled: true
       onnx:
         device: CPU
         # cuda-device-id: 0
@@ -214,6 +227,174 @@ mica:
         # enable-cpu-mem-arena: false
         # enable-memory-pattern: false
         # symbolic-dimension-values: { }
+
+    # ============================================================
+    #  🎯 Detect —— NanoDet-Plus / YOLOX-s 通用目标检测（Apache-2.0）
+    #  两个模型都已入库（model-tools/detect/models/）：
+    #    NanoDet-Plus 3.62MB（默认，416×416）/ YOLOX-s 34.2MB（640×640）
+    #  ⚠️ 切换模型族必须成对改 family + input-size —— 两族的预处理 / 解码 / NMS 契约不同，
+    #     只改其一会因输入边长与模型张量形状不符而启动失败。
+    # ============================================================
+    detect:
+      enabled: true
+      family: NANODET_PLUS
+      model-path: model-tools/detect/models/object_detection_nanodet_2022nov.onnx
+      input-size: 416
+      score-threshold: 0.35
+      nms-threshold: 0.6
+      max-detections: 100
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
+    # ============================================================
+    #  🧭 Track —— ByteTrack 多目标跟踪（MIT，纯算法零模型）
+    #  high-threshold：高分框分界线；low-threshold：低分框丢弃线（两轮匹配都进不去）
+    #  match-thresh：第一轮（高分 det ↔ 轨迹）IoU 阈值
+    #  match-low-thresh：第二轮（低分 det ↔ 未匹配轨迹）IoU 阈值
+    #  confirm-age：新轨迹连续命中多少帧才算成熟（成熟轨迹优先返回）
+    #  track-buffered-thresh：连续多少帧未命中就丢弃该轨迹
+    # ============================================================
+    track:
+      enabled: true
+      high-threshold: 0.6
+      low-threshold: 0.1
+      match-thresh: 0.8
+      match-low-thresh: 0.5
+      track-buffered-thresh: 30
+      confirm-age: 3
+    # ============================================================
+    #  👤 HumanSeg —— PP-HumanSeg V2-Lite 人像分割（Apache-2.0）
+    #  模型 5.88MB，已入库（model-tools/humanseg/models/），192×192 输入。
+    #  换模型：竖版 Portrait-PP-HumanSegV2-Lite（256×144）契约一致，
+    #  改 model-path + 成对改 input-width / input-height 即可。
+    # ============================================================
+    humanseg:
+      enabled: true
+      model-version: human_segmentation_pphumanseg_2023mar
+      model-path: model-tools/humanseg/models/human_segmentation_pphumanseg_2023mar.onnx
+      input-width: 192
+      input-height: 192
+      binary-threshold: 0.5
+      background-color: [ 255, 255, 255 ]
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
+    # ============================================================
+    #  📸 DocAlign —— DocAligner 文档角点检测 + 透视矫正（Apache-2.0）
+    #  模型 4.55MB，已入库（model-tools/docalign/models/）。
+    #  heatmap-threshold：热力图二值化阈值（上游默认 0.3），越大角点越保守。
+    #  ⚠️ 角点为热力图连通域质心，天然向文档内部收缩约 10~23px。
+    # ============================================================
+    docalign:
+      enabled: true
+      model-version: lcnet100_h_e_bifpn_256_fp32
+      model-path: model-tools/docalign/models/lcnet100_h_e_bifpn_256_fp32.onnx
+      input-width: 256
+      input-height: 256
+      heatmap-threshold: 0.3
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
+    # ============================================================
+    #  ✨ Enhance —— Real-ESRGAN 图像超分（BSD-3-Clause）
+    #  模型 2.33MB，已入库（model-tools/enhance/models/）。
+    #  scale：放大倍数，必须与模型实际输出一致，否则推理期直接抛异常。
+    #  tile-size / tile-overlap：大图自动切 tile 推理，重叠区用于消除拼接接缝。
+    # ============================================================
+    enhance:
+      enabled: true
+      model-version: realesr-general-x4v3
+      model-path: model-tools/enhance/models/realesr-general-x4v3.onnx
+      scale: 4
+      tile-size: 256
+      tile-overlap: 16
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
+    # ============================================================
+    #  🔎 Classify —— PaddleClas PULC 通用图像分类（Apache-2.0）
+    #  ⚠️ 一个引擎绑定「一个模型 + 一份 label_list」，两者必须成对配置，缺一启动即 fail-fast。
+    #  ⚠️ labels-path 无 classpath 兜底 —— 分类模型不打包进 jar，必须指向本地文件。
+    #  这里配的是默认模型（整图方向 0/90/180/270）；
+    #  其余 3 个 PULC 模型见下方 mica.example.classify.models。
+    # ============================================================
+    classify:
+      enabled: true
+      model-version: text_image_orientation
+      model-path: model-tools/classify/models/text_image_orientation.onnx
+      labels-path: model-tools/classify/models/text_image_orientation_labels.txt
+      input-width: 224
+      input-height: 224
+      # 短边缩放 + 中心裁剪（PULC 官方默认 256 → 224）；
+      # table_attribute 这类官方直接 resize 的模型要置 0
+      resize-short: 256
+      channel-order: RGB
+      multi-label: false
+      output-is-probability: true
+      top-k: 1
+      onnx:
+        device: CPU
+        # cuda-device-id: 0
+        # intra-op-num-threads: 0
+        # inter-op-num-threads: 0
+        # graph-optimization-level: ENABLE_ALL
+        # execution-mode: PARALLEL
+        # enable-cpu-mem-arena: false
+        # enable-memory-pattern: false
+        # symbolic-dimension-values: { }
+  # ============================================================
+  #  🔎 示例专用：PULC 多模型扩展
+  #  starter 的 classify 一个引擎只绑一个模型；要同时用多个 PULC 模型，
+  #  就再声明引擎 —— 这里用 mica.example.classify.models 声明另外 3 个，
+  #  按需（首次调用该模型时）懒加载，不占启动内存。
+  # ============================================================
+  example:
+    classify:
+      models:
+        # 清晰 / 模糊二分类
+        clarity:
+          model-path: model-tools/classify/models/clarity_assessment.onnx
+          labels-path: model-tools/classify/models/clarity_assessment_labels.txt
+        # 画面有人 / 无人二分类
+        person:
+          model-path: model-tools/classify/models/person_exists.onnx
+          labels-path: model-tools/classify/models/person_exists_labels.txt
+        # 表格 6 属性（source / number / color / clarity / obstruction / angle）
+        # 官方配置是直接 resize 到 224（resize-short 置 0），且各属性独立 sigmoid（多标签）
+        table:
+          model-path: model-tools/classify/models/table_attribute.onnx
+          labels-path: model-tools/classify/models/table_attribute_labels.txt
+          resize-short: 0
+          multi-label: true
+          top-k: 6
 
 logging:
   level:

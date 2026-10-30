@@ -179,7 +179,11 @@ const FACE_CAPS = [
   {t: '头像提取', p: '/face/avatar', d: '正方形头像，自动摆正', o: 'image',
     f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '证件卡片提取', p: '/face/card/extract', d: '透视矫正 + 增强', o: 'image',
-    f: [{k: 'file', l: '证件照', y: 'file'}]}
+    f: [{k: 'file', l: '证件照', y: 'file'}]},
+  {t: '人脸质量评估', p: '/face/quality', d: 'eDifFIQA 质量分 + 是否达标', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]},
+  {t: '表情识别', p: '/face/expression', d: '愤怒 / 厌恶 / 恐惧 / 开心 / 平静 / 悲伤 / 惊讶', o: 'json',
+    f: [{k: 'file', l: '人脸图片', y: 'file'}]}
 ];
 
 const OTHER_CAPS = [
@@ -191,6 +195,24 @@ const OTHER_CAPS = [
     f: [{k: 'file', l: '文档图片', y: 'file'}]},
   {t: '通用抠图', p: '/matting/cutout', d: 'U²-Net 透明底 PNG', o: 'image',
     f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '人像分割', p: '/humanseg/cutout', d: 'PP-HumanSeg 透明底 PNG', o: 'image',
+    f: [{k: 'file', l: '人像图片', y: 'file'}]},
+  {t: '人像换底色', p: '/humanseg/cutout-on-color', d: '人像抠图 + 纯色底合成', o: 'image',
+    f: [{k: 'file', l: '人像图片', y: 'file'}, {k: 'color', l: '底色 RGB（如 0,0,255）', y: 'text', v: '255,255,255'}]},
+  {t: '目标检测', p: '/detect/detect', d: 'NanoDet / YOLOX · COCO 80 类', o: 'json',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '目标检测调试图', p: '/detect/annotate', d: '画出检测框与类别名', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '检测 + 跟踪', p: '/track/detect-and-track', d: 'ByteTrack 输出稳定 track id', o: 'json',
+    f: [{k: 'file', l: '视频帧图片', y: 'file'}]},
+  {t: '文档角点矫正', p: '/docalign/align', d: 'DocAligner 透视拉平', o: 'image',
+    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
+  {t: '文档角点坐标', p: '/docalign/corners', d: '返回 4 个角点与置信度', o: 'json',
+    f: [{k: 'file', l: '拍摄的文档图', y: 'file'}]},
+  {t: '图像超分', p: '/enhance/upscale', d: 'Real-ESRGAN 4 倍放大', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '图像分类', p: '/classify/classify', d: 'PULC 分类（默认整图方向）', o: 'json',
+    f: [{k: 'file', l: '图片', y: 'file'}, {k: 'model', l: '模型（留空=默认 / clarity / person / table）', y: 'text', v: ''}]},
   {t: '文本行方向', p: '/textline/classify', d: '0° / 180° 分类', o: 'json',
     f: [{k: 'file', l: '单行文本图', y: 'file'}]},
   {t: '文本行转正', p: '/textline/upright', d: '倒置则旋转 180°', o: 'image',
@@ -243,7 +265,9 @@ async function runCap(card) {
     if (type.startsWith('image/')) {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const checker = card.dataset.path.indexOf('/matting/') === 0 ? ' checker' : '';
+      const path = card.dataset.path;
+      const transparent = path.indexOf('/matting/') === 0 || path.indexOf('/humanseg/') === 0;
+      const checker = transparent ? ' checker' : '';
       out.innerHTML = '<div class="' + (checker ? 'checker' : '') + '"><img class="preview" src="' + url + '" alt="result"></div>';
     } else {
       const data = await res.json();

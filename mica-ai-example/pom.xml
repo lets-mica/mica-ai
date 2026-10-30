@@ -52,6 +52,30 @@
         </dependency>
         <dependency>
             <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-humanseg-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-detect-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-track-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-docalign-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-enhance-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
+            <artifactId>mica-ai-classify-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.dreamlu</groupId>
             <artifactId>mica-ai-captcha-spring-boot-starter</artifactId>
         </dependency>
         <!-- Test -->

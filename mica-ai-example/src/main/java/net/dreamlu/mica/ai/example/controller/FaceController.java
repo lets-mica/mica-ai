@@ -25,15 +25,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import net.dreamlu.mica.ai.face.alignment.FaceAligner;
 import net.dreamlu.mica.ai.face.detection.FaceDetector;
+import net.dreamlu.mica.ai.face.expression.ExpressionRecognizer;
+import net.dreamlu.mica.ai.face.expression.ExpressionResult;
 import net.dreamlu.mica.ai.face.liveness.LivenessDetector;
 import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.model.LivenessResult;
+import net.dreamlu.mica.ai.face.quality.FaceQualityAssessor;
+import net.dreamlu.mica.ai.face.quality.FaceQualityResult;
 import net.dreamlu.mica.ai.face.recognition.FeatureExtractor;
 import net.dreamlu.mica.ai.face.util.ImageUtils;
 import net.dreamlu.mica.ai.face.verification.FaceVerifier;
 import org.opencv.core.Mat;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,6 +50,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +72,14 @@ public class FaceController {
 	private final FeatureExtractor extractor;
 	private final FaceVerifier verifier;
 	private final LivenessDetector livenessDetector;
+	/**
+	 * eDifFIQA 质量评估器：仅在 mica.ai.face.quality.enabled=true 时存在。
+	 */
+	private final ObjectProvider<FaceQualityAssessor> qualityAssessorProvider;
+	/**
+	 * 表情识别器：仅在 mica.ai.face.expression.enabled=true 时存在。
+	 */
+	private final ObjectProvider<ExpressionRecognizer> expressionRecognizerProvider;
 
 	private static Path save(MultipartFile file) throws IOException {
 		String original = file.getOriginalFilename() == null ? "face.png" : file.getOriginalFilename();
@@ -200,6 +217,113 @@ public class FaceController {
 			if (aligned != null) {
 				aligned.release();
 			}
+		}
+	}
+
+	@Operation(summary = "人脸质量评估", description = "检测人脸后逐个做 eDifFIQA 质量评估，"
+		+ "返回 score（越高越好）、threshold 与 passed；需要 mica.ai.face.quality.enabled=true")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "评估成功",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = Map.class))),
+		@ApiResponse(responseCode = "400", description = "图片读取失败", content = @Content),
+		@ApiResponse(responseCode = "503", description = "质量评估能力未启用", content = @Content),
+		@ApiResponse(responseCode = "500", description = "推理异常", content = @Content)
+	})
+	@PostMapping(value = "/quality", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Object> quality(
+		@Parameter(description = "待评估图片（支持 jpg/png/webp）", required = true,
+			content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+				schema = @Schema(type = "string", format = "binary")))
+		@RequestParam("file") MultipartFile file) throws IOException {
+		FaceQualityAssessor assessor = qualityAssessorProvider.getIfAvailable();
+		if (assessor == null) {
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Collections.singletonMap("error",
+					"人脸质量评估未启用（mica.ai.face.quality.enabled=false）"));
+		}
+		Path tmp = save(file);
+		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
+		try {
+			final Mat work = img;
+			List<FaceBox> boxes = detector.detect(work);
+			float threshold = assessor.getConfig().getThreshold();
+			List<Map<String, Object>> results = new ArrayList<>(boxes.size());
+			for (FaceBox box : boxes) {
+				Mat aligned = null;
+				try {
+					aligned = aligner.align(work, box);
+					FaceQualityResult result = assessor.assess(aligned);
+					Map<String, Object> m = new LinkedHashMap<>();
+					m.put("score", result.getScore());
+					m.put("threshold", threshold);
+					m.put("passed", result.passed(threshold));
+					results.add(m);
+				} finally {
+					if (aligned != null) {
+						aligned.release();
+					}
+				}
+			}
+			return ResponseEntity.ok(results);
+		} finally {
+			img.release();
+			Files.deleteIfExists(tmp);
+		}
+	}
+
+	@Operation(summary = "表情识别", description = "检测人脸后逐个识别 7 类表情"
+		+ "（愤怒 / 厌恶 / 恐惧 / 开心 / 平静 / 悲伤 / 惊讶），返回各类概率；"
+		+ "需要 mica.ai.face.expression.enabled=true")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "识别成功",
+			content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = Map.class))),
+		@ApiResponse(responseCode = "400", description = "图片读取失败", content = @Content),
+		@ApiResponse(responseCode = "503", description = "表情识别能力未启用", content = @Content),
+		@ApiResponse(responseCode = "500", description = "推理异常", content = @Content)
+	})
+	@PostMapping(value = "/expression", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Object> expression(
+		@Parameter(description = "待识别图片（支持 jpg/png/webp）", required = true,
+			content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+				schema = @Schema(type = "string", format = "binary")))
+		@RequestParam("file") MultipartFile file) throws IOException {
+		ExpressionRecognizer recognizer = expressionRecognizerProvider.getIfAvailable();
+		if (recognizer == null) {
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Collections.singletonMap("error",
+					"表情识别未启用（mica.ai.face.expression.enabled=false）"));
+		}
+		Path tmp = save(file);
+		Mat img = ImageUtils.byteArrayToMat(Files.readAllBytes(tmp));
+		try {
+			final Mat work = img;
+			List<FaceBox> boxes = detector.detect(work);
+			List<Map<String, Object>> results = new ArrayList<>(boxes.size());
+			for (FaceBox box : boxes) {
+				Mat aligned = null;
+				try {
+					aligned = aligner.align(work, box);
+					ExpressionResult result = recognizer.recognize(aligned);
+					Map<String, Object> m = new LinkedHashMap<>();
+					m.put("expression", result.getExpression().name());
+					m.put("desc", result.getExpression().getDesc());
+					m.put("score", result.getScore());
+					m.put("probabilities", result.getProbabilities());
+					results.add(m);
+				} finally {
+					if (aligned != null) {
+						aligned.release();
+					}
+				}
+			}
+			return ResponseEntity.ok(results);
+		} finally {
+			img.release();
+			Files.deleteIfExists(tmp);
 		}
 	}
 }
