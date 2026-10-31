@@ -2,7 +2,7 @@
 
 本项目的所有显著变更都会记录在此文件中。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
-## [1.0.2] - 未发布
+## [1.0.2] - 2026-10-31
 
 ### ✨ 新增能力
 
@@ -17,12 +17,29 @@
 
 - 本次新增能力依赖的模型全部随仓库分发且单文件 <50MB：NanoDet-Plus 3.62MB、YOLOX-s 34.2MB、PP-HumanSeg V2-Lite 5.88MB、DocAligner lcnet100 4.55MB、Real-ESRGAN x4v3 2.33MB、PULC 4 个 4.14–6.79MB；多目标跟踪不引入任何模型
 - 换模型一律走 `model-path` 外置、Java 侧无需改动：fastvit、realesr 完整版等未入库同族直接指向本地路径，其余 PULC 模型先用 `paddle2onnx` 离线转换再外置
+- **新增顶层 `NOTICE`**：逐项署名第三方模型权重的来源与许可 —— eDifFIQA-Tiny 标注 CC-BY-4.0 并内嵌署名要求，Real-ESRGAN 内嵌 BSD-3-Clause 全文，其余 Apache-2.0 / MIT 模型集中列出，便于下游合规分发
+- **CI 补上 `mica-ai-example` 构建**：此前主矩阵用 `-P !develop` 排除 example，导致它的 54 个测试从不参与 CI；新增独立 job 保留 develop profile 跑通示例模块
+- **发版脚本不再跳过测试**：`deploy.sh` 原先固定带 `-DskipTests`，发版流程完全不跑测试；现已去掉，发版前必须全量测试通过
+
+### 📚 文档
+
+- **补齐 3 个缺失的 README**（`mica-ai-track` 核心模块、detect / track 两个 Starter），并修掉 6 处断链（含指向已删除文档的链接）；`mica-ai-core` / `mica-ai-starters` / `model-tools` 三个聚合 README 从 1.0.0 时代的 3 / 5 / 7 个能力更新到实时的 13 / 13 / 12 个
+- 根 README 能力表补上「人脸质量评估」（eDifFIQA-Tiny，**CC-BY-4.0**）与「表情识别」两行，致谢补 PaddleOCR / PaddleClas-PULC / ByteTrack，License 段加 CC-BY-4.0 署名提示；模型路径示例统一从误导性的 `classpath:models/xxx.onnx` 改指向仓库内真实的 `model-tools/<cap>/models/` 路径
+
+### 🔧 行为变更（对调用方可见）
+
+- **所有能力的模型路径改为必填，不再有「内置 classpath 兜底」**：此前 11 个配置类在 `model-path` 为空时会回退到 `classpath:mica-ai/models/...`，但模型随仓库分发、**从不打包进 jar**，该兜底恒不命中——用户不配路径就会看到「classpath 资源未找到」并被错误地引向「往 classpath 放模型」。现在改为 `model-path` 必填，未配置时启动即 fail-fast，错误消息直接指向 `model-tools/<cap>/models/` 下的文件
+- **用户显式配置的路径仍支持 `classpath:` 前缀**：只是不再由框架替用户猜测路径，`classpath:` 资源由 `OnnxModelSession` 统一解析；`mica-ai-classify` 的 `labels-path` 一并补上了 `classpath:` 支持（此前只有文件路径）
+- **移除 9 个 `createDefault()` 工厂方法**（`MattingEngine` / `TextLineEngine` / `HumanSegEngine` / `FiletypeDetector` / `DocAlignEngine` / `PlatePipeline` / `LayoutPipeline` / `DetectEngine`）：这些方法依赖上述死兜底或未填的必填路径，**从来没有成功过**，一律在构造期抛 `MicaAiException`；现在改为编译期报错，调用方需显式传入模型路径
+- **`DetectModelFamily.getResource()` 更名为 `getModelFile()`**，取值改为仓库内真实文件名（`object_detection_nanodet_2022nov.onnx` / `object_detection_yolox_2022nov.onnx`），用于缺模型时的报错提示
+- **配置参数校验统一抛 `MicaAiException`**：各能力的 `Config#validate()` 不再抛裸 `IllegalArgumentException`，与 AGENTS.md 的异常约定对齐；`mica-ai-track` 因刻意零依赖（不引 `mica-ai-common`，避免拖进 ONNX Runtime）保留 JDK 原生异常，作为显式例外写进 AGENTS.md
+- **`mica.ai.face.enabled` / `mica.ai.track.enabled` 补进配置属性类**：这两个 Starter 的自动装配本就按 `enabled` 开关判定，但属性类里没有对应字段，与其余 11 个 Starter 不一致；补齐后文档、绑定与装配三者对齐
 
 ### 🧪 示例与集成
 
 - `mica-ai-example` 聚合全部 13 个 Starter，新增 detect / track / humanseg / docalign / enhance / classify 六个控制器（目标检测与调试图、跟踪与检测+跟踪、人像抠图与换底、文档角点与拉平、4 倍超分、PULC 分类），并给 face 补上人脸质量评估与表情识别端点；`application.yml` 同步补齐各能力配置，内置示例页新增对应能力卡片
 - 分类能力演示 PULC 多模型用法：starter 一个引擎只绑一个模型 + 一份 label_list，示例用自有前缀 `mica.example.classify.models` 声明另外 3 个模型并按需懒加载，`/classify/classify` 传 `model` 参数即可切换
-- Starter 自动装配测试从 9 项扩到 22 项，新增能力全部覆盖「关闭时不装配」「指向真模型时装配出可用引擎」「模型与配套 label_list 缺一即 fail-fast」三类断言
+- Starter 自动装配测试从 13 项扩到 56 项、13 个 Starter 全覆盖，新增能力全部覆盖「关闭时不装配」「指向真模型时装配出可用引擎」「模型与配套 label_list 缺一即 fail-fast」三类断言；补测试的 5 个 Starter（face / filetype / layout / plate / track）为此把映射逻辑抽成包级 `toConfig()`，测试直接调用**真实装配链**而非重抄 builder，漏装配一个字段即失败
 - `mica-ai-example` 新增**组合场景**示例，把多个模型能力编排成完整业务链路，REST 端点挂在 `/scenario/*`（`/scenario/document/*` 智能文档流水线、`/scenario/idphoto/*` 证件照一键生成），内置示例页新增「组合场景」标签页，一次调用即返回阶段报告与成片
 - 📄 **智能文档流水线**：串联 docalign 拉正 → classify 整图方向 → layout 版面与阅读顺序 → textline 文本块转正 → enhance 超分共 5 个模型能力；每个阶段可单独关闭，依赖缺失（如 layout 模型 125MB 不随仓库分发）自动降级并在报告中说明原因而不是报错，几何与语义阶段都在原分辨率上跑、画质增强放最后以免后续检测在 4 倍图上变慢
 - 🪪 **证件照一键生成**：串联 face 检人脸 → face 质量评估 → matting/humanseg 抠像换底 → 按证件照规范裁剪 → enhance 超分；支持一寸等 6 种尺寸规格与白/蓝/红三种底色，头顶留白 7%、头高占比 75%、水平居中，越界部分用底色补齐而不拉伸人脸；人脸质量分始终评估并回填到报告，**是否因质量不达标而拒绝出片由 `qualityGate` 参数控制、默认放行**；示例页的参数改为下拉框（尺寸规格 / 底色 / 掩码来源 / 质量门控，选项直接对应后端枚举），**质量门限用滑动条实时调节**，门控选「放行」时滑动条自动置灰
