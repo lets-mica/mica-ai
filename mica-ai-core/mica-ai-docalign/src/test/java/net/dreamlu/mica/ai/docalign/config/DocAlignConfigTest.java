@@ -26,9 +26,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class DocAlignConfigTest {
 
+	private static final String MODEL =
+		"model-tools/docalign/models/lcnet100_h_e_bifpn_256_fp32.onnx";
+
 	@Test
 	void defaultConfigMatchesBundledModel() {
-		DocAlignConfig config = DocAlignConfig.builder().build();
+		DocAlignConfig config = DocAlignConfig.builder().modelPath(MODEL).build();
 
 		assertThat(config.getModelVersion()).isEqualTo("lcnet100_h_e_bifpn_256_fp32");
 		assertThat(config.getInputWidth()).isEqualTo(256);
@@ -38,9 +41,12 @@ class DocAlignConfigTest {
 	}
 
 	@Test
-	void resolveModelPathUsesClasspathResource() {
-		assertThat(DocAlignConfig.builder().build().resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/docalign/lcnet100_h_e_bifpn_256_fp32.onnx");
+	void resolveModelPathKeepsExplicitClasspathPrefix() {
+		DocAlignConfig config = DocAlignConfig.builder()
+			.modelPath("classpath:models/docalign/lcnet100.onnx")
+			.build();
+
+		assertThat(config.resolveModelPath()).isEqualTo("classpath:models/docalign/lcnet100.onnx");
 	}
 
 	@Test
@@ -53,19 +59,31 @@ class DocAlignConfigTest {
 	}
 
 	@Test
+	void rejectsMissingModelPath() {
+		assertThatThrownBy(() -> DocAlignConfig.builder().build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+		assertThatThrownBy(() -> DocAlignConfig.builder().modelPath("").build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+	}
+
+	@Test
 	void rejectsEmptyModelVersion() {
 		assertThatThrownBy(() -> DocAlignConfig.builder()
-			.modelVersion("").build().validate())
+			.modelPath(MODEL).modelVersion("").build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("modelVersion");
 	}
 
 	@Test
 	void rejectsNonPositiveInputSize() {
-		assertThatThrownBy(() -> DocAlignConfig.builder().inputWidth(0).build().validate())
+		assertThatThrownBy(() -> DocAlignConfig.builder()
+			.modelPath(MODEL).inputWidth(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
-		assertThatThrownBy(() -> DocAlignConfig.builder().inputHeight(-1).build().validate())
+		assertThatThrownBy(() -> DocAlignConfig.builder()
+			.modelPath(MODEL).inputHeight(-1).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
 	}
@@ -73,11 +91,11 @@ class DocAlignConfigTest {
 	@Test
 	void rejectsHeatmapThresholdOutOfRange() {
 		assertThatThrownBy(() -> DocAlignConfig.builder()
-			.heatmapThreshold(1.2f).build().validate())
+			.modelPath(MODEL).heatmapThreshold(1.2f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("heatmapThreshold");
 		assertThatThrownBy(() -> DocAlignConfig.builder()
-			.heatmapThreshold(-0.1f).build().validate())
+			.modelPath(MODEL).heatmapThreshold(-0.1f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("heatmapThreshold");
 	}

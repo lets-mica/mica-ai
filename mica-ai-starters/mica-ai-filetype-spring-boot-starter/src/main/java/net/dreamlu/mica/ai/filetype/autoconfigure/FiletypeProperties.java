@@ -36,22 +36,29 @@ public class FiletypeProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型版本（对应 classpath: mica-ai/models/filetype/{modelVersion}/ 目录名）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "standard_v3_3";
 
 	/**
-	 * Magika 模型 ONNX 路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 * Magika 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/filetype/models/model.onnx}。
 	 */
 	private String modelPath;
 
 	/**
-	 * config.min.json 路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 * config.min.json 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>与模型成对使用，例如 {@code model-tools/filetype/models/config.min.json}。
 	 */
 	private String configPath;
 
 	/**
-	 * content_types_kb.min.json 知识库路径（支持 classpath: 前缀，留空走内置 classpath 资源）。
+	 * content_types_kb.min.json 知识库路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>与模型成对使用，例如 {@code model-tools/filetype/models/content_types_kb.min.json}。
 	 */
 	private String contentTypesPath;
 

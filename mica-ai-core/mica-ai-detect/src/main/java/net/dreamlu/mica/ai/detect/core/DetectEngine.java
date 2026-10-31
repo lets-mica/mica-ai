@@ -38,7 +38,10 @@ import java.util.Objects;
  * 通用目标检测门面（NanoDet-Plus / YOLOX-s，COCO 80 类）。
  *
  * <pre>{@code
- * try (DetectEngine engine = DetectEngine.createDefault()) {
+ * DetectConfig config = DetectConfig.builder()
+ *     .modelPath("model-tools/detect/models/object_detection_nanodet_2022nov.onnx")
+ *     .build();
+ * try (DetectEngine engine = DetectEngine.create(config)) {
  *     DetectResult result = engine.detectPath("street.jpg");
  *     for (DetectBox box : result.getBoxes()) {
  *         System.out.println(box.label(engine.getLabels()) + " " + box.getScore());
@@ -83,15 +86,6 @@ public class DetectEngine implements AutoCloseable {
 	 */
 	public static DetectEngine create(DetectConfig config) {
 		return new DetectEngine(config);
-	}
-
-	/**
-	 * 使用默认配置（NanoDet-Plus，内置 classpath 模型）创建引擎。
-	 *
-	 * @return 初始化完成的引擎
-	 */
-	public static DetectEngine createDefault() {
-		return new DetectEngine(DetectConfig.builder().build());
 	}
 
 	/**

@@ -20,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 /**
@@ -31,12 +30,15 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
  * {@code family=YOLOX_S} + {@code inputSize=640}（YOLOX 官方 conf 0.5 / NMS 0.5）。
  *
  * <pre>{@code
- * // NanoDet-Plus（默认）
- * DetectConfig nano = DetectConfig.builder().build();
+ * // NanoDet-Plus（默认模型族）
+ * DetectConfig nano = DetectConfig.builder()
+ *     .modelPath("model-tools/detect/models/object_detection_nanodet_2022nov.onnx")
+ *     .build();
  *
  * // YOLOX-s（精度更高，速度更慢）
  * DetectConfig yolox = DetectConfig.builder()
  *     .family(DetectModelFamily.YOLOX_S)
+ *     .modelPath("model-tools/detect/models/object_detection_yolox_2022nov.onnx")
  *     .inputSize(640)
  *     .scoreThreshold(0.5f)
  *     .nmsThreshold(0.5f)
@@ -49,12 +51,10 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 public class DetectConfig {
 
 	/**
-	 * 内置 classpath 资源模板；{@code %s} 为 {@link DetectModelFamily#getResource()}
-	 */
-	private static final String MODEL_RESOURCE = "mica-ai/models/detect/%s.onnx";
-
-	/**
-	 * 自定义模型路径；为空时按 {@link #family} 解析内置 classpath 路径
+	 * 模型 ONNX 路径（必填，支持 {@code classpath:} 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，例如
+	 * {@code model-tools/detect/models/object_detection_nanodet_2022nov.onnx}。
 	 */
 	private String modelPath;
 
@@ -109,6 +109,12 @@ public class DetectConfig {
 		if (family == null) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT, "family must not be null");
 		}
+		if (modelPath == null || modelPath.trim().isEmpty()) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"modelPath 不能为空：检测模型不随 jar 分发，"
+					+ "请指向本地模型文件（如 model-tools/detect/models/"
+					+ family.getModelFile() + "）");
+		}
 		if (inputSize <= 0) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT, "inputSize 必须为正数");
 		}
@@ -136,13 +142,9 @@ public class DetectConfig {
 	/**
 	 * 解析实际使用的模型路径。
 	 *
-	 * @return 配置了 {@code modelPath} 时直接返回；否则返回内置 classpath 资源路径
+	 * @return 配置的模型路径（原样返回；{@code classpath:} 前缀由会话层解析）
 	 */
 	public String resolveModelPath() {
-		if (modelPath != null && !modelPath.isEmpty()) {
-			return modelPath;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX
-			+ String.format(MODEL_RESOURCE, family.getResource());
+		return modelPath;
 	}
 }

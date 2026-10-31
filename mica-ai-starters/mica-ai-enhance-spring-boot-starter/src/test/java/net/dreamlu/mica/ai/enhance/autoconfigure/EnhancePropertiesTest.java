@@ -15,10 +15,12 @@
  */
 package net.dreamlu.mica.ai.enhance.autoconfigure;
 
+import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.enhance.config.EnhanceConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link EnhanceProperties} 与 {@link EnhanceAutoConfiguration#toConfig} 映射测试。
@@ -36,7 +38,10 @@ class EnhancePropertiesTest {
 		assertThat(config.getTileSize()).isEqualTo(256);
 		assertThat(config.getTileOverlap()).isEqualTo(16);
 		assertThat(config.getModelPath()).isNull();
-		config.validate();
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test

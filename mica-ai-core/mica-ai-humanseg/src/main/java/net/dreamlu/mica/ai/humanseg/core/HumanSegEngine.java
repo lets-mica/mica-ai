@@ -94,16 +94,6 @@ public class HumanSegEngine implements AutoCloseable {
 	}
 
 	/**
-	 * 使用默认配置（内置 classpath 模型）创建引擎。
-	 *
-	 * @return 初始化完成的引擎
-	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
-	 */
-	public static HumanSegEngine createDefault() {
-		return new HumanSegEngine(HumanSegConfig.builder().build());
-	}
-
-	/**
 	 * 计算原尺寸人像 alpha 掩码。
 	 *
 	 * @param bgr 原图 BGR Mat

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link TextLineProperties} 配置绑定测试（纯绑定，不启动 Spring 上下文、不加载模型）。
@@ -183,9 +184,11 @@ class TextLinePropertiesTest {
 	}
 
 	@Test
-	void unsetModelPathShouldFallBackToClasspathTemplate() {
+	void unsetModelPathShouldFailFast() {
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
 		TextLineConfig config = TextLineConfig.builder().build();
-		assertThat(config.resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/textline/PP-LCNet_x1_0_textline_ori.onnx");
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 }

@@ -87,16 +87,6 @@ public class DocAlignEngine implements AutoCloseable {
 	}
 
 	/**
-	 * 使用默认配置（内置 classpath 模型）创建引擎。
-	 *
-	 * @return 初始化完成的引擎
-	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
-	 */
-	public static DocAlignEngine createDefault() {
-		return new DocAlignEngine(DocAlignConfig.builder().build());
-	}
-
-	/**
 	 * 检测文档四角。
 	 *
 	 * @param bgr 原图 BGR Mat

@@ -51,7 +51,21 @@ public class LayoutAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public LayoutPipeline layoutPipeline(LayoutProperties properties) {
-		LayoutConfig config = LayoutConfig.builder()
+		return LayoutPipeline.create(toConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link LayoutConfig}。
+	 *
+	 * <p>独立成包级静态方法，便于测试直接调用<b>这段真实装配逻辑</b>——
+	 * 若在测试里重抄一遍 builder 链，就永远发现不了「漏写一个
+	 * {@code .xxx(properties.getXxx())}」这类静默失效。
+	 *
+	 * @param properties 版面分析配置属性
+	 * @return 核心模块配置对象
+	 */
+	static LayoutConfig toConfig(LayoutProperties properties) {
+		return LayoutConfig.builder()
 			.modelVersion(properties.getModelVersion())
 			.modelPath(properties.getModelPath())
 			.maxSideLength(properties.getMaxSideLength())
@@ -67,7 +81,6 @@ public class LayoutAutoConfiguration {
 			.std(properties.getStd())
 			.onnx(properties.getOnnx())
 			.build();
-		return LayoutPipeline.create(config);
 	}
 
 	/**

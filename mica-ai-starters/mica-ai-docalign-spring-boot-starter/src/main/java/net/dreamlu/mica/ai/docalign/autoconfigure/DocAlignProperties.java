@@ -35,12 +35,15 @@ public class DocAlignProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型标识（对应 model-tools/docalign/models/ 下的文件名前缀）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "lcnet100_h_e_bifpn_256_fp32";
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）；为空时按 {@code model-version} 解析。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/docalign/models/lcnet100_h_e_bifpn_256_fp32.onnx}。
 	 */
 	private String modelPath;
 

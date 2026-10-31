@@ -15,11 +15,13 @@
  */
 package net.dreamlu.mica.ai.detect.autoconfigure;
 
+import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.detect.config.DetectConfig;
 import net.dreamlu.mica.ai.detect.config.DetectModelFamily;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link DetectProperties} 与 {@link DetectAutoConfiguration#toConfig} 映射测试。
@@ -38,7 +40,11 @@ class DetectPropertiesTest {
 		assertThat(config.getNmsThreshold()).isEqualTo(0.6f);
 		assertThat(config.getMaxDetections()).isEqualTo(100);
 		assertThat(config.getLabels()).isNull();
-		config.validate();
+		assertThat(config.getModelPath()).isNull();
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test

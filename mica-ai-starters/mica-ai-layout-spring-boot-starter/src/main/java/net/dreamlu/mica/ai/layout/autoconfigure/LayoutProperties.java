@@ -40,12 +40,15 @@ public class LayoutProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型版本（对应 model-tools/layout/models/{modelVersion}/ 目录名）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "v3";
 
 	/**
-	 * PP-DocLayoutV3 模型 ONNX 路径（支持 classpath: 前缀；⚠️ 125MB 不入库，需本地准备）。
+	 * PP-DocLayoutV3 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>⚠️ 模型 125MB，超出「单文件 &lt;50MB 入库」约定，<b>不随仓库分发</b>，
+	 * 必须自行准备并指向本地文件，例如 {@code model-tools/layout/models/model.onnx}。
 	 */
 	private String modelPath;
 

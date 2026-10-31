@@ -15,10 +15,12 @@
  */
 package net.dreamlu.mica.ai.humanseg.autoconfigure;
 
+import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.humanseg.config.HumanSegConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link HumanSegProperties} 与 {@link HumanSegAutoConfiguration#toConfig} 映射测试。
@@ -40,7 +42,10 @@ class HumanSegPropertiesTest {
 		assertThat(config.getBinaryThreshold()).isEqualTo(0.5f);
 		assertThat(config.getBackgroundColor()).containsExactly(255, 255, 255);
 		assertThat(config.getModelPath()).isNull();
-		config.validate();
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test

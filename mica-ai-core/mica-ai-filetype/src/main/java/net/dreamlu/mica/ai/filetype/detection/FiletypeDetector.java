@@ -116,15 +116,6 @@ public class FiletypeDetector implements AutoCloseable {
 	}
 
 	/**
-	 * 用默认配置创建检测器。
-	 *
-	 * @return FiletypeDetector 实例
-	 */
-	public static FiletypeDetector createDefault() {
-		return new FiletypeDetector(FiletypeConfig.builder().build());
-	}
-
-	/**
 	 * 按文件路径识别文件类型。
 	 *
 	 * @param path 文件路径（不可为空）

@@ -88,11 +88,23 @@ class ClassifyPropertiesTest {
 
 	@Test
 	void labelsPathIsRequired() {
-		ClassifyConfig config = ClassifyAutoConfiguration.toConfig(new ClassifyProperties());
+		ClassifyProperties properties = new ClassifyProperties();
+		properties.setModelPath("D:/models/classify.onnx");
+		ClassifyConfig config = ClassifyAutoConfiguration.toConfig(properties);
 
 		assertThatThrownBy(config::validate)
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("labelsPath");
+	}
+
+	@Test
+	void modelPathIsRequired() {
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
+		ClassifyConfig config = ClassifyAutoConfiguration.toConfig(new ClassifyProperties());
+
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test

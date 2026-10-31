@@ -40,12 +40,15 @@ public class TextLineProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型标识（对应 model-tools/textline/models/ 下的文件名前缀）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "PP-LCNet_x1_0_textline_ori";
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/textline/models/PP-LCNet_x1_0_textline_ori.onnx}。
 	 *
 	 * <p>同任务模型可直接替换，如 PP-LCNet_x0_25_textline_ori（约 0.96MB，更轻）。
 	 */

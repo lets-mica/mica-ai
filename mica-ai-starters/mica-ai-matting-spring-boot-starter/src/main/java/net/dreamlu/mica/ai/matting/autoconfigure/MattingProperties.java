@@ -40,12 +40,15 @@ public class MattingProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型标识（对应 model-tools/matting/models/ 下的文件名前缀）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "u2netp";
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/matting/models/u2netp.onnx}。
 	 *
 	 * <p>任意 U²-Net 族 ONNX 均可：指向本地绝对路径即可接入超出 50MB 入库上限的模型
 	 * （如 u2net / u2net_human_seg，各约 168MB）。

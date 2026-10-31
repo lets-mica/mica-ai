@@ -15,10 +15,12 @@
  */
 package net.dreamlu.mica.ai.docalign.autoconfigure;
 
+import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.docalign.config.DocAlignConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link DocAlignProperties} 与 {@link DocAlignAutoConfiguration#toConfig} 映射测试。
@@ -36,7 +38,10 @@ class DocAlignPropertiesTest {
 		assertThat(config.getInputHeight()).isEqualTo(256);
 		assertThat(config.getHeatmapThreshold()).isEqualTo(0.3f);
 		assertThat(config.getModelPath()).isNull();
-		config.validate();
+		// 模型不随 jar 分发，没有内置 classpath 兜底：未配置模型路径必须启动即失败
+		assertThatThrownBy(config::validate)
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test

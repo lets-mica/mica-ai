@@ -20,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 /**
@@ -41,17 +40,16 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 public class DocAlignConfig {
 
 	/**
-	 * 内置 classpath 资源模板；{@code %s} 为 {@link #modelVersion}
-	 */
-	private static final String MODEL_RESOURCE = "mica-ai/models/docalign/%s.onnx";
-
-	/**
-	 * 自定义模型路径；为空时按 {@code modelVersion} 解析内置 classpath 路径
+	 * 模型 ONNX 路径（必填，支持 {@code classpath:} 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，例如
+	 * {@code model-tools/docalign/models/lcnet100_h_e_bifpn_256_fp32.onnx}；
+	 * 同族的 fastvit 等更大模型同样通过本字段指向本地文件接入。
 	 */
 	private String modelPath;
 
 	/**
-	 * 模型标识（对应 {@code model-tools/docalign/models/} 下的文件名前缀）
+	 * 模型标识，仅用于日志展示，不参与路径解析
 	 */
 	@Builder.Default
 	private String modelVersion = "lcnet100_h_e_bifpn_256_fp32";
@@ -86,6 +84,12 @@ public class DocAlignConfig {
 	 * @throws MicaAiException 任一配置项非法时抛出，错误码为 {@link ErrorCode#ILLEGAL_ARGUMENT}
 	 */
 	public void validate() {
+		if (modelPath == null || modelPath.trim().isEmpty()) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"modelPath 不能为空：文档角点模型不随 jar 分发，"
+					+ "请指向本地模型文件（如 model-tools/docalign/models/"
+					+ "lcnet100_h_e_bifpn_256_fp32.onnx）");
+		}
 		if (modelVersion == null || modelVersion.isEmpty()) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
 				"modelVersion must not be null or empty");
@@ -103,13 +107,9 @@ public class DocAlignConfig {
 	/**
 	 * 解析实际使用的模型路径。
 	 *
-	 * @return 配置了 {@code modelPath} 时直接返回；否则返回内置 classpath 资源路径
+	 * @return 配置的模型路径（原样返回；{@code classpath:} 前缀由会话层解析）
 	 */
 	public String resolveModelPath() {
-		if (modelPath != null && !modelPath.isEmpty()) {
-			return modelPath;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX
-			+ String.format(MODEL_RESOURCE, modelVersion);
+		return modelPath;
 	}
 }

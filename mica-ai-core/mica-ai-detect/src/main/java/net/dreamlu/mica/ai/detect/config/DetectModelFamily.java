@@ -44,17 +44,17 @@ public enum DetectModelFamily {
 	/**
 	 * NanoDet-Plus（opencv_zoo {@code object_detection_nanodet_2022nov.onnx}，3.6MB）
 	 */
-	NANODET_PLUS("nanodet_plus", 416),
+	NANODET_PLUS("object_detection_nanodet_2022nov.onnx", 416),
 
 	/**
 	 * YOLOX-s（opencv_zoo {@code object_detection_yolox_2022nov.onnx}，34MB）
 	 */
-	YOLOX_S("yolox_s", 640);
+	YOLOX_S("object_detection_yolox_2022nov.onnx", 640);
 
 	/**
-	 * 内置 classpath 资源名（{@code mica-ai/models/detect/<resource>.onnx}）
+	 * 仓库内模型文件名（{@code model-tools/detect/models/} 下），用于报错提示
 	 */
-	private final String resource;
+	private final String modelFile;
 
 	/**
 	 * 模型原生输入边长；配置的 {@code inputSize} 与之不一致时构造期快速失败

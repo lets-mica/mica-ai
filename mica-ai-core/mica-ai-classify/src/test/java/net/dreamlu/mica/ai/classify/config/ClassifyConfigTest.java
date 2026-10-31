@@ -26,11 +26,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class ClassifyConfigTest {
 
+	private static final String MODEL = "model-tools/classify/models/text_image_orientation.onnx";
 	private static final String LABELS = "model-tools/classify/models/text_image_orientation_labels.txt";
 
 	@Test
 	void defaultsMatchPulcContract() {
-		ClassifyConfig config = ClassifyConfig.builder().labelsPath(LABELS).build();
+		ClassifyConfig config = ClassifyConfig.builder()
+			.modelPath(MODEL)
+			.labelsPath(LABELS)
+			.build();
 		config.validate();
 
 		assertThat(config.getModelVersion()).isEqualTo("text_image_orientation");
@@ -47,9 +51,13 @@ class ClassifyConfigTest {
 	}
 
 	@Test
-	void resolveModelPathUsesClasspathResource() {
-		assertThat(ClassifyConfig.builder().labelsPath(LABELS).build().resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/classify/text_image_orientation.onnx");
+	void resolveModelPathKeepsExplicitClasspathPrefix() {
+		ClassifyConfig config = ClassifyConfig.builder()
+			.modelPath("classpath:models/classify.onnx")
+			.labelsPath(LABELS)
+			.build();
+
+		assertThat(config.resolveModelPath()).isEqualTo("classpath:models/classify.onnx");
 	}
 
 	@Test
@@ -65,6 +73,7 @@ class ClassifyConfigTest {
 	@Test
 	void acceptsTableAttributeStyleMultiLabelConfig() {
 		ClassifyConfig config = ClassifyConfig.builder()
+			.modelPath("model-tools/classify/models/table_attribute.onnx")
 			.modelVersion("table_attribute")
 			.labelsPath("model-tools/classify/models/table_attribute_labels.txt")
 			.resizeShort(0)
@@ -79,11 +88,21 @@ class ClassifyConfigTest {
 	}
 
 	@Test
+	void rejectsMissingModelPath() {
+		assertThatThrownBy(() -> ClassifyConfig.builder().labelsPath(LABELS).build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+		assertThatThrownBy(() -> ClassifyConfig.builder().modelPath("").labelsPath(LABELS).build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+	}
+
+	@Test
 	void rejectsMissingLabelsPath() {
-		assertThatThrownBy(() -> ClassifyConfig.builder().build().validate())
+		assertThatThrownBy(() -> ClassifyConfig.builder().modelPath(MODEL).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("labelsPath");
-		assertThatThrownBy(() -> ClassifyConfig.builder().labelsPath("").build().validate())
+		assertThatThrownBy(() -> ClassifyConfig.builder().modelPath(MODEL).labelsPath("").build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("labelsPath");
 	}
@@ -91,7 +110,7 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsEmptyModelVersion() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.modelVersion("").labelsPath(LABELS).build().validate())
+			.modelPath(MODEL).modelVersion("").labelsPath(LABELS).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("modelVersion");
 	}
@@ -99,11 +118,11 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsNonPositiveInputSize() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).inputWidth(0).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).inputWidth(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).inputHeight(-1).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).inputHeight(-1).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
 	}
@@ -111,7 +130,7 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsNegativeResizeShort() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).resizeShort(-1).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).resizeShort(-1).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("resizeShort");
 	}
@@ -119,7 +138,7 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsResizeShortSmallerThanInputSize() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).resizeShort(200).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).resizeShort(200).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("resizeShort");
 	}
@@ -127,11 +146,11 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsMalformedMeanAndStd() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).mean(new float[]{0.5f}).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).mean(new float[]{0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("mean");
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).std(new float[]{0.5f, 0.5f}).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).std(new float[]{0.5f, 0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("mean");
 	}
@@ -139,7 +158,7 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsZeroStd() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).std(new float[]{0.5f, 0f, 0.5f}).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).std(new float[]{0.5f, 0f, 0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("std[1]");
 	}
@@ -147,11 +166,11 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsNullChannelOrderAndInterpolation() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).channelOrder(null).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).channelOrder(null).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("channelOrder");
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).interpolation(null).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).interpolation(null).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("interpolation");
 	}
@@ -159,7 +178,7 @@ class ClassifyConfigTest {
 	@Test
 	void rejectsNonPositiveTopK() {
 		assertThatThrownBy(() -> ClassifyConfig.builder()
-			.labelsPath(LABELS).topK(0).build().validate())
+			.modelPath(MODEL).labelsPath(LABELS).topK(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("topK");
 	}

@@ -42,7 +42,10 @@ public class CaptchaProperties {
 	private boolean enabled = true;
 
 	/**
-	 * ONNX 模型路径（支持 classpath: 前缀，其余按文件系统路径处理）。
+	 * ONNX 模型路径（必填，支持 classpath: 前缀，其余按文件系统路径处理）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/captcha/models/ddddocr.onnx}。
 	 */
 	private String modelPath;
 

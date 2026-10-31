@@ -121,6 +121,9 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 - **日志**：仅用 SLF4J（`@Slf4j`），禁 `System.out.println`（测试 main 例外）。
 - **空值语义**：使用 `@Nullable` 显式标注可空参数；Java 8 无 `org.jspecify`，按需引入 `javax.annotation.Nullable` 或 `org.springframework.lang.Nullable`。
 - **异常**：业务异常继承 `MicaAiException`（在 `mica-ai-common`），禁止直接抛 `RuntimeException`。
+  - **Config 类的 `validate()`** —— 参数非法一律抛 `MicaAiException(ErrorCode.ILLEGAL_ARGUMENT, "...")`
+  - **值对象 / 枚举的边界校验**（如 `ExpressionType.fromIndex` 越界、`DocAlignResult` 角点数量）—— 用 JDK 原生 `IllegalArgumentException`，语义更准确且不引入基础设施依赖
+  - **例外**：`mica-ai-track` 刻意**零依赖**（不引 `mica-ai-common`，避免把 ONNX Runtime 拖进纯算法模块），其参数校验统一用 `IllegalArgumentException`
 - **Lombok**：可使用 `@Getter / @Setter / @RequiredArgsConstructor / @Slf4j / @Data / @Builder`（视场景选择）。
 - **缩进 / 命名**：4 空格缩进，类名 `UpperCamelCase`，包名全小写（`net.dreamlu.mica.ai.face`）。
 - **Maven 坐标**：`net.dreamlu:mica-ai-face`，版本用 `${revision}` 占位。
@@ -212,7 +215,8 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 | 性能调优 | `mica-ai-face/onnx/OrtSessionFactory.java` + `mica-ai-face/onnx/OrtSessionOptions.java` | 优先调整 `intraOpNumThreads` / `interOpNumThreads` / `device` (cpu/gpu) |
 | 新增头像提取参数 | `mica-ai-face/avatar/AvatarOptions.java` | 在 Builder 加字段 → `AvatarOptions.validate()` 加范围校验 → Starter `FaceProperties.Avatar` 同步 → mica-ai-face/README.md「头像提取」一节 |
 | 新增分类/方向能力（文本行方向这类 N 类分类） | `mica-ai-textline/detection/TextLineDetector.java` | **先拿到官方 `inference.yml` 确认 `label_list` 顺序与预处理契约，不要凭 ONNX 输出维度猜类别语义**（写反 = 正的判成倒的）→ 校验「配置的输入宽高 == 模型形状」并快速失败 → 复核 `Imgproc.resize` 的 `Size` 是 **(宽, 高)** → 集成测试断言类别语义 + 真实数据置信度区间 |
-| **模型 + 配套资源一起外置**（如 `mica-ai-captcha` 的模型 + 字符集） | 该能力 README 的「模型规格」一节 | 模型与**强耦合的配套资源**（字符集 / 词表 / 类别映射）**必须成对配置**：`model-path` 与 `charset-path` 都是必填，缺任一项启动即 fail-fast → 类别数与资源条目数不一致时**在首次推理时直接抛异常**（不是打 warning 后输出乱码）→ 资源文件**刻意不去重**（去重会让索引整体错位）→ 该能力**不提供 classpath 兜底**（模型不打包进 jar，就不要留一个指向不存在资源的默认路径） |
+| **模型 + 配套资源一起外置**（如 `mica-ai-captcha` 的模型 + 字符集） | 该能力 README 的「模型规格」一节 | 模型与**强耦合的配套资源**（字符集 / 词表 / 类别映射）**必须成对配置**：`model-path` 与 `charset-path` 都是必填，缺任一项启动即 fail-fast → 类别数与资源条目数不一致时**在首次推理时直接抛异常**（不是打 warning 后输出乱码）→ 资源文件**刻意不去重**（去重会让索引整体错位）→ **不提供 classpath 兜底**（模型不打包进 jar，就不要留一个指向不存在资源的默认路径） |
+| **模型路径的 classpath 兜底** | 该能力 README 的「配置项」一节 | 模型随仓库分发但**不打包进 jar** ⇒ **一律不提供内置 classpath 兜底**：`model-path` 必填，为空时 `validate()` 直接抛 `MicaAiException` 并在消息里指向 `model-tools/<cap>/models/` 下的文件 → 用户**显式配置**的路径仍支持 `classpath:` 前缀（统一由 `OnnxModelSession` 解析） → ⚠️ 写死一个指向不存在资源的默认路径 = 死路径：报错会把用户引向「往 classpath 放模型」的错误方向，而正确做法是指向仓库里的文件 |
 | **新增需要 OpenCV 原生库的集成测试** | 该能力集成测试的静态块 | **用 `nu.pattern.OpenCV.loadLocally()`，不要用 `loadShared()`**。`forkCount=0` 下全仓测试共用一个 JVM，但每个模块各有一个 ClassLoader；`loadShared()` 在 **Java 8** 会把解压出的原生库目录写进**全局** `ClassLoader.usr_paths`，于是后一个模块通过 `System.loadLibrary` 解析到**同一个** .so 文件 → JVM 抛 `UnsatisfiedLinkError: Native Library ... already loaded in another classloader`（Java 8 的 CI 必挂，Java 12+ 因 `loadShared()` 内部回退到 `loadLocally()` 而侥幸不挂）。`loadLocally()` 每次解压到独立临时目录，天然规避 |
 
 ---
@@ -220,7 +224,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 ## 8. 验证清单（改完跑一遍）
 
 - [ ] `mvn -DskipTests install` 通过
-- [ ] `mvn test` 全绿（face / filetype / plate / layout / matting / textline / captcha / example 八个模块）
+- [ ] `mvn test` 全绿（13 个 core 模块 + 13 个 starter + example；外置模型相关的用例按 `Assumptions` 跳过）
 - [ ] 替换了模型：对应能力模块的**集成测试**通过（加载真 ONNX 跑一遍完整推理）
 - [ ] 新增能力：模块 README + Starter + `model-tools/<cap>/README.md` 三处齐全，且能力清单（根 README / 本文件 §1 §2 §6.1）同步
 - [ ] 改了 Starter：在 `application.yml` 加示例，且至少 1 个 `@Autowired` 使用点

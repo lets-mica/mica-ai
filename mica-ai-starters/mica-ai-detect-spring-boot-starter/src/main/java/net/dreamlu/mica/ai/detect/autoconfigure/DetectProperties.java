@@ -39,7 +39,12 @@ public class DetectProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）；为空时按 {@code family} 解析内置 classpath 路径。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，例如
+	 * {@code model-tools/detect/models/object_detection_nanodet_2022nov.onnx}；
+	 * 切到 {@code family=YOLOX_S} 时对应
+	 * {@code model-tools/detect/models/object_detection_yolox_2022nov.onnx}。
 	 */
 	private String modelPath;
 

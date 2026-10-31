@@ -20,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 /**
@@ -38,10 +37,17 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 @AllArgsConstructor
 public class FaceQualityConfig {
 
-	private static final String MODEL_RESOURCE = "mica-ai/models/face/%s.onnx";
-
+	/**
+	 * 模型 ONNX 路径（必填，支持 {@code classpath:} 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，例如
+	 * {@code model-tools/face/models/ediffiqa_tiny_jun2024.onnx}。
+	 */
 	private String modelPath;
 
+	/**
+	 * 模型标识，仅用于日志展示，不参与路径解析
+	 */
 	@Builder.Default
 	private String modelVersion = "ediffiqa_tiny_jun2024";
 
@@ -61,6 +67,11 @@ public class FaceQualityConfig {
 	private OrtSessionOptions onnx = OrtSessionOptions.defaults();
 
 	public void validate() {
+		if (modelPath == null || modelPath.trim().isEmpty()) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"modelPath 不能为空：人脸质量评估模型不随 jar 分发，"
+					+ "请指向本地模型文件（如 model-tools/face/models/ediffiqa_tiny_jun2024.onnx）");
+		}
 		if (modelVersion == null || modelVersion.isEmpty()) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT, "modelVersion must not be null or empty");
 		}
@@ -80,11 +91,12 @@ public class FaceQualityConfig {
 		}
 	}
 
+	/**
+	 * 解析实际使用的模型路径。
+	 *
+	 * @return 配置的模型路径（原样返回；{@code classpath:} 前缀由会话层解析）
+	 */
 	public String resolveModelPath() {
-		if (modelPath != null && !modelPath.isEmpty()) {
-			return modelPath;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX
-			+ String.format(MODEL_RESOURCE, modelVersion);
+		return modelPath;
 	}
 }

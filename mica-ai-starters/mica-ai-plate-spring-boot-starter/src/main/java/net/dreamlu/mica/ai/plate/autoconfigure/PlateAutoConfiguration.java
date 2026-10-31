@@ -44,7 +44,21 @@ public class PlateAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public PlatePipeline platePipeline(PlateProperties properties) {
-		PlateConfig config = PlateConfig.builder()
+		return PlatePipeline.create(toConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link PlateConfig}。
+	 *
+	 * <p>独立成包级静态方法，便于测试直接调用<b>这段真实装配逻辑</b>——
+	 * 若在测试里重抄一遍 builder 链，就永远发现不了「漏写一个
+	 * {@code .xxx(properties.getXxx())}」这类静默失效。
+	 *
+	 * @param properties 车牌识别配置属性
+	 * @return 核心模块配置对象
+	 */
+	static PlateConfig toConfig(PlateProperties properties) {
+		return PlateConfig.builder()
 			.modelVersion(properties.getModelVersion())
 			.detectionModelPath(properties.getDetectionModelPath())
 			.recognitionModelPath(properties.getRecognitionModelPath())
@@ -58,6 +72,5 @@ public class PlateAutoConfiguration {
 			.maxPlates(properties.getMaxPlates())
 			.onnx(properties.getOnnx())
 			.build();
-		return PlatePipeline.create(config);
 	}
 }

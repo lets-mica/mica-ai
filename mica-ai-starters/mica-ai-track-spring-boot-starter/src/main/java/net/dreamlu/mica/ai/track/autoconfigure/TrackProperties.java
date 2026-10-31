@@ -29,6 +29,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TrackProperties {
 
 	/**
+	 * 是否启用多目标跟踪（false 时不装配 ByteTracker Bean）。
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * 高分框 / 低分框分界线。
 	 */
 	private float highThreshold = 0.6f;

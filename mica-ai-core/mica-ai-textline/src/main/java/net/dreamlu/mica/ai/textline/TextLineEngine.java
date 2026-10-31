@@ -101,16 +101,6 @@ public class TextLineEngine implements AutoCloseable {
 	}
 
 	/**
-	 * 使用默认配置创建 {@link TextLineEngine} 实例。
-	 *
-	 * @return 初始化完成的引擎
-	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
-	 */
-	public static TextLineEngine createDefault() {
-		return new TextLineEngine(TextLineConfig.builder().build());
-	}
-
-	/**
 	 * 判定文本行方向。
 	 *
 	 * @param line 文本行图 BGR Mat

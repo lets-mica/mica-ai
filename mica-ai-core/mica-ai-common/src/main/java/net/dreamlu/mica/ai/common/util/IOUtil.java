@@ -20,14 +20,17 @@ import lombok.experimental.UtilityClass;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * IO 工具（跨能力通用基础设施）。
  *
- * <p>当前仅 {@link #readAllBytes(InputStream)} 一个工具方法：
+ * <p>当前工具方法：
  * <ul>
- *   <li>读取时一次性分配与流实际可用字节相近的初始缓冲</li>
- *   <li>按 8KB 分块读取，避免大输入流场景下反复扩容</li>
+ *   <li>{@link #readAllBytes(InputStream)} —— 一次性读入流内容</li>
+ *   <li>{@link #readAllLines(byte[], Charset)} —— 按行切分文本内容</li>
  * </ul>
  */
 @UtilityClass
@@ -41,5 +44,39 @@ public class IOUtil {
 			out.write(buf, 0, n);
 		}
 		return out.toByteArray();
+	}
+
+	/**
+	 * 把文本内容按行切分。
+	 *
+	 * <p>换行语义与 {@code BufferedReader#readLine()} 一致：{@code \n}、{@code \r}、
+	 * {@code \r\n} 均视为行分隔符；末尾换行不产生额外的空行。
+	 *
+	 * @param content 文本字节内容
+	 * @param charset 字符集
+	 * @return 按行切分后的列表，内容为空时返回空列表
+	 */
+	public static List<String> readAllLines(byte[] content, Charset charset) {
+		List<String> lines = new ArrayList<>();
+		if (content == null || content.length == 0) {
+			return lines;
+		}
+		String text = new String(content, charset);
+		int start = 0;
+		int len = text.length();
+		for (int i = 0; i < len; i++) {
+			char c = text.charAt(i);
+			if (c == '\n' || c == '\r') {
+				lines.add(text.substring(start, i));
+				if (c == '\r' && i + 1 < len && text.charAt(i + 1) == '\n') {
+					i++;
+				}
+				start = i + 1;
+			}
+		}
+		if (start < len) {
+			lines.add(text.substring(start));
+		}
+		return lines;
 	}
 }

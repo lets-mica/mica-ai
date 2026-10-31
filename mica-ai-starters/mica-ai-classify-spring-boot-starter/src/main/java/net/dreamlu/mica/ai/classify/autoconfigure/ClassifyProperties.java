@@ -40,17 +40,20 @@ public class ClassifyProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型标识（对应 model-tools/classify/models/ 下的文件名前缀）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "text_image_orientation";
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）；为空时按 {@code model-version} 解析。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/classify/models/text_image_orientation.onnx}。
 	 */
 	private String modelPath;
 
 	/**
-	 * 与模型强耦合的 label_list 文件路径（必填，无 classpath 兜底）。
+	 * 与模型强耦合的 label_list 文件路径（必填，支持 classpath: 前缀）。
 	 */
 	private String labelsPath;
 

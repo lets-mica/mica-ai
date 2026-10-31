@@ -94,16 +94,6 @@ public class LayoutPipeline implements AutoCloseable {
 	}
 
 	/**
-	 * 使用默认配置创建 {@link LayoutPipeline} 实例。
-	 *
-	 * @return 初始化完成的 pipeline
-	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
-	 */
-	public static LayoutPipeline createDefault() {
-		return new LayoutPipeline(LayoutConfig.builder().build());
-	}
-
-	/**
 	 * 检测本地图像文件的版面区域。
 	 *
 	 * @param imagePath 图像文件路径

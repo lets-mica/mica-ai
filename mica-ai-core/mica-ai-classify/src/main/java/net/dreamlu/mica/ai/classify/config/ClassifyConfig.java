@@ -20,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 
 /**
@@ -49,24 +48,21 @@ import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 public class ClassifyConfig {
 
 	/**
-	 * 内置 classpath 资源模板；{@code %s} 为 {@link #modelVersion}
-	 */
-	private static final String MODEL_RESOURCE = "mica-ai/models/classify/%s.onnx";
-
-	/**
-	 * 自定义模型路径；为空时按 {@code modelVersion} 解析内置 classpath 路径
+	 * 模型 ONNX 路径（必填，支持 {@code classpath:} 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，例如
+	 * {@code model-tools/classify/models/text_image_orientation.onnx}。
 	 */
 	private String modelPath;
 
 	/**
-	 * 模型标识（对应 {@code model-tools/classify/models/} 下的文件名前缀），
-	 * 默认首批的 {@code text_image_orientation}
+	 * 模型标识，仅用于日志展示，不参与路径解析
 	 */
 	@Builder.Default
 	private String modelVersion = "text_image_orientation";
 
 	/**
-	 * 与模型强耦合的 label_list 文件路径（必填，无 classpath 兜底）。
+	 * 与模型强耦合的 label_list 文件路径（必填，支持 {@code classpath:} 前缀）。
 	 *
 	 * <p>格式为「一行一个标签」，按行序对应模型输出索引；<b>刻意不做去重</b>
 	 * （去重会让索引整体错位）。类别数与资源条目数不一致时快速失败。
@@ -155,6 +151,11 @@ public class ClassifyConfig {
 	 * @throws MicaAiException 任一配置项非法时抛出
 	 */
 	public void validate() {
+		if (modelPath == null || modelPath.trim().isEmpty()) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"modelPath 不能为空：分类模型不随 jar 分发，"
+					+ "请指向本地模型文件（如 model-tools/classify/models/text_image_orientation.onnx）");
+		}
 		if (modelVersion == null || modelVersion.isEmpty()) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
 				"modelVersion must not be null or empty");
@@ -203,13 +204,9 @@ public class ClassifyConfig {
 	/**
 	 * 解析实际使用的模型路径。
 	 *
-	 * @return 配置了 {@code modelPath} 时直接返回；否则返回内置 classpath 资源路径
+	 * @return 配置的模型路径（原样返回；{@code classpath:} 前缀由会话层解析）
 	 */
 	public String resolveModelPath() {
-		if (modelPath != null && !modelPath.isEmpty()) {
-			return modelPath;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX
-			+ String.format(MODEL_RESOURCE, modelVersion);
+		return modelPath;
 	}
 }

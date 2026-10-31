@@ -93,15 +93,6 @@ public class PlatePipeline implements AutoCloseable {
 		return new PlatePipeline(config);
 	}
 
-	/**
-	 * 使用默认配置创建车牌识别 Pipeline。
-	 *
-	 * @return Pipeline 实例
-	 */
-	public static PlatePipeline createDefault() {
-		return new PlatePipeline(PlateConfig.builder().build());
-	}
-
 	static PlateType codeFilter(String plateCode) {
 		if (plateCode == null || plateCode.isEmpty()) {
 			return PlateType.UNKNOWN;

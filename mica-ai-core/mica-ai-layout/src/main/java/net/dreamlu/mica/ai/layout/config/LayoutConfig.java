@@ -20,7 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 
@@ -36,15 +35,17 @@ import java.util.Set;
 @AllArgsConstructor
 public class LayoutConfig {
 
-	private static final String MODEL_RESOURCE = "mica-ai/models/layout/%s/model.onnx";
-
 	/**
-	 * 自定义模型路径；为空时按 {@code modelVersion} 解析内置 classpath 路径
+	 * 模型 ONNX 路径（必填，支持 {@code classpath:} 前缀）。
+	 *
+	 * <p>PP-DocLayoutV3 模型约 125MB，超出「单文件 &lt;50MB 入库」约定，
+	 * <b>不随仓库分发</b>，必须由使用者自行准备并指向本地文件，例如
+	 * {@code model-tools/layout/models/model.onnx}。
 	 */
 	private String modelPath;
 
 	/**
-	 * 内置模型版本（v2 / v3），默认 v3
+	 * 模型标识，仅用于日志展示，不参与路径解析
 	 */
 	@Builder.Default
 	private String modelVersion = "v3";
@@ -127,6 +128,11 @@ public class LayoutConfig {
 	 * @throws MicaAiException 任一配置项非法时抛出，错误码为 {@link ErrorCode#ILLEGAL_ARGUMENT}
 	 */
 	public void validate() {
+		if (modelPath == null || modelPath.trim().isEmpty()) {
+			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
+				"modelPath 不能为空：版面分析模型（125MB）不随 jar 分发，"
+					+ "请自行准备模型文件并指向本地路径（如 model-tools/layout/models/model.onnx）");
+		}
 		if (modelVersion == null || modelVersion.isEmpty()) {
 			throw new MicaAiException(ErrorCode.ILLEGAL_ARGUMENT,
 				"modelVersion must not be null or empty");
@@ -198,13 +204,9 @@ public class LayoutConfig {
 	/**
 	 * 解析实际使用的模型路径。
 	 *
-	 * @return 配置了 {@code modelPath} 时直接返回；否则返回内置 classpath 资源路径
+	 * @return 配置的模型路径（原样返回；{@code classpath:} 前缀由会话层解析）
 	 */
 	public String resolveModelPath() {
-		if (modelPath != null && !modelPath.isEmpty()) {
-			return modelPath;
-		}
-		return OnnxModelSession.CLASSPATH_PREFIX
-			+ String.format(MODEL_RESOURCE, modelVersion);
+		return modelPath;
 	}
 }

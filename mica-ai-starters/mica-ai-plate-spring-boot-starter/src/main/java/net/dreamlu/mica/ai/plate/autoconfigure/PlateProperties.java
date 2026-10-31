@@ -35,22 +35,29 @@ public class PlateProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型版本（对应 model-tools/plate/models/ 的版本标识，如 20230229）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "20230229";
 
 	/**
-	 * 车牌检测模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 * 车牌检测模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/plate/models/y5fu_320x_sim.onnx}。
 	 */
 	private String detectionModelPath;
 
 	/**
-	 * 车牌字符识别（CRNN）模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 * 车牌字符识别（CRNN）模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>例如 {@code model-tools/plate/models/rpv3_mdict_160_r3.onnx}。
 	 */
 	private String recognitionModelPath;
 
 	/**
-	 * 车牌颜色分类模型 ONNX 路径（支持 classpath: 前缀，未配置时启动失败）。
+	 * 车牌颜色分类模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>例如 {@code model-tools/plate/models/litemodel_cls_96x_r1.onnx}。
 	 */
 	private String classificationModelPath;
 

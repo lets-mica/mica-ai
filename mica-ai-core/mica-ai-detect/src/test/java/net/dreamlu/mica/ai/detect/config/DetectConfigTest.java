@@ -26,9 +26,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class DetectConfigTest {
 
+	private static final String MODEL =
+		"model-tools/detect/models/object_detection_nanodet_2022nov.onnx";
+
 	@Test
 	void defaultConfigIsNanodetPlus() {
-		DetectConfig config = DetectConfig.builder().build();
+		DetectConfig config = DetectConfig.builder().modelPath(MODEL).build();
 
 		assertThat(config.getFamily()).isEqualTo(DetectModelFamily.NANODET_PLUS);
 		assertThat(config.getInputSize()).isEqualTo(416);
@@ -40,12 +43,12 @@ class DetectConfigTest {
 	}
 
 	@Test
-	void resolveModelPathUsesFamilyResource() {
-		assertThat(DetectConfig.builder().build().resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/detect/nanodet_plus.onnx");
+	void resolveModelPathKeepsExplicitClasspathPrefix() {
+		DetectConfig config = DetectConfig.builder()
+			.modelPath("classpath:models/detect/nanodet.onnx")
+			.build();
 
-		assertThat(DetectConfig.builder().family(DetectModelFamily.YOLOX_S).build().resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/detect/yolox_s.onnx");
+		assertThat(config.resolveModelPath()).isEqualTo("classpath:models/detect/nanodet.onnx");
 	}
 
 	@Test
@@ -58,28 +61,45 @@ class DetectConfigTest {
 	}
 
 	@Test
-	void familyCarriesNativeInputSize() {
+	void familyCarriesNativeInputSizeAndModelFile() {
 		assertThat(DetectModelFamily.NANODET_PLUS.getInputSize()).isEqualTo(416);
 		assertThat(DetectModelFamily.YOLOX_S.getInputSize()).isEqualTo(640);
+		assertThat(DetectModelFamily.NANODET_PLUS.getModelFile())
+			.isEqualTo("object_detection_nanodet_2022nov.onnx");
+		assertThat(DetectModelFamily.YOLOX_S.getModelFile())
+			.isEqualTo("object_detection_yolox_2022nov.onnx");
+	}
+
+	@Test
+	void rejectsMissingModelPath() {
+		assertThatThrownBy(() -> DetectConfig.builder().build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+		assertThatThrownBy(() -> DetectConfig.builder().modelPath("").build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
 	}
 
 	@Test
 	void rejectsNullFamily() {
-		assertThatThrownBy(() -> DetectConfig.builder().family(null).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).family(null).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("family");
 	}
 
 	@Test
 	void rejectsNonPositiveInputSize() {
-		assertThatThrownBy(() -> DetectConfig.builder().inputSize(0).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).inputSize(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputSize");
 	}
 
 	@Test
 	void rejectsInputSizeNotMultipleOf32() {
-		assertThatThrownBy(() -> DetectConfig.builder().inputSize(410).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).inputSize(410).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("32");
 	}
@@ -87,6 +107,7 @@ class DetectConfigTest {
 	@Test
 	void acceptsYoloxInputSize() {
 		DetectConfig config = DetectConfig.builder()
+			.modelPath("model-tools/detect/models/object_detection_yolox_2022nov.onnx")
 			.family(DetectModelFamily.YOLOX_S)
 			.inputSize(640)
 			.scoreThreshold(0.5f)
@@ -98,24 +119,28 @@ class DetectConfigTest {
 
 	@Test
 	void rejectsScoreThresholdOutOfRange() {
-		assertThatThrownBy(() -> DetectConfig.builder().scoreThreshold(1.5f).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).scoreThreshold(1.5f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("scoreThreshold");
-		assertThatThrownBy(() -> DetectConfig.builder().scoreThreshold(-0.1f).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).scoreThreshold(-0.1f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("scoreThreshold");
 	}
 
 	@Test
 	void rejectsNmsThresholdOutOfRange() {
-		assertThatThrownBy(() -> DetectConfig.builder().nmsThreshold(1.2f).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).nmsThreshold(1.2f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("nmsThreshold");
 	}
 
 	@Test
 	void rejectsNonPositiveMaxDetections() {
-		assertThatThrownBy(() -> DetectConfig.builder().maxDetections(0).build().validate())
+		assertThatThrownBy(() -> DetectConfig.builder()
+			.modelPath(MODEL).maxDetections(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("maxDetections");
 	}
@@ -123,7 +148,7 @@ class DetectConfigTest {
 	@Test
 	void rejectsEmptyLabelsArray() {
 		assertThatThrownBy(() -> DetectConfig.builder()
-			.labels(new String[0]).build().validate())
+			.modelPath(MODEL).labels(new String[0]).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("labels");
 	}

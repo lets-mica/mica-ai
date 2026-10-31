@@ -62,8 +62,22 @@ public class FaceAutoConfiguration implements InitializingBean {
 	@Bean
 	@ConditionalOnMissingBean
 	public ModelManager modelManager(FaceProperties properties) {
+		return ModelManager.create(toModelConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link ModelConfig}。
+	 *
+	 * <p>独立成包级静态方法，便于测试直接调用<b>这段真实装配逻辑</b>——
+	 * 若在测试里重抄一遍 builder 链，就永远发现不了「漏写一个
+	 * {@code .xxx(properties.getXxx())}」这类静默失效。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 核心模块模型配置对象
+	 */
+	static ModelConfig toModelConfig(FaceProperties properties) {
 		FaceProperties.Model model = properties.getModel();
-		ModelConfig config = ModelConfig.builder()
+		return ModelConfig.builder()
 			.detectionModelPath(model.getDetection().getPath())
 			.recognitionModelPath(model.getRecognition().getPath())
 			.livenessModelPath(properties.getLiveness().isEnabled() ? model.getLiveness().getPath() : null)
@@ -73,7 +87,6 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.multiFaceStrategy(properties.getVerify().getStrategy())
 			.onnx(properties.getOnnx())
 			.build();
-		return ModelManager.create(config);
 	}
 
 	/**
@@ -149,8 +162,18 @@ public class FaceAutoConfiguration implements InitializingBean {
 	@Bean
 	@ConditionalOnMissingBean
 	public AvatarExtractor avatarExtractor(FaceDetector faceDetector, FaceProperties properties) {
+		return new AvatarExtractor(faceDetector, toAvatarOptions(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link AvatarOptions}。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 头像提取配置对象
+	 */
+	static AvatarOptions toAvatarOptions(FaceProperties properties) {
 		FaceProperties.Avatar a = properties.getAvatar();
-		AvatarOptions defaults = AvatarOptions.builder()
+		return AvatarOptions.builder()
 			.size(a.getSize())
 			.faceScale(a.getFaceScale())
 			.verticalOffset(a.getVerticalOffset())
@@ -165,7 +188,6 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.minFaceSize(a.getMinFaceSize())
 			.maxFaces(a.getMaxFaces())
 			.build();
-		return new AvatarExtractor(faceDetector, defaults);
 	}
 
 	/**
@@ -177,6 +199,16 @@ public class FaceAutoConfiguration implements InitializingBean {
 	@Bean
 	@ConditionalOnMissingBean
 	public CardExtractor cardExtractor(FaceProperties properties) {
+		return new CardExtractor(toCardOptions(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link CardOptions}。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 卡片提取配置对象
+	 */
+	static CardOptions toCardOptions(FaceProperties properties) {
 		FaceProperties.Card c = properties.getCard();
 		CardOptions.CardOptionsBuilder builder = CardOptions.defaults().toBuilder()
 			.outputWidth(c.getOutputWidth())
@@ -187,7 +219,7 @@ public class FaceAutoConfiguration implements InitializingBean {
 			.sharpenSigma(c.getSharpenSigma())
 			.minCardSize(c.getMinCardSize());
 		// 默认不注入 FaceDetector；需要 autoOrient 时由业务模块自行提供带检测器的 CardExtractor
-		return new CardExtractor(builder.build());
+		return builder.build();
 	}
 
 	/**
@@ -200,14 +232,23 @@ public class FaceAutoConfiguration implements InitializingBean {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = "mica.ai.face.quality", name = "enabled", havingValue = "true")
 	public FaceQualityAssessor faceQualityAssessor(FaceProperties properties) {
+		return new FaceQualityAssessor(toQualityConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link FaceQualityConfig}。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 人脸质量评估配置对象
+	 */
+	static FaceQualityConfig toQualityConfig(FaceProperties properties) {
 		FaceProperties.Quality q = properties.getQuality();
 		FaceProperties.ModelEntry qualityModel = properties.getModel().getQuality();
-		FaceQualityConfig config = FaceQualityConfig.builder()
+		return FaceQualityConfig.builder()
 			.modelPath(qualityModel.getPath())
 			.threshold(q.getThreshold())
 			.onnx(properties.getOnnx())
 			.build();
-		return new FaceQualityAssessor(config);
 	}
 
 	/**
@@ -220,12 +261,21 @@ public class FaceAutoConfiguration implements InitializingBean {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = "mica.ai.face.expression", name = "enabled", havingValue = "true")
 	public ExpressionRecognizer expressionRecognizer(FaceProperties properties) {
+		return new ExpressionRecognizer(toExpressionConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link ExpressionConfig}。
+	 *
+	 * @param properties 人脸模块配置
+	 * @return 表情识别配置对象
+	 */
+	static ExpressionConfig toExpressionConfig(FaceProperties properties) {
 		FaceProperties.ModelEntry exprModel = properties.getModel().getExpression();
-		ExpressionConfig config = ExpressionConfig.builder()
+		return ExpressionConfig.builder()
 			.modelPath(exprModel.getPath())
 			.onnx(properties.getOnnx())
 			.build();
-		return new ExpressionRecognizer(config);
 	}
 
 	@Override

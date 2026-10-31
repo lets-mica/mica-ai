@@ -47,7 +47,21 @@ public class FiletypeAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public FiletypeDetector filetypeDetector(FiletypeProperties properties) {
-		FiletypeConfig config = FiletypeConfig.builder()
+		return FiletypeDetector.create(toConfig(properties));
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link FiletypeConfig}。
+	 *
+	 * <p>独立成包级静态方法，便于测试直接调用<b>这段真实装配逻辑</b>——
+	 * 若在测试里重抄一遍 builder 链，就永远发现不了「漏写一个
+	 * {@code .xxx(properties.getXxx())}」这类静默失效。
+	 *
+	 * @param properties 文件类型配置属性
+	 * @return 核心模块配置对象
+	 */
+	static FiletypeConfig toConfig(FiletypeProperties properties) {
+		return FiletypeConfig.builder()
 			.modelVersion(properties.getModelVersion())
 			.modelPath(properties.getModelPath())
 			.configPath(properties.getConfigPath())
@@ -55,7 +69,6 @@ public class FiletypeAutoConfiguration {
 			.predictionMode(properties.getPredictionMode())
 			.onnx(properties.getOnnx())
 			.build();
-		return FiletypeDetector.create(config);
 	}
 
 }

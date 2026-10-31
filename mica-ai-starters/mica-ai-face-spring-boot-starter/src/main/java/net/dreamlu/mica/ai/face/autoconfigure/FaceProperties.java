@@ -31,6 +31,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class FaceProperties {
 
 	/**
+	 * 是否启用人脸能力（false 时不装配任何 Bean）。
+	 */
+	private boolean enabled = true;
+
+	/**
 	 * 模型路径配置（检测 / 识别 / 活体，均未配置时启动失败）。
 	 */
 	private Model model = new Model();
@@ -111,7 +116,10 @@ public class FaceProperties {
 	@Setter
 	public static class ModelEntry {
 		/**
-		 * 模型 ONNX 路径（支持 classpath: 前缀）。
+		 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+		 *
+		 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+		 * 例如 {@code model-tools/face/models/face_detection_yunet_2023mar.onnx}。
 		 */
 		private String path;
 	}

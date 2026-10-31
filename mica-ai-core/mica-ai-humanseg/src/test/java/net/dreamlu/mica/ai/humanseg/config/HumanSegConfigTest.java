@@ -26,9 +26,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class HumanSegConfigTest {
 
+	private static final String MODEL =
+		"model-tools/humanseg/models/human_segmentation_pphumanseg_2023mar.onnx";
+
 	@Test
 	void defaultConfigMatchesBundledModel() {
-		HumanSegConfig config = HumanSegConfig.builder().build();
+		HumanSegConfig config = HumanSegConfig.builder().modelPath(MODEL).build();
 
 		assertThat(config.getModelVersion())
 			.isEqualTo("human_segmentation_pphumanseg_2023mar");
@@ -42,10 +45,13 @@ class HumanSegConfigTest {
 	}
 
 	@Test
-	void resolveModelPathUsesClasspathResource() {
-		assertThat(HumanSegConfig.builder().build().resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/humanseg/"
-				+ "human_segmentation_pphumanseg_2023mar.onnx");
+	void resolveModelPathKeepsExplicitClasspathPrefix() {
+		HumanSegConfig config = HumanSegConfig.builder()
+			.modelPath("classpath:models/humanseg/humanseg.onnx")
+			.build();
+
+		assertThat(config.resolveModelPath())
+			.isEqualTo("classpath:models/humanseg/humanseg.onnx");
 	}
 
 	@Test
@@ -60,6 +66,7 @@ class HumanSegConfigTest {
 	@Test
 	void acceptsPortraitInputSize() {
 		HumanSegConfig config = HumanSegConfig.builder()
+			.modelPath(MODEL)
 			.modelVersion("pphumansegv2_lite_portrait")
 			.inputWidth(256)
 			.inputHeight(144)
@@ -71,19 +78,31 @@ class HumanSegConfigTest {
 	}
 
 	@Test
+	void rejectsMissingModelPath() {
+		assertThatThrownBy(() -> HumanSegConfig.builder().build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+		assertThatThrownBy(() -> HumanSegConfig.builder().modelPath("").build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+	}
+
+	@Test
 	void rejectsEmptyModelVersion() {
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.modelVersion("").build().validate())
+			.modelPath(MODEL).modelVersion("").build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("modelVersion");
 	}
 
 	@Test
 	void rejectsNonPositiveInputSize() {
-		assertThatThrownBy(() -> HumanSegConfig.builder().inputWidth(0).build().validate())
+		assertThatThrownBy(() -> HumanSegConfig.builder()
+			.modelPath(MODEL).inputWidth(0).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
-		assertThatThrownBy(() -> HumanSegConfig.builder().inputHeight(-1).build().validate())
+		assertThatThrownBy(() -> HumanSegConfig.builder()
+			.modelPath(MODEL).inputHeight(-1).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("inputWidth");
 	}
@@ -91,11 +110,11 @@ class HumanSegConfigTest {
 	@Test
 	void rejectsMalformedMeanAndStd() {
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.mean(new float[]{0.5f}).build().validate())
+			.modelPath(MODEL).mean(new float[]{0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("mean");
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.std(new float[]{0.5f, 0.5f}).build().validate())
+			.modelPath(MODEL).std(new float[]{0.5f, 0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("mean");
 	}
@@ -103,7 +122,7 @@ class HumanSegConfigTest {
 	@Test
 	void rejectsZeroStd() {
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.std(new float[]{0.5f, 0f, 0.5f}).build().validate())
+			.modelPath(MODEL).std(new float[]{0.5f, 0f, 0.5f}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("std[1]");
 	}
@@ -111,11 +130,11 @@ class HumanSegConfigTest {
 	@Test
 	void rejectsBinaryThresholdOutOfRange() {
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.binaryThreshold(1.5f).build().validate())
+			.modelPath(MODEL).binaryThreshold(1.5f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("binaryThreshold");
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.binaryThreshold(-0.1f).build().validate())
+			.modelPath(MODEL).binaryThreshold(-0.1f).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("binaryThreshold");
 	}
@@ -123,11 +142,11 @@ class HumanSegConfigTest {
 	@Test
 	void rejectsMalformedBackgroundColor() {
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.backgroundColor(new int[]{255, 0}).build().validate())
+			.modelPath(MODEL).backgroundColor(new int[]{255, 0}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("backgroundColor");
 		assertThatThrownBy(() -> HumanSegConfig.builder()
-			.backgroundColor(new int[]{255, 0, 300}).build().validate())
+			.modelPath(MODEL).backgroundColor(new int[]{255, 0, 300}).build().validate())
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("backgroundColor[2]");
 	}

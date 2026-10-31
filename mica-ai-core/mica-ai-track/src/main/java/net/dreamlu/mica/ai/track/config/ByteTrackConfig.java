@@ -69,6 +69,12 @@ public class ByteTrackConfig {
 	@Builder.Default
 	private int confirmAge = 3;
 
+	/**
+	 * 校验配置合法性，非法时抛出 {@link IllegalArgumentException}。
+	 *
+	 * <p>本模块刻意**零依赖**（不引 {@code mica-ai-common}，避免拖进 ONNX Runtime），
+	 * 故不共用 {@code MicaAiException}，参数校验用 JDK 原生异常。
+	 */
 	public void validate() {
 		if (highThreshold <= lowThreshold) {
 			throw new IllegalArgumentException("highThreshold 必须 > lowThreshold");

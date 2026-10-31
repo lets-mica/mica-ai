@@ -38,12 +38,15 @@ public class EnhanceProperties {
 	private boolean enabled = true;
 
 	/**
-	 * 模型标识（对应 model-tools/enhance/models/ 下的文件名前缀）。
+	 * 模型标识，仅用于日志展示，不参与路径解析。
 	 */
 	private String modelVersion = "realesr-general-x4v3";
 
 	/**
-	 * 模型 ONNX 路径（支持 classpath: 前缀）；为空时按 {@code model-version} 解析。
+	 * 模型 ONNX 路径（必填，支持 classpath: 前缀）。
+	 *
+	 * <p>模型随仓库分发但不打包进 jar，必须显式指向本地文件，
+	 * 例如 {@code model-tools/enhance/models/realesr-general-x4v3.onnx}。
 	 */
 	private String modelPath;
 

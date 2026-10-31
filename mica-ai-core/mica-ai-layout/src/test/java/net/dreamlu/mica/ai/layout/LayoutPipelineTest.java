@@ -26,9 +26,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LayoutPipelineTest {
 
+	private static final String MODEL = "model-tools/layout/models/model.onnx";
+
 	@Test
 	void configDefaultShouldBeValid() {
-		LayoutConfig config = LayoutConfig.builder().build();
+		LayoutConfig config = LayoutConfig.builder().modelPath(MODEL).build();
 		config.validate();
 		assertThat(config.getScoreThreshold()).isEqualTo(0.4f);
 		assertThat(config.getMaxSideLength()).isEqualTo(800);
@@ -42,18 +44,27 @@ class LayoutPipelineTest {
 	}
 
 	@Test
+	void configMissingModelPathShouldThrow() {
+		assertThatThrownBy(() -> LayoutConfig.builder().build().validate())
+			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
+			.hasMessageContaining("modelPath");
+	}
+
+	@Test
 	void configInvalidNmsThresholdShouldThrow() {
-		assertThatThrownBy(LayoutConfig.builder().nmsThreshold(1.5f).build()::validate)
+		assertThatThrownBy(() -> LayoutConfig.builder()
+			.modelPath(MODEL).nmsThreshold(1.5f).build().validate())
 			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
 			.hasMessageContaining("nmsThreshold");
-		assertThatThrownBy(LayoutConfig.builder().nmsDiffClassThreshold(-0.1f).build()::validate)
+		assertThatThrownBy(() -> LayoutConfig.builder()
+			.modelPath(MODEL).nmsDiffClassThreshold(-0.1f).build().validate())
 			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
 			.hasMessageContaining("nmsDiffClassThreshold");
 	}
 
 	@Test
 	void configInvalidScoreShouldThrow() {
-		LayoutConfig bad = LayoutConfig.builder().scoreThreshold(1.5f).build();
+		LayoutConfig bad = LayoutConfig.builder().modelPath(MODEL).scoreThreshold(1.5f).build();
 		assertThatThrownBy(bad::validate)
 			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
 			.hasMessageContaining("scoreThreshold");
@@ -62,6 +73,7 @@ class LayoutPipelineTest {
 	@Test
 	void configInvalidClassThresholdShouldThrow() {
 		LayoutConfig bad = LayoutConfig.builder()
+			.modelPath(MODEL)
 			.classScoreThresholds(java.util.Collections.singletonMap(99, 0.5f))
 			.build();
 		assertThatThrownBy(bad::validate)
@@ -71,7 +83,8 @@ class LayoutPipelineTest {
 
 	@Test
 	void configInvalidMeanShouldThrow() {
-		LayoutConfig bad = LayoutConfig.builder().mean(new float[]{1f, 2f}).build();
+		LayoutConfig bad = LayoutConfig.builder()
+			.modelPath(MODEL).mean(new float[]{1f, 2f}).build();
 		assertThatThrownBy(bad::validate)
 			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class)
 			.hasMessageContaining("mean");
@@ -90,7 +103,7 @@ class LayoutPipelineTest {
 
 	@Test
 	void createWithoutModelShouldThrow() {
-		// classpath: 默认路径下没有真实模型，构造应当快速失败（MicaAiException）
+		// 模型路径未配置时构造应当快速失败（MicaAiException）
 		LayoutConfig config = LayoutConfig.builder().build();
 		assertThatThrownBy(() -> LayoutPipeline.create(config))
 			.isInstanceOf(net.dreamlu.mica.ai.common.exception.MicaAiException.class);

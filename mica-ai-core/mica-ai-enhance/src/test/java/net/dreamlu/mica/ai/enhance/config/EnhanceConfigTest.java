@@ -23,9 +23,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class EnhanceConfigTest {
 
+	private static final String MODEL = "model-tools/enhance/models/realesr-general-x4v3.onnx";
+
 	@Test
 	void defaultsAreProductionReady() {
-		EnhanceConfig config = EnhanceConfig.builder().build();
+		EnhanceConfig config = EnhanceConfig.builder().modelPath(MODEL).build();
 		assertThat(config.getModelVersion()).isEqualTo("realesr-general-x4v3");
 		assertThat(config.getScale()).isEqualTo(4);
 		assertThat(config.getTileSize()).isEqualTo(256);
@@ -35,10 +37,12 @@ class EnhanceConfigTest {
 	}
 
 	@Test
-	void resolvesBundledClasspathModel() {
-		EnhanceConfig config = EnhanceConfig.builder().build();
+	void resolvesExplicitClasspathModel() {
+		EnhanceConfig config = EnhanceConfig.builder()
+			.modelPath("classpath:models/enhance/realesr-general-x4v3.onnx")
+			.build();
 		assertThat(config.resolveModelPath())
-			.isEqualTo("classpath:mica-ai/models/enhance/realesr-general-x4v3.onnx");
+			.isEqualTo("classpath:models/enhance/realesr-general-x4v3.onnx");
 	}
 
 	@Test
@@ -51,8 +55,19 @@ class EnhanceConfigTest {
 	}
 
 	@Test
+	void rejectsMissingModelPath() {
+		assertThatThrownBy(() -> EnhanceConfig.builder().build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+		assertThatThrownBy(() -> EnhanceConfig.builder().modelPath("").build().validate())
+			.isInstanceOf(MicaAiException.class)
+			.hasMessageContaining("modelPath");
+	}
+
+	@Test
 	void rejectsEmptyModelVersion() {
-		EnhanceConfig config = EnhanceConfig.builder().modelVersion("").build();
+		EnhanceConfig config = EnhanceConfig.builder()
+			.modelPath(MODEL).modelVersion("").build();
 		assertThatThrownBy(config::validate)
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("modelVersion");
@@ -60,7 +75,7 @@ class EnhanceConfigTest {
 
 	@Test
 	void rejectsNonPositiveScale() {
-		EnhanceConfig config = EnhanceConfig.builder().scale(0).build();
+		EnhanceConfig config = EnhanceConfig.builder().modelPath(MODEL).scale(0).build();
 		assertThatThrownBy(config::validate)
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("scale");
@@ -68,7 +83,7 @@ class EnhanceConfigTest {
 
 	@Test
 	void rejectsNonPositiveTileSize() {
-		EnhanceConfig config = EnhanceConfig.builder().tileSize(0).build();
+		EnhanceConfig config = EnhanceConfig.builder().modelPath(MODEL).tileSize(0).build();
 		assertThatThrownBy(config::validate)
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("tileSize");
@@ -76,7 +91,7 @@ class EnhanceConfigTest {
 
 	@Test
 	void rejectsNegativeOverlap() {
-		EnhanceConfig config = EnhanceConfig.builder().tileOverlap(-1).build();
+		EnhanceConfig config = EnhanceConfig.builder().modelPath(MODEL).tileOverlap(-1).build();
 		assertThatThrownBy(config::validate)
 			.isInstanceOf(MicaAiException.class)
 			.hasMessageContaining("tileOverlap");
@@ -85,6 +100,7 @@ class EnhanceConfigTest {
 	@Test
 	void rejectsOverlapNotSmallerThanTile() {
 		EnhanceConfig config = EnhanceConfig.builder()
+			.modelPath(MODEL)
 			.tileSize(32)
 			.tileOverlap(32)
 			.build();

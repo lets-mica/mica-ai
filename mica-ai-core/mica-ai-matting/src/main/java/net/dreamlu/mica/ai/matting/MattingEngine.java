@@ -100,16 +100,6 @@ public class MattingEngine implements AutoCloseable {
 	}
 
 	/**
-	 * 使用默认配置创建 {@link MattingEngine} 实例。
-	 *
-	 * @return 初始化完成的引擎
-	 * @throws MicaAiException {@link ErrorCode#MODEL_LOAD_FAILED} 模型加载失败
-	 */
-	public static MattingEngine createDefault() {
-		return new MattingEngine(MattingConfig.builder().build());
-	}
-
-	/**
 	 * 计算原尺寸 alpha 掩码。
 	 *
 	 * @param bgr 原图 BGR Mat
