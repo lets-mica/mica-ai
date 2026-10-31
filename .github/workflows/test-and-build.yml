@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         java: [ '8', '17', '21' ]
-    name: Java ${{ matrix.Java }} build
+    name: Java ${{ matrix.java }} build
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -19,4 +19,21 @@ jobs:
           cache: 'maven'
           cache-dependency-path: 'pom.xml'
       - name: Build with Maven
+        # -P !develop：发布只含 core + starters，example 由下面的 job 单独验证
         run: mvn clean package -P !develop
+
+  example:
+    runs-on: ubuntu-latest
+    name: Example module build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          cache: 'maven'
+          cache-dependency-path: 'pom.xml'
+      - name: Build with Maven (含 mica-ai-example)
+        # 保留 develop profile：mica-ai-example 的 54 个测试（含两个组合场景集成测试）
+        # 不在上面的 build job 覆盖范围内，必须单独跑
+        run: mvn clean package

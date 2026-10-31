@@ -23,5 +23,6 @@ else
 fi
 
 ## 4. deploy 发布正式版，
-mvn clean package deploy -P$profile -DskipTests
+##    不加 -DskipTests：发版前必须跑全量测试，测试不过就不该发出去
+mvn clean package deploy -P$profile
 
