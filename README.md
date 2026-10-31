@@ -15,7 +15,7 @@
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
-[快速开始](#-快速开始) · [Spring Boot Starter](#-spring-boot-starter) · [应用场景](#-应用场景) · [更新日志](CHANGELOG.md)
+[快速开始](#-快速开始) · [整体架构](#-整体架构) · [Spring Boot Starter](#-spring-boot-starter) · [应用场景](#-应用场景) · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -60,57 +60,35 @@
 | 🔎 通用图像分类 | `mica-ai-classify` | PaddleClas PULC（4 个入库：整图方向 / 清晰度 / 人物存在 / 表格 6 属性） | **Top-K** + 全量概率（单标签 / 多标签） | Apache 2.0 | ✅ |
 | 🔐 通用验证码识别 | `mica-ai-captcha` | ddddocr CRNN + CTC（**8210 类**字符集，模型外置配置） | 验证码文本 + 逐字符置信度 | MIT | ✅ |
 
-### 整体架构
+## 🏛️ 整体架构
 
-```
-                    ┌─────────────────────────────────────┐
-                    │           Spring Boot App           │
-                    └──────────────┬──────────────────────┘
-                                   │ @Autowired / 一行 YAML
-                                   ▼
-        ┌──────────────────────────────────────────────────────┐
-        │                    mica-ai-starters                  │
-        │  face 🎭 filetype 📄 plate 🚗 layout 📐 matting ✂️    │
-        │  humanseg 👤 detect 🎯 track 🧭 docalign 📸         │
-        │  enhance ✨ textline 🔤 classify 🔎 captcha 🔐        │
-        └──────────────────────────┬───────────────────────────┘
-                                   │
-                                   ▼
-        ┌──────────────────────────────────────────────────────┐
-        │                    mica-ai-core                     │
-        │   mica-ai-face        mica-ai-filetype  mica-ai-plate│
-        │   YuNet + SFace 🎭    Magika 214 类 📄  HyperLPR3 🚗  │
-        │   + 活体 MiniFASNet   + mime / group   + 车牌号 / 颜色│
-        │   + 头像 / 证件卡片                                  │
-        │         mica-ai-layout   mica-ai-matting            │
-        │         PP-DocLayoutV3 📐 U²-Net 族 ✂️              │
-        │         25 类 + 阅读顺序   原尺寸 alpha 掩码           │
-        │      mica-ai-humanseg   mica-ai-detect  mica-ai-track│
-        │      PP-HumanSeg 👤     NanoDet/YOLOX 🎯 ByteTrack 🧭│
-        │              mica-ai-docalign                       │
-        │              DocAligner 📸 4 角点 + 透视矫正         │
-        │              mica-ai-enhance                        │
-        │              Real-ESRGAN ✨ 4 倍超分（tile）         │
-        │                mica-ai-textline                     │
-        │                PP-LCNet 🔤 0° / 180° + 转正         │
-        │                mica-ai-classify                     │
-        │                PaddleClas PULC 🔎 Top-K / 多标签     │
-        │                mica-ai-captcha                      │
-        │                ddddocr CRNN 🔐 验证码 + 置信度       │
-        └──────────────────────────┬───────────────────────────┘
-                                   │
-                                   ▼
-                          ┌──────────────────────┐
-                          │    mica-ai-common    │
-                          │  ONNX 通用基础设施    │
-                          │  + 统一异常          │
-                          └──────────────────────┘
+mica-ai 的运行时是四层单向依赖：**接入层 → 能力层 → 底座层 → 模型层**，你的应用站在接入层之上。
+
+```mermaid
+graph TD
+    APP["你的应用<br/>Spring Boot App / 纯 Java 应用"]
+    ST["接入层 · mica-ai-starters × 13<br/>一行 YAML 注入引擎 Bean（可选）"]
+    CORE["能力层 · mica-ai-core × 13 能力模块<br/>face · filetype · plate · layout · matting · humanseg<br/>detect · track · docalign · enhance · textline · classify · captcha"]
+    COMMON["底座层 · mica-ai-common<br/>OnnxModelSession · OrtSessionFactory · MicaAiException"]
+    MODELS["模型层 · model-tools 各能力目录下的 *.onnx（23 个）<br/>随仓库分发，不打包进 jar，路径必须显式配置"]
+
+    APP -->|"@Autowired / 一行 YAML"| ST
+    APP -.->|"零 Spring 可直连"| CORE
+    ST --> CORE
+    CORE --> COMMON
+    COMMON -->|"加载 .onnx"| MODELS
 ```
 
-> 🔌 零 Spring 场景可直接依赖 `mica-ai-core` 各模块，Starter 仅是 Bean 注入的便捷封装；`mica-ai-example` 提供完整集成示例。
+| 层 | 模块 | 职责 | 关键约束 |
+|----|------|------|----------|
+| 接入层 | `mica-ai-starters` × 13 | 把 `mica.ai.*` YAML 配置翻译成引擎 Bean | **可选**；不用 Spring Boot 可直接依赖能力层 |
+| 能力层 | `mica-ai-core` × 13 | 13 个互不依赖的能力引擎，可按需引入 | 零 Spring、纯 Java 8+ |
+| 底座层 | `mica-ai-common` | ONNX 会话工厂、ORT 选项、统一异常 | 被全部能力模块共享 |
+| 模型层 | `model-tools/<cap>/models/` | 23 个模型文件（12 个能力目录） | 随仓库分发，**不打包进 jar**，路径必须显式配置 |
 
-> - OCR：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr) — PaddleOCR / PP-OCRv4 的 Java 推理
-> - 语音（ASR / TTS / 热词雷达 / 中文 ITN）：[**mica-voice**](https://gitee.com/dreamlu/mica-voice) — SenseVoice 等语音模型的 Java 推理
+> 三条硬约束贯穿全栈：**零 Spring**（core 不引任何 `spring-*`）、**零 Python**（全部 ONNX Runtime 内推理，不 spawn 子进程）、**零模型入 jar**（模型走外置路径配置）。
+>
+> `mica-ai-example` 提供完整集成示例；相邻项目：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr)（PaddleOCR / PP-OCRv4 的 Java 推理）、[**mica-voice**](https://gitee.com/dreamlu/mica-voice)（ASR / TTS / 热词雷达 / 中文 ITN）。
 
 ---
 
@@ -319,34 +297,21 @@ mica-ai/
 │   ├── mica-ai-textline/           #   🔤 PP-LCNet 文本行方向分类（0° / 180°）
 │   ├── mica-ai-classify/           #   🔎 PaddleClas PULC 通用图像分类
 │   └── mica-ai-captcha/            #   🔐 ddddocr 通用验证码识别（CRNN + CTC）
-├── mica-ai-starters/               # Spring Boot 2 Starter
-│   ├── mica-ai-face-spring-boot-starter/
-│   ├── mica-ai-filetype-spring-boot-starter/
-│   ├── mica-ai-plate-spring-boot-starter/
-│   ├── mica-ai-layout-spring-boot-starter/
-│   ├── mica-ai-matting-spring-boot-starter/
-│   ├── mica-ai-humanseg-spring-boot-starter/
-│   ├── mica-ai-detect-spring-boot-starter/
-│   ├── mica-ai-track-spring-boot-starter/
-│   ├── mica-ai-docalign-spring-boot-starter/
-│   ├── mica-ai-enhance-spring-boot-starter/
-│   ├── mica-ai-textline-spring-boot-starter/
-│   ├── mica-ai-classify-spring-boot-starter/
-│   └── mica-ai-captcha-spring-boot-starter/
+├── mica-ai-starters/               # Spring Boot 2 Starter：每个能力一个（mica-ai-<cap>-spring-boot-starter），见上方 Starter 表
 ├── mica-ai-example/                # Spring Boot 集成示例
-└── model-tools/                    # 模型资产（直接入库，均 <50MB）
-    ├── face/models/                #   YuNet + SFace + MiniFASNetV2 + EDFFIQA + 表情识别
-    ├── filetype/models/            #   Magika standard_v3_3
-    ├── plate/models/               #   HyperLPR3 v20230229
-    ├── layout/models/              #   PP-DocLayoutV3（125MB，⚠️ 不随仓库分发）
-    ├── matting/models/             #   U²-Net u2netp（4.36MB，入库；u2net/u2net_human_seg 168MB 不入库）
-    ├── humanseg/models/            #   PP-HumanSeg V2-Lite（5.88MB，入库）
-    ├── detect/models/              #   NanoDet-Plus 3.62MB + YOLOX-s 34.2MB（入库）
-    ├── docalign/models/            #   DocAligner lcnet100 4.55MB（入库；fastvit 同族不入库）
-    ├── enhance/models/             #   Real-ESRGAN realesr-general-x4v3 2.33MB（入库，含 BSD-3 许可证原文）
-    ├── textline/models/            #   PP-LCNet_x1_0_textline_ori（6.46MB，入库；x0_25 轻量版不入库）
-    ├── classify/models/            #   PULC 4 个模型（4.14–6.79MB，入库；各带 label_list）
-    └── captcha/models/             #   ddddocr ddddocr.onnx + charset.txt（12.98MB，入库；不打包进 jar）
+└── model-tools/                    # 模型资产：12 个能力目录 / 23 个 .onnx，随仓库分发、不打包进 jar（体积为目录合计，单文件 <50MB）
+    ├── face/models/                #   5 个模型 · 51MB · ✅ 入库
+    ├── filetype/models/            #   1 个模型 + 配置 · 4MB · ✅ 入库
+    ├── plate/models/               #   4 个模型 · 18MB · ✅ 入库
+    ├── layout/models/              #   1 个模型 · 125MB · ⚠️ 不随仓库分发
+    ├── matting/models/             #   1 个模型 · 5MB · ✅ 入库
+    ├── humanseg/models/            #   1 个模型 · 6MB · ✅ 入库
+    ├── detect/models/              #   2 个模型 · 38MB · ✅ 入库
+    ├── docalign/models/            #   1 个模型 · 5MB · ✅ 入库
+    ├── enhance/models/             #   1 个模型 · 3MB · ✅ 入库（含 BSD-3 许可证原文）
+    ├── textline/models/            #   1 个模型 · 7MB · ✅ 入库
+    ├── classify/models/            #   4 个模型 + label_list · 24MB · ✅ 入库
+    └── captcha/models/             #   1 个模型 + 字符集 · 14MB · ✅ 入库
 ```
 
 ---

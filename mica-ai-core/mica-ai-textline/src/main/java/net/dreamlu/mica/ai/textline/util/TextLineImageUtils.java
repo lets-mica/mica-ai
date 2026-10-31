@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.textline.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.textline.config.TextLineChannelOrder;
@@ -30,10 +31,8 @@ import org.opencv.imgproc.Imgproc;
  *
  * <p>工具类，私有构造，线程安全（无状态）。
  */
-public final class TextLineImageUtils {
-
-	private TextLineImageUtils() {
-	}
+@UtilityClass
+public class TextLineImageUtils {
 
 	/**
 	 * 把图像字节数组解码为 BGR {@link Mat}。

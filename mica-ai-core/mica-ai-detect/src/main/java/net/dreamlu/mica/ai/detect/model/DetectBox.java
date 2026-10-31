@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.detect.model;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 /**
@@ -23,6 +24,7 @@ import lombok.ToString;
  */
 @Getter
 @ToString
+@RequiredArgsConstructor
 public class DetectBox {
 
 	private final float x1;
@@ -31,15 +33,6 @@ public class DetectBox {
 	private final float y2;
 	private final float score;
 	private final int classId;
-
-	public DetectBox(float x1, float y1, float x2, float y2, float score, int classId) {
-		this.x1 = x1;
-		this.y1 = y1;
-		this.x2 = x2;
-		this.y2 = y2;
-		this.score = score;
-		this.classId = classId;
-	}
 
 	/**
 	 * 检测框宽度。

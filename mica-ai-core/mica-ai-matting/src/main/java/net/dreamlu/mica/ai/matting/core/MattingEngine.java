@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.dreamlu.mica.ai.matting;
+package net.dreamlu.mica.ai.matting.core;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -67,6 +68,10 @@ import java.util.Objects;
 public class MattingEngine implements AutoCloseable {
 
 	private final MattingDetector detector;
+	/**
+	 * 获取当前配置。
+	 */
+	@Getter
 	private final MattingConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
@@ -246,15 +251,6 @@ public class MattingEngine implements AutoCloseable {
 		} finally {
 			MattingImageUtils.releaseAll(bgr, alpha, binary);
 		}
-	}
-
-	/**
-	 * 获取当前配置。
-	 *
-	 * @return 构造时传入的 {@link MattingConfig}
-	 */
-	public MattingConfig getConfig() {
-		return config;
 	}
 
 	/**

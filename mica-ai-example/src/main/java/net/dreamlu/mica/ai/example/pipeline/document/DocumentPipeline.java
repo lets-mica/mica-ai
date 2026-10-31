@@ -28,19 +28,13 @@ import net.dreamlu.mica.ai.example.config.ClassifyModelRegistry;
 import net.dreamlu.mica.ai.layout.model.LayoutLabel;
 import net.dreamlu.mica.ai.layout.model.LayoutResult;
 import net.dreamlu.mica.ai.layout.pipeline.LayoutPipeline;
-import net.dreamlu.mica.ai.textline.TextLineEngine;
+import net.dreamlu.mica.ai.textline.core.TextLineEngine;
 import net.dreamlu.mica.ai.textline.model.TextLineOrientationResult;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Range;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 智能文档流水线：把「手机拍的文档」变成「可读、结构正确、方向正确」的图。

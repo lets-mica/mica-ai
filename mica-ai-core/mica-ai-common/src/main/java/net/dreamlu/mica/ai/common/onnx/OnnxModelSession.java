@@ -74,10 +74,11 @@ public class OnnxModelSession {
 				byte[] bytes = loadClasspathBytes(resource);
 				log.info("加载 {} 模型 (classpath): {} ({} bytes)", name, resource, bytes.length);
 				return environment.createSession(bytes, options);
+			} else {
+				log.info("加载 {} 模型: {}", name, path);
+				String absolutePath = Paths.get(path).toFile().getAbsolutePath();
+				return environment.createSession(absolutePath, options);
 			}
-			log.info("加载 {} 模型: {}", name, path);
-			String absolutePath = Paths.get(path).toFile().getAbsolutePath();
-			return environment.createSession(absolutePath, options);
 		} catch (OrtException e) {
 			throw new MicaAiException(
 				ErrorCode.MODEL_LOAD_FAILED,

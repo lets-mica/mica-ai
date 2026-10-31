@@ -15,14 +15,16 @@
  */
 package net.dreamlu.mica.ai.captcha.util;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.captcha.config.CaptchaInterpolation;
 import net.dreamlu.mica.ai.captcha.config.CaptchaNormalization;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 
 import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,10 +46,8 @@ import java.util.Base64;
  *
  * <p>仅依赖 JDK 的 {@code javax.imageio} / {@code java.awt}，不引入 OpenCV 原生库。
  */
+@UtilityClass
 public class CaptchaImageUtils {
-
-	private CaptchaImageUtils() {
-	}
 
 	/**
 	 * 从字节数组解码图片。
@@ -120,11 +120,11 @@ public class CaptchaImageUtils {
 	/**
 	 * 预处理为 ONNX 输入张量（{@code [1, 1, H, W]}）。
 	 *
-	 * @param image          输入图片
-	 * @param targetHeight   目标高度，宽度按原图比例自适应
-	 * @param interpolation  缩放插值方式
-	 * @param normalization  归一化方式
-	 * @param pngFix         是否把透明像素按黑色合成
+	 * @param image         输入图片
+	 * @param targetHeight  目标高度，宽度按原图比例自适应
+	 * @param interpolation 缩放插值方式
+	 * @param normalization 归一化方式
+	 * @param pngFix        是否把透明像素按黑色合成
 	 * @return 预处理后的张量数据
 	 */
 	public static ImageTensor prepareForOnnx(BufferedImage image, int targetHeight,
@@ -158,7 +158,7 @@ public class CaptchaImageUtils {
 	 * @return 缩放后的图片（无透明通道）
 	 */
 	public static BufferedImage resizeKeepAspect(BufferedImage image, int targetHeight,
-												  CaptchaInterpolation interpolation) {
+												 CaptchaInterpolation interpolation) {
 		int originalWidth = image.getWidth();
 		int originalHeight = image.getHeight();
 		int targetWidth = (int) (originalWidth * ((double) targetHeight / originalHeight));
@@ -219,43 +219,20 @@ public class CaptchaImageUtils {
 	/**
 	 * 预处理后的图像张量（CHW 顺序的一维数组 + 尺寸）。
 	 */
+	@Getter
+	@RequiredArgsConstructor
 	public static final class ImageTensor {
-
-		private final float[] data;
-		private final int width;
-		private final int height;
-
-		ImageTensor(float[] data, int width, int height) {
-			this.data = data;
-			this.width = width;
-			this.height = height;
-		}
-
 		/**
-		 * 张量数据，布局为 {@code [1][1][height][width]}
-		 *
-		 * @return float 数组
+		 * 张量数据，布局为
 		 */
-		public float[] getData() {
-			return data;
-		}
-
+		private final float[] data;
 		/**
 		 * 张量宽度
-		 *
-		 * @return 宽度
 		 */
-		public int getWidth() {
-			return width;
-		}
-
+		private final int width;
 		/**
 		 * 张量高度
-		 *
-		 * @return 高度
 		 */
-		public int getHeight() {
-			return height;
-		}
+		private final int height;
 	}
 }

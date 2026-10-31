@@ -16,8 +16,8 @@
 package net.dreamlu.mica.ai.captcha.model;
 
 import lombok.Getter;
-
-import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 /**
  * 验证码识别结果。
@@ -29,24 +29,22 @@ import java.util.Arrays;
  * <p>本结果不可变，不持有任何需要释放的原生资源。
  */
 @Getter
+@ToString
+@RequiredArgsConstructor
 public class CaptchaResult {
 
-	private final String text;
-	private final float confidence;
-	private final float[] charConfidences;
-
 	/**
-	 * 构造识别结果。
-	 *
-	 * @param text            识别文本
-	 * @param confidence      平均置信度
-	 * @param charConfidences 逐字符置信度
+	 * 识别文本。
 	 */
-	public CaptchaResult(String text, float confidence, float[] charConfidences) {
-		this.text = text;
-		this.confidence = confidence;
-		this.charConfidences = charConfidences;
-	}
+	private final String text;
+	/**
+	 * 平均置信度。
+	 */
+	private final float confidence;
+	/**
+	 * 逐字符置信度。
+	 */
+	private final float[] charConfidences;
 
 	/**
 	 * 识别结果是否为空（未输出任何字符）。
@@ -67,10 +65,4 @@ public class CaptchaResult {
 		return confidence >= threshold;
 	}
 
-	@Override
-	public String toString() {
-		return "CaptchaResult{text='" + text + '\''
-			+ ", confidence=" + confidence
-			+ ", charConfidences=" + Arrays.toString(charConfidences) + '}';
-	}
 }

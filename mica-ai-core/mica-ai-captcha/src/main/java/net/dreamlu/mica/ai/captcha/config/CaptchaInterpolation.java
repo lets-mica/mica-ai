@@ -15,7 +15,10 @@
  */
 package net.dreamlu.mica.ai.captcha.config;
 
-import java.awt.RenderingHints;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.awt.*;
 
 /**
  * 验证码图片缩放时使用的插值方式（映射到 {@link RenderingHints}）。
@@ -24,6 +27,8 @@ import java.awt.RenderingHints;
  * 本模块默认用 {@link #BILINEAR}，与本项目迁出前的实现一致。
  * 两者在同一张实测图上的识别结果一致（{@code SHTP}），差异只体现在极细笔画上。
  */
+@Getter
+@RequiredArgsConstructor
 public enum CaptchaInterpolation {
 
 	/**
@@ -41,18 +46,9 @@ public enum CaptchaInterpolation {
 	 */
 	BICUBIC(RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 
+	/**
+	 * 获取对应的常量。
+	 */
 	private final Object awtValue;
 
-	CaptchaInterpolation(Object awtValue) {
-		this.awtValue = awtValue;
-	}
-
-	/**
-	 * 获取对应的 {@link RenderingHints} 常量。
-	 *
-	 * @return AWT 渲染提示常量
-	 */
-	public Object getAwtValue() {
-		return awtValue;
-	}
 }

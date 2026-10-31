@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.dreamlu.mica.ai.textline;
+package net.dreamlu.mica.ai.textline.core;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -68,6 +69,10 @@ import java.util.Objects;
 public class TextLineEngine implements AutoCloseable {
 
 	private final TextLineDetector detector;
+	/**
+	 * 获取当前配置。
+	 */
+	@Getter
 	private final TextLineConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
@@ -142,7 +147,7 @@ public class TextLineEngine implements AutoCloseable {
 	 *
 	 * @param line 文本行图 BGR Mat
 	 * @return 转正后的 Mat；输入为 null / 空图时返回 null；
-	 *         方向正常时返回<b>入参本身</b>
+	 * 方向正常时返回<b>入参本身</b>
 	 * @throws MicaAiException {@link ErrorCode#INFERENCE_FAILED} 推理失败
 	 */
 	public Mat rotateIfUpsideDown(Mat line) {
@@ -176,15 +181,6 @@ public class TextLineEngine implements AutoCloseable {
 		} finally {
 			TextLineImageUtils.releaseAll(bgr, rotated);
 		}
-	}
-
-	/**
-	 * 获取当前配置。
-	 *
-	 * @return 构造时传入的 {@link TextLineConfig}
-	 */
-	public TextLineConfig getConfig() {
-		return config;
 	}
 
 	/**

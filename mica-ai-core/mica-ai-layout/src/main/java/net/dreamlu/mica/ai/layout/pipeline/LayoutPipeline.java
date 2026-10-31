@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.layout.pipeline;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -60,6 +61,10 @@ import java.util.Objects;
 public class LayoutPipeline implements AutoCloseable {
 
 	private final LayoutDetector detector;
+	/**
+	 * 获取当前配置。
+	 */
+	@Getter
 	private final LayoutConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
@@ -140,15 +145,6 @@ public class LayoutPipeline implements AutoCloseable {
 			return Collections.emptyList();
 		}
 		return detector.detect(bgr);
-	}
-
-	/**
-	 * 获取当前配置。
-	 *
-	 * @return 构造时传入的 {@link LayoutConfig}
-	 */
-	public LayoutConfig getConfig() {
-		return config;
 	}
 
 	/**

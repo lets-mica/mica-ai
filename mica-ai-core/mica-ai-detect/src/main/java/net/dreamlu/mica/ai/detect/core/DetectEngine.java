@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.detect.core;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -56,8 +57,16 @@ import java.util.Objects;
 public class DetectEngine implements AutoCloseable {
 
 	private final ObjectDetector detector;
+	/**
+	 * 当前配置。
+	 */
+	@Getter
 	private final DetectConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
+	/**
+	 * 类别名表（配置未指定时返回 COCO 80 类）。
+	 */
+	@Getter
 	private final String[] labels;
 
 	/**
@@ -134,24 +143,6 @@ public class DetectEngine implements AutoCloseable {
 		} catch (IOException e) {
 			throw new MicaAiException(ErrorCode.UNKNOWN, "读取图像失败: " + imagePath, e);
 		}
-	}
-
-	/**
-	 * 当前配置。
-	 *
-	 * @return 构造时传入的 {@link DetectConfig}
-	 */
-	public DetectConfig getConfig() {
-		return config;
-	}
-
-	/**
-	 * 类别名表（配置未指定时返回 COCO 80 类）。
-	 *
-	 * @return 类别名数组
-	 */
-	public String[] getLabels() {
-		return labels;
 	}
 
 	/**

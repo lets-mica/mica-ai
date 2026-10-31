@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.humanseg.core;
 
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -61,6 +62,10 @@ import java.util.Objects;
 public class HumanSegEngine implements AutoCloseable {
 
 	private final HumanSegDetector detector;
+	/**
+	 * 获取当前配置。
+	 */
+	@Getter
 	private final HumanSegConfig config;
 	private final OrtSession.SessionOptions sessionOptions;
 
@@ -239,15 +244,6 @@ public class HumanSegEngine implements AutoCloseable {
 		} finally {
 			HumanSegImageUtils.releaseAll(bgr, alpha, binary);
 		}
-	}
-
-	/**
-	 * 获取当前配置。
-	 *
-	 * @return 构造时传入的 {@link HumanSegConfig}
-	 */
-	public HumanSegConfig getConfig() {
-		return config;
 	}
 
 	/**

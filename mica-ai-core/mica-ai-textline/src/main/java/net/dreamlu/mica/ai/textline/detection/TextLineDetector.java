@@ -15,20 +15,14 @@
  */
 package net.dreamlu.mica.ai.textline.detection;
 
-import ai.onnxruntime.NodeInfo;
-import ai.onnxruntime.OnnxJavaType;
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-import ai.onnxruntime.TensorInfo;
-import ai.onnxruntime.ValueInfo;
+import ai.onnxruntime.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.textline.config.TextLineConfig;
+import net.dreamlu.mica.ai.textline.core.TextLineEngine;
 import net.dreamlu.mica.ai.textline.model.TextLineOrientation;
 import net.dreamlu.mica.ai.textline.model.TextLineOrientationResult;
 import net.dreamlu.mica.ai.textline.util.TextLineImageUtils;
@@ -62,7 +56,7 @@ import java.util.Map;
  * 的自动命名，同样按「2 类 float 输出」的结构兜底。
  *
  * <p>线程安全：ONNX session 线程安全，每次推理新建 1 个 {@code OnnxTensor}；
- * 通常由 {@link net.dreamlu.mica.ai.textline.TextLineEngine} 单例持有。
+ * 通常由 {@link TextLineEngine} 单例持有。
  */
 @Slf4j
 public class TextLineDetector implements AutoCloseable {

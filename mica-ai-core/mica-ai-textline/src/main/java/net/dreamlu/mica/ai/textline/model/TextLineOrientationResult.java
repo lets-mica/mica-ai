@@ -16,6 +16,8 @@
 package net.dreamlu.mica.ai.textline.model;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 /**
  * 文本行方向分类结果。
@@ -27,17 +29,13 @@ import lombok.Getter;
  * 可自由缓存与传递。
  */
 @Getter
+@ToString
+@RequiredArgsConstructor
 public class TextLineOrientationResult {
 
 	private final TextLineOrientation orientation;
 	private final float score;
 	private final float[] rawLogits;
-
-	public TextLineOrientationResult(TextLineOrientation orientation, float score, float[] rawLogits) {
-		this.orientation = orientation;
-		this.score = score;
-		this.rawLogits = rawLogits;
-	}
 
 	/**
 	 * 是否判定为倒置（需要旋转 180 度转正）。
@@ -57,9 +55,4 @@ public class TextLineOrientationResult {
 		return orientation == null ? 0 : orientation.getAngle();
 	}
 
-	@Override
-	public String toString() {
-		return "TextLineOrientationResult{orientation=" + orientation
-			+ ", score=" + score + '}';
-	}
 }

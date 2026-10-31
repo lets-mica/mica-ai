@@ -15,28 +15,19 @@
  */
 package net.dreamlu.mica.ai.face.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.face.model.FaceBox;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfDouble;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 /**
  * 图像处理工具。
  */
+@UtilityClass
 public class ImageUtils {
-
-	private ImageUtils() {
-	}
 
 	/**
 	 * 解码任意常见格式（jpg / png / bmp / webp 等）的字节数组为 BGR {@link Mat}。

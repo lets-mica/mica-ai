@@ -118,7 +118,7 @@ PostProcess:
 
 | 组件 | 类 | 职责 |
 |------|----|------|
-| 主引擎 | [`TextLineEngine`](src/main/java/net/dreamlu/mica/ai/textline/TextLineEngine.java) | `AutoCloseable`，对外提供 `classify*`（只判定）/ `rotateIfUpsideDown` / `uprightBytes`（判定+转正） |
+| 主引擎 | [`TextLineEngine`](src/main/java/net/dreamlu/mica/ai/textline/core/TextLineEngine.java) | `AutoCloseable`，对外提供 `classify*`（只判定）/ `rotateIfUpsideDown` / `uprightBytes`（判定+转正） |
 | 配置 | [`TextLineConfig`](src/main/java/net/dreamlu/mica/ai/textline/config/TextLineConfig.java) | Builder 模式：模型路径、输入宽高、通道序、mean/std、插值、倒置阈值、输出是否概率、ONNX 参数 |
 | 检测器 | [`TextLineDetector`](src/main/java/net/dreamlu/mica/ai/textline/detection/TextLineDetector.java) | resize + 归一化 + ONNX 推理 + softmax + 阈值判定；解析并校验输入输出名与形状 |
 | 图像工具 | [`TextLineImageUtils`](src/main/java/net/dreamlu/mica/ai/textline/util/TextLineImageUtils.java) | byte[] ↔ Mat、resize + 归一化的 **BGR Mat → CHW float**、`rotate180`、PNG 编码 |

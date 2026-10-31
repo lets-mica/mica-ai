@@ -19,6 +19,7 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.textline.config.TextLineChannelOrder;
 import net.dreamlu.mica.ai.textline.config.TextLineConfig;
+import net.dreamlu.mica.ai.textline.core.TextLineEngine;
 import net.dreamlu.mica.ai.textline.model.TextLineOrientation;
 import net.dreamlu.mica.ai.textline.model.TextLineOrientationResult;
 import org.junit.jupiter.api.AfterAll;

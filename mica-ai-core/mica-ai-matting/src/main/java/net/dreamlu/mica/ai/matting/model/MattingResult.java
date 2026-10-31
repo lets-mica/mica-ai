@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.matting.model;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.opencv.core.Mat;
 
 /**
@@ -34,17 +35,12 @@ import org.opencv.core.Mat;
  * }</pre>
  */
 @Getter
+@RequiredArgsConstructor
 public class MattingResult implements AutoCloseable {
 
 	private final Mat alpha;
 	private final int width;
 	private final int height;
-
-	public MattingResult(Mat alpha, int width, int height) {
-		this.alpha = alpha;
-		this.width = width;
-		this.height = height;
-	}
 
 	/**
 	 * 释放底层 alpha {@link Mat}，可重复调用。

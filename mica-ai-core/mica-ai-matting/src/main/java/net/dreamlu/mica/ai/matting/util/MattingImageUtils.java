@@ -15,16 +15,11 @@
  */
 package net.dreamlu.mica.ai.matting.util;
 
+import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.matting.config.MattingInterpolation;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -36,10 +31,8 @@ import java.util.List;
  *
  * <p>工具类，私有构造，线程安全（无状态）。
  */
-public final class MattingImageUtils {
-
-	private MattingImageUtils() {
-	}
+@UtilityClass
+public class MattingImageUtils {
 
 	/**
 	 * 把图像字节数组解码为 BGR {@link Mat}。

@@ -115,7 +115,7 @@ rembg 官方导出**未在模型内嵌入归一化**，归一化参数由调用�
 
 | 组件 | 类 | 职责 |
 |------|----|------|
-| 主引擎 | [`MattingEngine`](src/main/java/net/dreamlu/mica/ai/matting/MattingEngine.java) | `AutoCloseable`，对外提供 `alpha` / `matte*` / `cutout*` / `matteBinary*` 四组接口 |
+| 主引擎 | [`MattingEngine`](src/main/java/net/dreamlu/mica/ai/matting/core/MattingEngine.java) | `AutoCloseable`，对外提供 `alpha` / `matte*` / `cutout*` / `matteBinary*` 四组接口 |
 | 配置 | [`MattingConfig`](src/main/java/net/dreamlu/mica/ai/matting/config/MattingConfig.java) | Builder 模式：模型路径、输入边长、mean/std、插值、二值阈值、min-max 开关、底色、ONNX 参数 |
 | 检测 | [`MattingDetector`](src/main/java/net/dreamlu/mica/ai/matting/detection/MattingDetector.java) | resize + 归一化 + ONNX 推理 + min-max + 掩码 resize 回原尺寸；输入输出名按提示解析并校验导出特征 |
 | 图像工具 | [`MattingImageUtils`](src/main/java/net/dreamlu/mica/ai/matting/util/MattingImageUtils.java) | byte[] ↔ Mat、**BGR Mat → RGB CHW** float(mean/std)、掩码缩放/二值化、alpha 合成、PNG/JPEG 编码 |

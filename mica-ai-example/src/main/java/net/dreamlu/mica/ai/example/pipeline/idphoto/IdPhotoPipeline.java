@@ -23,7 +23,7 @@ import net.dreamlu.mica.ai.face.model.FaceBox;
 import net.dreamlu.mica.ai.face.quality.FaceQualityAssessor;
 import net.dreamlu.mica.ai.face.quality.FaceQualityResult;
 import net.dreamlu.mica.ai.humanseg.core.HumanSegEngine;
-import net.dreamlu.mica.ai.matting.MattingEngine;
+import net.dreamlu.mica.ai.matting.core.MattingEngine;
 import net.dreamlu.mica.ai.matting.util.MattingImageUtils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;

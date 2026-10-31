@@ -16,8 +16,8 @@
 package net.dreamlu.mica.ai.textline.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.textline.TextLineEngine;
 import net.dreamlu.mica.ai.textline.config.TextLineConfig;
+import net.dreamlu.mica.ai.textline.core.TextLineEngine;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

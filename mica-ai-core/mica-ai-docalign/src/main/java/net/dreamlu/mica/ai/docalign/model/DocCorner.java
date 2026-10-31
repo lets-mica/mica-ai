@@ -17,6 +17,7 @@ package net.dreamlu.mica.ai.docalign.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * 文档角点（原图坐标系）。
@@ -26,6 +27,7 @@ import lombok.Getter;
  * 此时 score 可能较低，调用方可据此判断是否需要人工复核。
  */
 @Getter
+@ToString
 @AllArgsConstructor
 public class DocCorner {
 
@@ -45,8 +47,4 @@ public class DocCorner {
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 
-	@Override
-	public String toString() {
-		return String.format("(%.1f, %.1f, score=%.2f)", x, y, score);
-	}
 }

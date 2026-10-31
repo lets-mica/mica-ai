@@ -33,7 +33,7 @@ public class DetectResult {
 	public DetectResult(int width, int height, List<DetectBox> boxes) {
 		this.width = width;
 		this.height = height;
-		this.boxes = boxes == null ? Collections.<DetectBox>emptyList()
+		this.boxes = boxes == null ? Collections.emptyList()
 			: Collections.unmodifiableList(boxes);
 	}
 

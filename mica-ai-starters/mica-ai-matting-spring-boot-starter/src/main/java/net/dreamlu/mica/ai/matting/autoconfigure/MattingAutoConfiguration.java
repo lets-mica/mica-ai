@@ -16,8 +16,8 @@
 package net.dreamlu.mica.ai.matting.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import net.dreamlu.mica.ai.matting.MattingEngine;
 import net.dreamlu.mica.ai.matting.config.MattingConfig;
+import net.dreamlu.mica.ai.matting.core.MattingEngine;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

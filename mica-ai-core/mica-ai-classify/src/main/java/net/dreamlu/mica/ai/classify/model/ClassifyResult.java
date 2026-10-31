@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.classify.model;
 
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.List;
  * 可自由缓存与传递。
  */
 @Getter
+@ToString
 public class ClassifyResult {
 
 	private final List<ClassifyTopK> topK;
@@ -137,8 +139,4 @@ public class ClassifyResult {
 		return hit;
 	}
 
-	@Override
-	public String toString() {
-		return "ClassifyResult{topK=" + topK + ", multiLabel=" + multiLabel + '}';
-	}
 }

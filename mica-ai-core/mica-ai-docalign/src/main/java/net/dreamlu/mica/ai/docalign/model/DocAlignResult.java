@@ -16,6 +16,7 @@
 package net.dreamlu.mica.ai.docalign.model;
 
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.List;
  * <b>左上 → 右上 → 右下 → 左下</b>（即 "Z" 字形顺序，逆时针绕行）。
  */
 @Getter
+@ToString
 public class DocAlignResult {
 
 	public static final int CORNER_COUNT = 4;
@@ -88,8 +90,4 @@ public class DocAlignResult {
 		return corners.get(3);
 	}
 
-	@Override
-	public String toString() {
-		return "DocAlignResult{corners=" + corners + ", size=" + width + "x" + height + '}';
-	}
 }

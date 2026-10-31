@@ -15,14 +15,11 @@
  */
 package net.dreamlu.mica.ai.detect.util;
 
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -37,6 +34,7 @@ public class DetectImageUtils {
 	/**
 	 * letterbox 结果：模型输入图 + 反算回原图所需的缩放 / 偏移。
 	 */
+	@RequiredArgsConstructor
 	public static final class Letterbox {
 
 		/**
@@ -59,12 +57,6 @@ public class DetectImageUtils {
 		 */
 		public final int left;
 
-		Letterbox(Mat image, float ratio, int top, int left) {
-			this.image = image;
-			this.ratio = ratio;
-			this.top = top;
-			this.left = left;
-		}
 	}
 
 	/**

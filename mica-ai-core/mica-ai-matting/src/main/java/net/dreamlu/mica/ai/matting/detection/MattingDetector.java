@@ -15,14 +15,7 @@
  */
 package net.dreamlu.mica.ai.matting.detection;
 
-import ai.onnxruntime.NodeInfo;
-import ai.onnxruntime.OnnxJavaType;
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-import ai.onnxruntime.TensorInfo;
-import ai.onnxruntime.ValueInfo;
+import ai.onnxruntime.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.common.exception.ErrorCode;
@@ -30,6 +23,7 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.onnx.OnnxModelSession;
 import net.dreamlu.mica.ai.matting.config.MattingConfig;
 import net.dreamlu.mica.ai.matting.config.MattingOutputSelect;
+import net.dreamlu.mica.ai.matting.core.MattingEngine;
 import net.dreamlu.mica.ai.matting.util.MattingImageUtils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -66,7 +60,7 @@ import java.util.Map;
  * rembg U²-Net 族模型（u2netp / u2net / u2net_human_seg 等）均可直接加载。
  *
  * <p>线程安全：ONNX session 线程安全，每次推理新建 1 个 {@code OnnxTensor}；
- * 通常由 {@link net.dreamlu.mica.ai.matting.MattingEngine} 单例持有。
+ * 通常由 {@link MattingEngine} 单例持有。
  */
 @Slf4j
 public class MattingDetector implements AutoCloseable {

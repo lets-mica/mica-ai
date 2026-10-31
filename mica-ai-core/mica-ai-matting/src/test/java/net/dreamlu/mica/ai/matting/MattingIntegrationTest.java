@@ -19,6 +19,7 @@ import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.common.util.IOUtil;
 import net.dreamlu.mica.ai.matting.config.MattingConfig;
 import net.dreamlu.mica.ai.matting.config.MattingOutputSelect;
+import net.dreamlu.mica.ai.matting.core.MattingEngine;
 import net.dreamlu.mica.ai.matting.model.MattingResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
