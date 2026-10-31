@@ -44,7 +44,7 @@ mica:
 | 配置 | 默认值 | 说明 |
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配 |
-| `model-version` | `text_image_orientation` | 模型标识；`model-path` 为空时按 `classpath:mica-ai/models/classify/<version>.onnx` 解析 |
+| `model-version` | `text_image_orientation` | 模型标识，仅用于日志展示，不参与路径解析 |
 | `model-path` | 空 | 模型路径，支持 `classpath:`；**实际部署请显式指向 `model-tools/classify/models/*.onnx`** |
 | `labels-path` | **必填** | 与模型强耦合的 label_list（一行一个标签）；缺失启动即抛 `MicaAiException` |
 | `input-width` / `input-height` | `224` / `224` | 必须等于模型输入宽高 |
@@ -59,7 +59,7 @@ mica:
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 
-> `labels-path` **没有 classpath 兜底**：label_list 与模型必须成对配置，避免"模型换了、标签没换"的静默错位。
+> `labels-path` **必填**（支持 `classpath:` 前缀）：label_list 与模型必须成对配置，避免"模型换了、标签没换"的静默错位。
 
 ### 切换 PULC 模型
 

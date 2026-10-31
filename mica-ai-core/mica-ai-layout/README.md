@@ -181,7 +181,7 @@ public class DemoController {
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配 |
 | `model-version` | `v3` | 版本标识（日志用） |
-| `model-path` | `classpath:mica-ai/models/layout/v3/model.onnx` | 模型路径，必填，支持 `classpath:` |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；⚠️ 125MB 模型不随仓库分发，需自行准备 |
 | `max-side-length` | `800` | letterbox 方形边长；**必须等于模型输入边长**，不一致启动即抛 `MicaAiException` |
 | `score-threshold` | `0.4` | 全局置信度阈值 |
 | `score-ratio` | `0`（关闭） | **相对阈值系数**：有效阈值 = `max(score-threshold, top1 × score-ratio)`。`0.6` 为实测推荐值，见下方「阈值标定」 |

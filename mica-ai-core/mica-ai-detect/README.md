@@ -78,7 +78,7 @@ DetectConfig yolox = DetectConfig.builder()
 | 字段 | 默认 | 说明 |
 |------|------|------|
 | `family` | `NANODET_PLUS` | 模型族，决定预处理 / 解码 / NMS 契约 |
-| `modelPath` | 空 | 为空时按 `family` 解析 `classpath:mica-ai/models/detect/<family>.onnx` |
+| `modelPath` | **必填** | 模型路径，支持 `classpath:` 前缀；**模型不随 jar 分发**，未配置时启动即失败并给出提示 |
 | `inputSize` | `416` | 必须等于模型张量边长（YOLOX 用 640），否则构造期抛异常 |
 | `scoreThreshold` | `0.35` | 低于该值的候选框直接丢弃 |
 | `nmsThreshold` | `0.6` | IoU 大于该值的重叠框被抑制 |

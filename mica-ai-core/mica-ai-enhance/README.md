@@ -58,8 +58,8 @@ try (EnhanceEngine engine = EnhanceEngine.create(config)) {
 
 | 字段 | 默认 | 说明 |
 |------|------|------|
-| `modelVersion` | `realesr-general-x4v3` | 内置 classpath 资源名，`modelPath` 为空时使用 |
-| `modelPath` | 空 | 外置模型路径，优先级高于 `modelVersion` |
+| `modelVersion` | `realesr-general-x4v3` | 模型标识，仅用于日志展示，不参与路径解析 |
+| `modelPath` | **必填** | 模型路径，支持 `classpath:` 前缀；**模型不随 jar 分发**，未配置时启动即失败并给出提示 |
 | `scale` | `4` | 放大倍数，必须与模型实际倍数一致 |
 | `tileSize` | `256` | 单次推理 tile 边长（原图像素）；越小内存越省、越慢 |
 | `tileOverlap` | `16` | tile 重叠边宽；`0` 表示不重叠（可能出现接缝） |

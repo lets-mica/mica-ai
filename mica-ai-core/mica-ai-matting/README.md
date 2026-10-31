@@ -213,7 +213,7 @@ public class DemoController {
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配 |
 | `model-version` | `u2netp` | 模型标识（文件名前缀，兼作 classpath 资源名） |
-| `model-path` | `classpath:mica-ai/models/matting/u2netp.onnx` | 模型路径，支持 `classpath:`；**指向本地文件即可接入 168MB 级外置模型** |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；**模型不随 jar 分发**，未配置时启动即失败并给出提示；指向本地文件即可接入 168MB 级外置模型 |
 | `input-size` | `320` | 模型输入边长；**必须等于模型输入边长**，不一致启动即抛 `MicaAiException` |
 | `output-select` | `AUTO` | d0 定位策略：`AUTO` / `FIRST` / `D0`（详见「模型 I/O」一节） |
 | `mean` / `std` | `[0.485,0.456,0.406]` / `[0.229,0.224,0.225]` | 归一化参数（**RGB** 顺序，ImageNet 统计量） |

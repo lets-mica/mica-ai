@@ -43,7 +43,7 @@
 | 组件 | 类 | 职责 |
 |------|----|------|
 | 主引擎 | [`PlatePipeline`](src/main/java/net/dreamlu/mica/ai/plate/pipeline/PlatePipeline.java) | 实现 `AutoCloseable`，对外提供 `recognizePath` / `recognizeBytes` / `recognize(Mat)` |
-| 配置 | [`PlateConfig`](src/main/java/net/dreamlu/mica/ai/plate/PlateConfig.java) | Builder 模式，含三模型路径、输入尺寸、阈值、`maxPlates`、`onnx` |
+| 配置 | [`PlateConfig`](src/main/java/net/dreamlu/mica/ai/plate/config/PlateConfig.java) | Builder 模式，含三模型路径、输入尺寸、阈值、`maxPlates`、`onnx` |
 | 检测 | [`PlateDetector`](src/main/java/net/dreamlu/mica/ai/plate/detection/PlateDetector.java) | letterBox 预处理 + 推理 + xywh2xyxy + conf*class + NMS + 坐标反算 |
 | 对齐 | [`PlateAligner`](src/main/java/net/dreamlu/mica/ai/plate/alignment/PlateAligner.java) | 4 点透视校正（对齐 Python `get_rotate_crop_image`），高宽比 ≥ 1.5 时旋转 90°（双层牌） |
 | 识别 | [`PlateRecognizer`](src/main/java/net/dreamlu/mica/ai/plate/recognition/PlateRecognizer.java) | 变宽 resize + 右侧 padding 到 160 + 推理 + CTC 解码 |
@@ -136,9 +136,9 @@ try (PlatePipeline pipeline = PlatePipeline.create(config)) {
 mica:
   ai:
     plate:
-      detection-model-path: classpath:models/y5fu_320x_sim.onnx
-      recognition-model-path: classpath:models/rpv3_mdict_160_r3.onnx
-      classification-model-path: classpath:models/litemodel_cls_96x_r1.onnx
+      detection-model-path: model-tools/plate/models/y5fu_320x_sim.onnx
+      recognition-model-path: model-tools/plate/models/rpv3_mdict_160_r3.onnx
+      classification-model-path: model-tools/plate/models/litemodel_cls_96x_r1.onnx
       detection-input-size: 320      # 320 / 640
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5

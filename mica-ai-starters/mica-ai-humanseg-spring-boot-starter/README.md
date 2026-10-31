@@ -43,7 +43,7 @@ mica:
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配；`false` 时不装配 `HumanSegEngine` Bean |
 | `model-version` | `human_segmentation_pphumanseg_2023mar` | 模型标识（文件名前缀，兼作 classpath 资源名） |
-| `model-path` | `classpath:mica-ai/models/humanseg/human_segmentation_pphumanseg_2023mar.onnx` | 模型路径，支持 `classpath:`；**指向本地文件即可切换到竖版 2.3MB 模型** |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；**模型不随 jar 分发**，未配置时启动即失败并给出提示；指向本地文件即可切换到竖版 2.3MB 模型 |
 | `input-width` / `input-height` | `192` / `192` | 必须等于模型输入宽高，不一致启动即抛 `MicaAiException`（竖版模型为 `256` / `144`） |
 | `mean` / `std` | `[0.5,0.5,0.5]` | 归一化参数（**RGB** 顺序，PaddleSeg 默认），非专家不要改 |
 | `binary-threshold` | `0.5` | 二值掩码阈值（0~1），仅二值输出接口使用 |

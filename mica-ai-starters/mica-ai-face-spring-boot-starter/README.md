@@ -29,11 +29,15 @@ mica:
       enabled: true                       # 总开关，默认 true
       model:                              # ⚠️ 模型路径统一挂在 model 下
         detection:
-          path: classpath:models/face_detection_yunet_2023mar.onnx       # 必填
+          path: model-tools/face/models/face_detection_yunet_2023mar.onnx       # 必填
         recognition:
-          path: classpath:models/face_recognition_sface_2021dec.onnx     # 必填
+          path: model-tools/face/models/face_recognition_sface_2021dec.onnx     # 必填
         liveness:
-          path: classpath:models/2.7_80x80_MiniFASNetV2.onnx             # liveness.enabled=true 时必填
+          path: model-tools/face/models/2.7_80x80_MiniFASNetV2.onnx             # liveness.enabled=true 时必填
+        quality:
+          path: model-tools/face/models/ediffiqa_tiny_jun2024.onnx             # quality.enabled=true 时必填
+        expression:
+          path: model-tools/face/models/facial_expression_recognition_mobilefacenet_2022july.onnx  # expression.enabled=true 时必填
       detection:
         threshold: 0.9                    # 检测置信度阈值
         nms-threshold: 0.3                # NMS IoU 阈值
@@ -49,6 +53,11 @@ mica:
       card:
         output-width: 1011
         output-height: 638
+      quality:
+        enabled: false                    # eDifFIQA 质量门控，默认关闭
+        threshold: 0.5
+      expression:
+        enabled: false                    # 表情识别，默认关闭
       onnx:
         device: CPU                       # CPU / GPU（枚举）
         intra-op-num-threads: 0           # 0 = ORT 默认
@@ -56,12 +65,17 @@ mica:
         graph-optimization-level: ENABLE_ALL   # DISABLE_ALL / ENABLE_BASIC / ENABLE_EXTENDED / ENABLE_ALL
 ```
 
+> 模型**随 Git 仓库分发，不打包进 jar**。路径写仓库内相对路径或绝对路径均可；
+> 若把模型放进自己应用的 classpath，也可用 `classpath:` 前缀（如 `classpath:models/face_detection_yunet_2023mar.onnx`）。
+
 | 配置 | 默认 | 说明 |
 |------|------|------|
 | `mica.ai.face.enabled` | `true` | 总开关 |
 | `mica.ai.face.model.detection.path` | — | YuNet 路径（必填，支持 `classpath:`） |
 | `mica.ai.face.model.recognition.path` | — | SFace 路径（必填） |
 | `mica.ai.face.model.liveness.path` | — | MiniFASNetV2 路径（`liveness.enabled=true` 时必填） |
+| `mica.ai.face.model.quality.path` | — | eDifFIQA-Tiny 路径（`quality.enabled=true` 时必填） |
+| `mica.ai.face.model.expression.path` | — | MobileFaceNet 表情模型路径（`expression.enabled=true` 时必填） |
 | `mica.ai.face.detection.threshold` | `0.9` | 检测置信度阈值 |
 | `mica.ai.face.detection.nms-threshold` | `0.3` | NMS IoU 阈值 |
 | `mica.ai.face.liveness.enabled` | `true` | 活体开关（开启时 `model.liveness.path` 必填，否则启动失败） |
@@ -72,6 +86,9 @@ mica:
 | `mica.ai.face.avatar.size` | `256` | 头像边长（像素） |
 | `mica.ai.face.card.output-width` | `1011` | 卡片输出宽 |
 | `mica.ai.face.card.output-height` | `638` | 卡片输出高 |
+| `mica.ai.face.quality.enabled` | `false` | eDifFIQA 质量门控开关 |
+| `mica.ai.face.quality.threshold` | `0.5` | 质量分阈值（低于该值直接拒绝） |
+| `mica.ai.face.expression.enabled` | `false` | 表情识别开关 |
 | `mica.ai.face.onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `mica.ai.face.onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
 | `mica.ai.face.onnx.device` | `CPU` | `CPU` / `GPU`（枚举） |

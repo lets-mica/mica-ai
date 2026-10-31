@@ -48,7 +48,7 @@ mica:
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配；`false` 时不装配 `TextLineEngine` Bean |
 | `model-version` | `PP-LCNet_x1_0_textline_ori` | 模型标识（文件名前缀，兼作 classpath 资源名） |
-| `model-path` | `classpath:mica-ai/models/textline/PP-LCNet_x1_0_textline_ori.onnx` | 模型路径，支持 `classpath:`；**指向本地文件即可切换到外置模型** |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；**模型不随 jar 分发**，未配置时启动即失败并给出提示；指向本地文件即可切换到外置模型 |
 | `input-width` | `160` | 模型输入宽（NCHW 最后一维）；**必须等于模型输入宽**，不一致启动即抛 `MicaAiException` |
 | `input-height` | `80` | 模型输入高（NCHW 倒数第二维）；**必须等于模型输入高**。⚠️ 官方是 **80×160**（H×W），不是 160×80 |
 | `channel-order` | `BGR` | `BGR`（官方 PaddleX 约定）/ `RGB`。本任务判定结构朝向而非颜色，实测两者结论一致 |

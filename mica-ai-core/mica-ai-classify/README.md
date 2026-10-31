@@ -74,9 +74,9 @@ try (ClassifyEngine engine = ClassifyEngine.create(table)) {
 
 | 字段 | 默认 | 说明 |
 |------|------|------|
-| `modelVersion` | `text_image_orientation` | 内置 classpath 资源名，`modelPath` 为空时使用 |
-| `modelPath` | 空 | 外置模型路径，优先级高于 `modelVersion` |
-| `labelsPath` | **必填** | 与模型强耦合的 label_list；无 classpath 兜底，缺失即抛异常 |
+| `modelVersion` | `text_image_orientation` | 模型标识，仅用于日志展示，不参与路径解析 |
+| `modelPath` | **必填** | 模型路径，支持 `classpath:` 前缀；**模型不随 jar 分发**，未配置时启动即失败并给出提示 |
+| `labelsPath` | **必填** | 与模型强耦合的 label_list，支持 `classpath:` 前缀；缺失即抛异常 |
 | `inputWidth` / `inputHeight` | `224` / `224` | 必须等于模型输入宽高，否则构造期抛异常 |
 | `resizeShort` | `256` | 短边缩放目标；`0` 表示直接 resize（`table_attribute`） |
 | `channelOrder` | `RGB` | PaddleClas 约定；与 textline 的 BGR 不同 |

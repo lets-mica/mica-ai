@@ -19,7 +19,7 @@
 
 | # | 能力 | 挂载到 | 模型来源 | 体积 | License |
 |---|------|--------|---------|------|---------|
-| A | **EDFFIQA 人脸质量评估** | `mica-ai-face` | opencv_zoo `face_image_quality_assessment_ediffiqa` | 小 | Apache-2.0 |
+| A | **EDFFIQA 人脸质量评估** | `mica-ai-face` | opencv_zoo `face_image_quality_assessment_ediffiqa` | 小 | **CC-BY-4.0**（owner 批准例外，见 AGENTS.md §6.1） |
 | B | **7 类表情识别** | `mica-ai-face` | opencv_zoo `facial_expression_recognition` | ~10MB | Apache-2.0 |
 
 > 两者都直接吃 `FaceDetector.detect()` 已有的 **5 点 landmark**（左眼 / 右眼 / 鼻尖 / 左嘴角 / 右嘴角），用 `FaceAligner` 同款仿射裁剪得到对齐后人脸，**零新增预处理**。

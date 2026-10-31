@@ -62,8 +62,8 @@ try (DocAlignEngine engine = DocAlignEngine.create(config)) {
 
 | 字段 | 默认 | 说明 |
 |------|------|------|
-| `modelVersion` | `lcnet100_h_e_bifpn_256_fp32` | 内置 classpath 资源名，`modelPath` 为空时使用 |
-| `modelPath` | 空 | 外置模型路径，优先级高于 `modelVersion` |
+| `modelVersion` | `lcnet100_h_e_bifpn_256_fp32` | 模型标识，仅用于日志展示，不参与路径解析 |
+| `modelPath` | **必填** | 模型路径，支持 `classpath:` 前缀；**模型不随 jar 分发**，未配置时启动即失败并给出提示 |
 | `inputWidth` / `inputHeight` | `256` / `256` | 必须等于模型输入宽高，否则构造期抛异常 |
 | `heatmapThreshold` | `0.3` | 热力图二值化阈值，取值 `[0,1]` |
 | `onnx` | defaults | ORT 会话参数（`intraOpNumThreads` / `device` 等） |

@@ -42,7 +42,7 @@ mica:
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配；`false` 时不装配 `EnhanceEngine` Bean |
 | `model-version` | `realesr-general-x4v3` | 模型标识（文件名前缀，兼作 classpath 资源名） |
-| `model-path` | `classpath:mica-ai/models/enhance/realesr-general-x4v3.onnx` | 模型路径，支持 `classpath:`；指向本地文件即可切换到外置模型 |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；**模型不随 jar 分发**，未配置时启动即失败并给出提示；指向本地文件即可切换到外置模型 |
 | `scale` | `4` | 放大倍数；与模型实际输出/输入比值不一致时**推理期**抛异常 |
 | `tile-size` | `256` | 单次推理 tile 边长（原图像素）；图像小于该值时整图推理 |
 | `tile-overlap` | `16` | tile 重叠边宽，必须 `< tile-size`；`0` 表示不重叠 |

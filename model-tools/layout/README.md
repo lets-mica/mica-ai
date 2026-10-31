@@ -64,7 +64,7 @@ mica:
 ```
 
 模型规格 / I/O 格式 / 坐标空间约定 / 后处理详见 [`mica-ai-core/mica-ai-layout/README.md`](../../mica-ai-core/mica-ai-layout/README.md)，
-落地过程与实测记录见 [`docs/layout-tracking.md`](../../docs/layout-tracking.md)。
+实测记录见本目录下的 `scripts/` 探针脚本（见下表）。
 
 ## 脚本（`scripts/`）
 

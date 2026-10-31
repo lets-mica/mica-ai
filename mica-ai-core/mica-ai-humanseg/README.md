@@ -69,8 +69,8 @@ try (HumanSegEngine engine = HumanSegEngine.create(config)) {
 
 | 字段 | 默认 | 说明 |
 |------|------|------|
-| `modelVersion` | `human_segmentation_pphumanseg_2023mar` | 内置 classpath 资源名，`modelPath` 为空时使用 |
-| `modelPath` | 空 | 外置模型路径，优先级高于 `modelVersion` |
+| `modelVersion` | `human_segmentation_pphumanseg_2023mar` | 模型标识，仅用于日志展示，不参与路径解析 |
+| `modelPath` | **必填** | 模型路径，支持 `classpath:` 前缀；**模型不随 jar 分发**，未配置时启动即失败并给出提示 |
 | `inputWidth` / `inputHeight` | `192` / `192` | 必须等于模型输入宽高，否则构造期抛异常 |
 | `mean` / `std` | `[0.5,0.5,0.5]` | RGB 3 通道归一化参数 |
 | `binaryThreshold` | `0.5` | 仅 `maskBinaryBytes` 使用 |

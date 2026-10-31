@@ -28,9 +28,9 @@ mica:
     plate:
       enabled: true                                          # 默认 true
       model-version: 20230229                                # 模型版本（日志用）
-      detection-model-path: classpath:models/y5fu_320x_sim.onnx
-      recognition-model-path: classpath:models/rpv3_mdict_160_r3.onnx
-      classification-model-path: classpath:models/litemodel_cls_96x_r1.onnx
+      detection-model-path: model-tools/plate/models/y5fu_320x_sim.onnx
+      recognition-model-path: model-tools/plate/models/rpv3_mdict_160_r3.onnx
+      classification-model-path: model-tools/plate/models/litemodel_cls_96x_r1.onnx
       detection-input-size: 320                              # 320 / 640
       detection-confidence-threshold: 0.25
       detection-nms-threshold: 0.5

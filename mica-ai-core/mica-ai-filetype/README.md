@@ -102,9 +102,9 @@ FiletypeResult{outputLabel, modelLabel, score, contentType, mode, isText}
 
 ```java
 FiletypeConfig config = FiletypeConfig.builder()
-    .modelPath("classpath:mica-ai/models/filetype/standard_v3_3/model.onnx")
-    .configPath("classpath:mica-ai/models/filetype/standard_v3_3/config.min.json")
-    .contentTypesPath("classpath:mica-ai/models/filetype/standard_v3_3/content_types_kb.min.json")
+    .modelPath("model-tools/filetype/models/model.onnx")
+    .configPath("model-tools/filetype/models/config.min.json")
+    .contentTypesPath("model-tools/filetype/models/content_types_kb.min.json")
     .predictionMode(PredictionMode.HIGH_CONFIDENCE)
     .build();
 try (FiletypeDetector detector = new FiletypeDetector(config)) {

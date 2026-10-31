@@ -1,6 +1,6 @@
 # mica-ai-filetype-spring-boot-starter
 
-> Google [Magika](https://github.com/google/magika) 文件类型识别 Spring Boot Starter，基于 [mica-ai-filetype](../mica-ai-core/mica-ai-filetype/README.md) 核心模块。**Apache-2.0 可商用**。
+> Google [Magika](https://github.com/google/magika) 文件类型识别 Spring Boot Starter，基于 [mica-ai-filetype](../../mica-ai-core/mica-ai-filetype/README.md) 核心模块。**Apache-2.0 可商用**。
 >
 > 注入 `FiletypeDetector` Bean，对外提供 `detectPath` / `detectBytes` / `detectStream` 三个 API。
 
@@ -28,9 +28,9 @@ mica:
     filetype:
       enabled: true                    # 默认 true
       model-version: standard_v3_3     # 模型版本（固定，备用未来升级）
-      model-path: classpath:mica-ai/models/filetype/standard_v3_3/model.onnx
-      config-path: classpath:mica-ai/models/filetype/standard_v3_3/config.min.json
-      content-types-path: classpath:mica-ai/models/filetype/standard_v3_3/content_types_kb.min.json
+      model-path: model-tools/filetype/models/model.onnx
+      config-path: model-tools/filetype/models/config.min.json
+      content-types-path: model-tools/filetype/models/content_types_kb.min.json
       prediction-mode: HIGH_CONFIDENCE # HIGH_CONFIDENCE / MEDIUM_CONFIDENCE / BEST_GUESS
       onnx:
         device: CPU                       # CPU / GPU（枚举）

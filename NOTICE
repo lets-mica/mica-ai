@@ -1,0 +1,142 @@
+NOTICE
+======
+
+mica-ai
+Copyright (c) 2019-2029 DreamLu 卢春梦 (596392912@qq.com & dreamlu.net)
+
+This product includes software developed at DreamLu (https://www.dreamlu.net).
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+these files except in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+
+================================================================================
+Third-Party Model Weights
+================================================================================
+
+本项目随仓库分发了一批第三方预训练模型权重（位于 `model-tools/*/models/`）。
+**这些权重不打包进 jar**，使用者需自行从本仓库取得文件并通过各能力的
+`model-path` 配置指向本地路径。
+
+各权重的上游来源与许可证如下。**再分发这些权重时，须保留对应的署名与
+许可声明**（Apache-2.0 §4(d) / CC-BY-4.0 / BSD-3-Clause 的要求）。
+
+--------------------------------------------------------------------------------
+OpenCV Zoo 模型 —— Apache License 2.0
+--------------------------------------------------------------------------------
+
+来源：https://github.com/opencv/opencv_zoo
+
+  * face_detection_yunet_2023mar.onnx          （人脸检测）
+  * face_recognition_sface_2021dec.onnx        （人脸特征 128d）
+  * 2.7_80x80_MiniFASNetV2.onnx                （活体检测）
+  * facial_expression_recognition_mobilefacenet_2022july.onnx （表情识别 7 类）
+  * object_detection_nanodet_2022nov.onnx       （目标检测 NanoDet-Plus）
+  * object_detection_yolox_2022nov.onnx        （目标检测 YOLOX-s）
+  * human_segmentation_pphumanseg_2023mar.onnx （人像分割 PP-HumanSeg）
+
+--------------------------------------------------------------------------------
+eDifFIQA-Tiny —— CC-BY-4.0
+--------------------------------------------------------------------------------
+
+文件：face/models/ediffiqa_tiny_jun2024.onnx
+来源：https://github.com/opencv/opencv_zoo/tree/main/models/face_image_quality_assessment_ediffiqa
+用途：人脸图像质量评估
+
+CC-BY-4.0 **允许商业使用**，但再分发时**必须保留署名与许可声明**。
+
+署名（Attribution）：
+  "eDifFIQA: an image quality assessment for faces"
+  来源：OpenCV Zoo（https://github.com/opencv/opencv_zoo），
+  目录 models/face_image_quality_assessment_ediffiqa
+
+许可声明：
+  Creative Commons Attribution 4.0 International (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/legalcode
+
+--------------------------------------------------------------------------------
+Real-ESRGAN —— BSD-3-Clause
+--------------------------------------------------------------------------------
+
+文件：enhance/models/realesr-general-x4v3.onnx
+来源：https://github.com/xinntao/Real-ESRGAN
+论文：Xintao Wang, Liangbin Xie, Chao Dong, Ying Shan.
+      "Real-ESRGAN: Training Real-World Blind Super-Resolution with Pure
+      Synthetic Data." ICCV Workshops, 2021.
+许可声明原文：model-tools/enhance/LICENSE-realesrgan.txt
+
+Copyright (c) 2021, Xintao Wang
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------------
+其余模型 —— Apache-2.0 / MIT
+--------------------------------------------------------------------------------
+
+  * filetype/models/*                          Google Magika `standard_v3_3`
+                                                https://github.com/google/magika
+                                                Apache-2.0
+  * plate/models/*                             HyperLPR3 v20230229
+                                                https://github.com/szad670401/HyperLPR
+                                                Apache-2.0
+  * layout/models/model.onnx                   PP-DocLayoutV3
+                                                https://github.com/PaddlePaddle/PaddleOCR
+                                                Apache-2.0（125MB，不随仓库分发）
+  * matting/models/u2netp.onnx                U²-Net（rembg 打包 ONNX）
+                                                https://github.com/xuebinqin/U-2-Net
+                                                https://github.com/danielgatis/rembg
+                                                Apache-2.0
+  * docalign/models/*                          DocAligner
+                                                https://github.com/DocsaidLab/DocAligner
+                                                Apache-2.0
+  * textline/models/*                          PP-LCNet 文本行方向分类
+                                                https://github.com/PaddlePaddle/PaddleX
+                                                Apache-2.0
+  * classify/models/*                          PaddleClas PULC
+                                                https://github.com/PaddlePaddle/PaddleClas
+                                                Apache-2.0
+  * captcha/models/*                           ddddocr CRNN + 字符集
+                                                https://github.com/sml2h3/ddddocr
+                                                MIT
+
+================================================================================
+Third-Party Software
+================================================================================
+
+本项目依赖以下第三方软件（通过 Maven 引入，许可证均为商业友好）：
+
+  * ONNX Runtime —— MIT
+        https://onnxruntime.ai/
+  * OpenCV（openpnp 打包版）—— Apache-2.0
+        https://github.com/openpnp/openpnp-vision
+  * ByteTrack（跟踪算法的公开方法论参考，本项目为纯 Java 独立实现）—— MIT
+        https://github.com/FoundationVision/ByteTrack

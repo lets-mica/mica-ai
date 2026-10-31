@@ -42,7 +42,7 @@ mica:
 |------|--------|------|
 | `enabled` | `true` | 是否启用自动装配；`false` 时不装配 `DocAlignEngine` Bean |
 | `model-version` | `lcnet100_h_e_bifpn_256_fp32` | 模型标识（文件名前缀，兼作 classpath 资源名） |
-| `model-path` | `classpath:mica-ai/models/docalign/lcnet100_h_e_bifpn_256_fp32.onnx` | 模型路径，支持 `classpath:`；**指向本地文件即可切换到 fastvit 等更高精度模型** |
+| `model-path` | **必填** | 模型路径，支持 `classpath:`；**模型不随 jar 分发**，未配置时启动即失败并给出提示；指向本地文件即可切换到 fastvit 等更高精度模型 |
 | `input-width` / `input-height` | `256` / `256` | 必须等于模型输入宽高，不一致启动即抛 `MicaAiException` |
 | `heatmap-threshold` | `0.3` | 热力图二值化阈值（`[0,1]`），越低越容易把弱响应也算作角点 |
 | `onnx.device` | `CPU` | `CPU` / `GPU`（枚举，GPU 需 classpath 换 `onnxruntime_gpu`） |
