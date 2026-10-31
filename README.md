@@ -64,13 +64,15 @@
 
 mica-ai 的运行时是四层单向依赖：**接入层 → 能力层 → 底座层 → 模型层**，你的应用站在接入层之上。
 
+<!-- htmlLabels:false 规避 mermaid 在中文标签下的宽度测量误差（foreignObject 测宽按拉丁字体、渲染回退 CJK 字体，导致文字被裁）；wrappingWidth 放大后 <br/> 手写分行才不会被自动折行打散 -->
 ```mermaid
+%%{init: {'htmlLabels': false, 'flowchart': {'wrappingWidth': 600}}}%%
 graph TD
-    APP["你的应用<br/>Spring Boot App / 纯 Java 应用"]
+    APP["你的应用<br/>Spring Boot / 纯 Java"]
     ST["接入层 · mica-ai-starters × 13<br/>一行 YAML 注入引擎 Bean（可选）"]
     CORE["能力层 · mica-ai-core × 13 能力模块<br/>face · filetype · plate · layout · matting · humanseg<br/>detect · track · docalign · enhance · textline · classify · captcha"]
     COMMON["底座层 · mica-ai-common<br/>OnnxModelSession · OrtSessionFactory · MicaAiException"]
-    MODELS["模型层 · model-tools 各能力目录下的 *.onnx（23 个）<br/>随仓库分发，不打包进 jar，路径必须显式配置"]
+    MODELS["模型层 · model-tools/*.onnx（23 个）<br/>随仓库分发，不打包进 jar，路径必须显式配置"]
 
     APP -->|"@Autowired / 一行 YAML"| ST
     APP -.->|"零 Spring 可直连"| CORE
@@ -82,7 +84,7 @@ graph TD
 | 层 | 模块 | 职责 | 关键约束 |
 |----|------|------|----------|
 | 接入层 | `mica-ai-starters` × 13 | 把 `mica.ai.*` YAML 配置翻译成引擎 Bean | **可选**；不用 Spring Boot 可直接依赖能力层 |
-| 能力层 | `mica-ai-core` × 13 | 13 个互不依赖的能力引擎，可按需引入 | 零 Spring、纯 Java 8+ |
+| 能力层 | `mica-ai-core` × 13 | 13 个互不依赖的能力模块，可按需引入 | 零 Spring、纯 Java 8+；`face` 一个模块含 6 项能力 |
 | 底座层 | `mica-ai-common` | ONNX 会话工厂、ORT 选项、统一异常 | 被全部能力模块共享 |
 | 模型层 | `model-tools/<cap>/models/` | 23 个模型文件（12 个能力目录） | 随仓库分发，**不打包进 jar**，路径必须显式配置 |
 
@@ -300,18 +302,18 @@ mica-ai/
 ├── mica-ai-starters/               # Spring Boot 2 Starter：每个能力一个（mica-ai-<cap>-spring-boot-starter），见上方 Starter 表
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产：12 个能力目录 / 23 个 .onnx，随仓库分发、不打包进 jar（体积为目录合计，单文件 <50MB）
-    ├── face/models/                #   5 个模型 · 51MB · ✅ 入库
-    ├── filetype/models/            #   1 个模型 + 配置 · 4MB · ✅ 入库
-    ├── plate/models/               #   4 个模型 · 18MB · ✅ 入库
-    ├── layout/models/              #   1 个模型 · 125MB · ⚠️ 不随仓库分发
-    ├── matting/models/             #   1 个模型 · 5MB · ✅ 入库
-    ├── humanseg/models/            #   1 个模型 · 6MB · ✅ 入库
-    ├── detect/models/              #   2 个模型 · 38MB · ✅ 入库
-    ├── docalign/models/            #   1 个模型 · 5MB · ✅ 入库
-    ├── enhance/models/             #   1 个模型 · 3MB · ✅ 入库（含 BSD-3 许可证原文）
-    ├── textline/models/            #   1 个模型 · 7MB · ✅ 入库
-    ├── classify/models/            #   4 个模型 + label_list · 24MB · ✅ 入库
-    └── captcha/models/             #   1 个模型 + 字符集 · 14MB · ✅ 入库
+    ├── face/models/                #   5 个模型 · 50.3MB · ✅ 入库
+    ├── filetype/models/            #   1 个模型 + 配置 · 3.1MB · ✅ 入库
+    ├── plate/models/               #   4 个模型 · 17.3MB · ✅ 入库
+    ├── layout/models/              #   1 个模型 · 124.5MB · ⚠️ 不随仓库分发
+    ├── matting/models/             #   1 个模型 · 4.4MB · ✅ 入库
+    ├── humanseg/models/            #   1 个模型 · 5.9MB · ✅ 入库
+    ├── detect/models/              #   2 个模型 · 37.8MB · ✅ 入库
+    ├── docalign/models/            #   1 个模型 · 4.5MB · ✅ 入库
+    ├── enhance/models/             #   1 个模型 · 2.3MB · ✅ 入库（含 BSD-3 许可证原文）
+    ├── textline/models/            #   1 个模型 · 6.5MB · ✅ 入库
+    ├── classify/models/            #   4 个模型 + label_list · 23.3MB · ✅ 入库
+    └── captcha/models/             #   1 个模型 + 字符集 · 13.0MB · ✅ 入库
 ```
 
 ---
