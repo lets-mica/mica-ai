@@ -21,6 +21,8 @@
 
 ---
 
+[✨✨✨推广：**BladeX 物联网平台**✨✨✨iot.bladex.cn](https://iot.bladex.cn?from=mica-mqtt)
+
 ## ✨ 为什么选 Mica AI？
 
 还在为 Java 项目集成 AI 模型苦恼吗？
