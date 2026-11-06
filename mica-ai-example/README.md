@@ -1,11 +1,11 @@
 # mica-ai-example
 
-> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout + Matting + HumanSeg + Detect + Track + DocAlign + Enhance + TextLine + Classify + Captcha Starter 的可运行示例与集成测试。
+> mica-ai Spring Boot 集成 Demo / Test：聚合 Face + Filetype + Plate + Layout + Matting + HumanSeg + Detect + Track + DocAlign + Enhance + TextLine + Classify + Captcha + Barcode Starter 的可运行示例与集成测试。
 
 本模块面向集成测试场景：
 
 1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype /
-   plate / layout / matting / humanseg / detect / track / docalign / enhance / textline / classify / captcha 能力。
+   plate / layout / matting / humanseg / detect / track / docalign / enhance / textline / classify / captcha / barcode 能力。
 2. **组合场景示例**：把多个能力编排成完整业务链路（智能文档流水线、证件照一键生成），见 [§3.1 组合场景](#31-组合场景)。
 3. **Starter 自动装配测试**：覆盖 `enabled` 开关、fail-fast、Bean 注入（基于轻量级
    `ApplicationContextRunner`，非 `@SpringBootTest`）。
@@ -19,7 +19,7 @@
 | JDK         | **8+**                                                  | 推荐 Temurin / Azul Zulu 8、11、17 |
 | Maven       | 3.6+                                                    | 多模块构建                          |
 | Spring Boot | 2.7.x                                                   | 由根 BOM 引入                      |
-| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 + U²-Net + PP-HumanSeg + NanoDet + DocAligner + Real-ESRGAN + PP-LCNet + PULC + ddddocr | 见各能力 README；layout 模型需自行获取     |
+| ONNX 模型     | YuNet + SFace + Magika + HyperLPR3 + U²-Net + PP-HumanSeg + NanoDet + DocAligner + Real-ESRGAN + PP-LCNet + PULC + ddddocr | 见各能力 README；layout 模型需自行获取；barcode 零模型 |
 
 ---
 
@@ -124,6 +124,13 @@ mica:
       # ⚠️ 模型与字符集都是外置配置，两项必填且必须成对
       model-path: model-tools/captcha/models/ddddocr.onnx
       charset-path: model-tools/captcha/models/charset.txt
+    barcode:
+      enabled: true                     # 零模型、无必填项，不配也能用
+      formats: [ QR_CODE, CODE_128, EAN_13, EAN_8, UPC_A, CODE_39, ITF, CODABAR ]
+      multi-scale: true                 # 小码 / 模糊图靠 ×2、×3 放大重试
+      tile-scan: true                   # 一图多码靠 2×2 分块
+      tile-rows: 2
+      tile-cols: 2
 ```
 
 > matting（`u2netp` 4.36MB）/ humanseg（`PP-HumanSeg` 5.88MB）/ detect（`NanoDet-Plus` 3.62MB）/ docalign（4.55MB）/
@@ -224,7 +231,9 @@ mvn -pl mica-ai-example -am test
 | `/textline/upright` | POST multipart | 上传单行文本图，倒置则旋转 180° 输出 PNG，正常则原样回传 |
 | `/classify/classify` | POST multipart | 上传图片做分类（`model` 参数可选：默认 / clarity / person / table），返回 topK + 全量概率 |
 | `/captcha/recognize` | POST multipart | 上传验证码图片，返回 text（识别文本）/ confidence（平均置信度）/ charConfidences（逐字符置信度） |
-| `/scenario/document/process` | POST multipart | **智能文档流水线**：拉正 → 整图方向 → 版面 → 文本块转正 → 超分，返回阶段报告 + 成片 base64 |
+| `/barcode/decode` | POST multipart | 上传票据 / 面单 / 标签图，返回全部条码（text / symbology / boundingBox / strategy） |
+| `/barcode/decode-first` | POST multipart | 只解第一个码，命中即短路；未命中返回 `found=false` |
+| `/scenario/document/process` | POST multipart | **智能文档流水线**：拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分，返回阶段报告 + 检出的条码 + 成片 base64 |
 | `/scenario/document/preview` | POST multipart | 同上参数，直接返回处理后的 PNG 字节 |
 | `/scenario/idphoto/generate` | POST multipart | **证件照一键生成**：检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分 |
 | `/scenario/idphoto/preview` | POST multipart | 同上参数，直接返回成片 PNG 字节（质量不通过返回 422） |
@@ -251,15 +260,16 @@ Swagger UI：`http://localhost:8181/swagger-ui.html`
 
 ### 📄 智能文档流水线（`/scenario/document/*`）
 
-把「手机拍的文档」变成「可读、结构正确、方向正确」的图，串联 **5 个模型能力**：
+把「手机拍的文档」变成「可读、结构正确、方向正确」的图，串联 **5 个模型能力 + 1 个纯算法阶段**：
 
 | 阶段 | 能力 | 作用 |
 |------|------|------|
 | 1. 拉正 | `mica-ai-docalign` | 检四角 + 透视拉平，把斜拍的文档拧正 |
 | 2. 整图方向 | `mica-ai-classify`（PULC `text_image_orientation`） | 判 0° / 90° / 180° / 270° 并旋转到位 |
-| 3. 版面分析 | `mica-ai-layout` | 出版面区域 + 阅读顺序 |
-| 4. 文本块转正 | `mica-ai-textline` | 对文本块判 0° / 180°，倒置的原地转正 |
-| 5. 画质增强 | `mica-ai-classify`（PULC `clarity_assessment`）+ `mica-ai-enhance` | 判清晰 / 模糊，模糊则超分 |
+| 3. 条码解码 | `mica-ai-barcode`（ZXing，**零模型**） | 读票据 / 面单上的二维码与一维码；紧跟几何矫正、排在超分之前 |
+| 4. 版面分析 | `mica-ai-layout` | 出版面区域 + 阅读顺序 |
+| 5. 文本块转正 | `mica-ai-textline` | 对文本块判 0° / 180°，倒置的原地转正 |
+| 6. 画质增强 | `mica-ai-classify`（PULC `clarity_assessment`）+ `mica-ai-enhance` | 判清晰 / 模糊，模糊则超分 |
 
 ```bash
 curl -X POST -F "file=@doc.jpg" http://localhost:8181/scenario/document/process
@@ -271,23 +281,31 @@ curl -X POST -F "file=@doc.jpg" http://localhost:8181/scenario/document/process
   "stages": [
     {"name": "align",      "applied": false, "detail": "角点最低分 0.002 < 0.3，画面中可能没有成形文档，跳过拉正"},
     {"name": "orientation", "applied": true,  "detail": "预测 90°（0.856），逆时针旋转 90°"},
+    {"name": "barcode",    "applied": true,  "detail": "检出 1 个条码"},
     {"name": "layout",     "applied": false, "detail": "layout 模型未启用（125MB 不随仓库分发），跳过版面分析"},
     {"name": "textLine",   "applied": false, "detail": "没有版面结果可供判定，跳过"},
     {"name": "clarity",    "applied": false, "detail": "判定 clear（0.917，clear 概率 0.917），无需超分"}
   ],
   "orientation": {"label": "90", "score": 0.856, "rotated": true, "rotation": "逆时针旋转 90°"},
+  "barcodes": [
+    {"text": "https://example.com/invoice/2026-000123", "symbology": "QR_CODE",
+     "boundingBox": [214, 318, 302, 406], "strategy": "UPSCALE_x2"}
+  ],
   "blocks": [], "textBlocks": [],
   "imageBase64": "data:image/png;base64,..."
 }
 ```
 
-**三个设计取舍**：
+**四个设计取舍**：
 
 1. **阶段顺序**：几何矫正与语义理解（版面 / 方向）都放在**原分辨率**上跑，最快；
    画质增强放最后，对整图一次性超分，不会让后续检测在 4 倍图上变慢。
-2. **每个阶段都能单独关**（`align` / `orientation` / `enhance` / `layout` / `textLine` 参数），
+2. **条码必须排在超分之前**：一维码对缩放极敏感，放大/插值会直接破坏条带宽度比例；
+   同理它接在 `docalign` 之后，先吃掉透视形变。`strategy` 字段会回告命中的策略，
+   便于判断业务现场是「码太小」（`UPSCALE_x2`）还是「一图多码」（`TILE_*`）。
+3. **每个阶段都能单独关**（`align` / `orientation` / `barcode` / `enhance` / `layout` / `textLine` 参数），
    关掉的阶段既不推理也不出现在报告里。
-3. **依赖缺失自动降级**，不抛异常：`layout` 模型 125MB 不随仓库分发，
+4. **依赖缺失自动降级**，不抛异常：`layout` 模型 125MB 不随仓库分发，
    未启用时该阶段跳过并说明原因；`clarity` 模型未在 `mica.example.classify.models` 声明时同样跳过。
 
 > ⚠️ **方向标签的约定（实测结论）**：PULC `text_image_orientation` 的标签是
@@ -520,3 +538,7 @@ mica-ai-example/
   这是为了避免超大图把内存和响应体打爆——4× 输出意味着边长也要 ×4。
 - **超分不是生成式修复**：Real-ESRGAN 重建高频细节、把小图放大，
   撕裂 / 污损 / 缺失的内容补不回来，严重老旧或破损照片的效果有限。
+- **条码解码率取决于原图**：一维码对缩放极敏感（缩小或模糊后各策略都是 0%），
+  务必用**原分辨率**原图送 `/barcode/decode`；透视形变先过 `docalign` 或在流水线里跑。
+  解码率数据来自合成退化样本（见 `mica-ai-core/mica-ai-barcode` 的单测 `BarcodeSamples` / `BarcodeEngineTest`），
+  实拍票据 / 面单上线前建议自行复跑。

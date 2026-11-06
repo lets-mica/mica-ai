@@ -29,5 +29,6 @@
         <module>mica-ai-textline-spring-boot-starter</module>
         <module>mica-ai-classify-spring-boot-starter</module>
         <module>mica-ai-captcha-spring-boot-starter</module>
+        <module>mica-ai-barcode-spring-boot-starter</module>
     </modules>
 </project>

@@ -370,6 +370,26 @@ mica:
         # enable-cpu-mem-arena: false
         # enable-memory-pattern: false
         # symbolic-dimension-values: { }
+    # ============================================================
+    #  🧾 Barcode —— ZXing 二维码 / 一维条码（Apache-2.0，零模型）
+    #  无模型路径、无必填项，不配也能用。解码链：
+    #  Hybrid+TRY_HARDER → ×2/×3 放大 → 2×2 分块 → GlobalHistogram 回退。
+    #  ⚠️ 一维码必须原分辨率，禁止先缩放；文档图建议先过 docalign 拉正。
+    # ============================================================
+    barcode:
+      enabled: true
+      formats: [ QR_CODE, CODE_128, EAN_13, EAN_8, UPC_A, CODE_39, ITF, CODABAR ]
+      charset: UTF-8
+      try-harder: true
+      multi-scale: true
+      upscale-factors: [ 2, 3 ]
+      max-side-length: 4096
+      tile-scan: true
+      tile-rows: 2
+      tile-cols: 2
+      tile-overlap-ratio: 0.12
+      global-histogram-fallback: true
+      max-results: 16
   # ============================================================
   #  🔎 示例专用：PULC 多模型扩展
   #  starter 的 classify 一个引擎只绑一个模型；要同时用多个 PULC 模型，

@@ -2,7 +2,7 @@
 
 > mica-ai Spring Boot Starter 聚合模块，一行配置即可将 AI 能力接入 Spring Boot 应用。
 
-本模块为聚合 POM（`packaging=pom`），包含 **13 个 starter**：
+本模块为聚合 POM（`packaging=pom`），包含 **14 个 starter**：
 
 | Starter | 功能 | 配置前缀 |
 |---------|------|---------|
@@ -19,6 +19,7 @@
 | [mica-ai-textline-spring-boot-starter](mica-ai-textline-spring-boot-starter/README.md) | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正；`x1_0` 6.46MB 入库，`x0_25` 轻量版走 `model-path` 外置切换） | `mica.ai.textline` |
 | [mica-ai-classify-spring-boot-starter](mica-ai-classify-spring-boot-starter/README.md) | PaddleClas PULC 通用图像分类（整图方向 / 清晰度 / 人物存在 / 表格 6 属性；`labels-path` 必填，多模型分别声明 Bean） | `mica.ai.classify` |
 | [mica-ai-captcha-spring-boot-starter](mica-ai-captcha-spring-boot-starter/README.md) | ddddocr 通用验证码识别（CRNN + CTC，8210 类字符集；**模型与字符集外置配置**，`model-path` / `charset-path` 必填） | `mica.ai.captcha` |
+| [mica-ai-barcode-spring-boot-starter](mica-ai-barcode-spring-boot-starter/README.md) | 二维码 / 一维条码解码（纯算法零模型，多尺度 + 分块多策略回退，一图多码；零配置即可用） | `mica.ai.barcode` |
 
 ---
 
@@ -114,10 +115,16 @@
     <artifactId>mica-ai-captcha-spring-boot-starter</artifactId>
     <version>${mica-ai.version}</version>
 </dependency>
+
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-barcode-spring-boot-starter</artifactId>
+    <version>${mica-ai.version}</version>
+</dependency>
 ```
 
 引入后无需任何 Java 代码，仅需在 `application.yml` 中配置模型路径即可自动注入对应 Bean。
 
-> ⚠️ 模型随仓库分发但**不打包进 jar**，各能力的 `model-path` **必填**；未配置时启动即 fail-fast，并在错误消息里指向 `model-tools/<cap>/models/` 下的文件。用户自己把模型放进 classpath 时，路径写 `classpath:` 前缀即可。
+> ⚠️ 模型随仓库分发但**不打包进 jar**，各能力的 `model-path` **必填**；未配置时启动即 fail-fast，并在错误消息里指向 `model-tools/<cap>/models/` 下的文件。用户自己把模型放进 classpath 时，路径写 `classpath:` 前缀即可。`mica-ai-track` / `mica-ai-barcode` 无模型，**零配置**即可用。
 
 完整可运行示例见 [`mica-ai-example`](../mica-ai-example/README.md)。

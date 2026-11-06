@@ -2,6 +2,20 @@
 
 本项目的所有显著变更都会记录在此文件中。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [Unreleased]
+
+### ✨ 新增能力
+
+- 📷 `mica-ai-barcode` —— 二维码 / 一维条码解码：**纯算法、零模型**，只依赖 `com.google.zxing:core:3.5.3`（3.6.0 起要求 Java 11+，故锁在 JDK 8 线的最后一个版本），不引 ONNX Runtime / OpenCV / `javase`（规避 AWT headless 依赖）；核心是 `HybridBinarizer + TRY_HARDER` 起步的**多策略回退链**——失败后依次做 ×2 / ×3 最近邻放大、2×2 带重叠分块扫描、`GlobalHistogramBinarizer` 回退，支持一图多码与 20+ 种码制；输入走自带像素载体（`byte[]` / 灰度 / RGB），与 OpenCV `Mat` 解耦；配套 `mica-ai-barcode-spring-boot-starter`（`mica.ai.barcode` 前缀，**零配置**即可注入 `BarcodeEngine`）
+- 智能文档流水线新增条码阶段：`docalign` 拉正 → `classify` 整图方向 → **`barcode` 条码解码** → `layout` 版面 → `textline` 文本块转正 → `enhance` 超分。条码放在**原分辨率、超分之前**跑——一维码经缩放会直接失效；example 同步新增 `/barcode/decode` 与 `/scenario/document/process` 的条码结果字段
+
+### 🧪 选型结论（已固化进单测）
+
+- 条码解码选型结论已固化进单测 `BarcodeSamples` / `BarcodeEngineTest`（16 档合成退化样本 × N=12）：固定 `HybridBinarizer` 在模糊图上反而弱于 `GlobalHistogram`，故必须做策略回退；**多尺度重试**（<2ms）把 1px 小码与 σ=2 模糊从 0% 拉到 100%；**多码场景 2×2 分块扫描 100%，优于 OpenCV `detectAndDecodeMulti` 的 75% 且快约 10 倍** ⇒ 不引入 WeChatQRCode（属 `opencv_contrib`，且是 Caffe 模型，收益/成本极差）
+- 同期评审推翻了「PULC 补 7 个模型 = 0 行 Java」的假设：`person_attribute` / `vehicle_attribute` 的官方契约是 `256×192` / `192×256` 非正方形输入 + **裸 logits** 输出 + 分组 argmax 分组阈值后处理，与 `ClassifyConfig` 的 `multiLabel` + 单一阈值语义不匹配，**不纳入本轮**
+
+---
+
 ## [1.0.2] - 2026-11-01
 
 ### ✨ 新增能力

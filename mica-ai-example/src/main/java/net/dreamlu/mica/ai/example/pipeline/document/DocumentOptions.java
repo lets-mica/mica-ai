@@ -46,13 +46,14 @@ public class DocumentOptions {
 	@Builder.Default
 	private final boolean orientation = true;
 
-	/** 阶段 3：清晰度不足时超分 */
+	/**
+	 * 阶段 3：条码 / 二维码解码（纯算法零模型）。
+	 *
+	 * <p>放在拉正与整图转正之后、超分之前：此时几何已正、仍是原分辨率；
+	 * 一维码一旦被缩放就几乎解不出，所以绝不能排在 enhance 之后。
+	 */
 	@Builder.Default
-	private final boolean enhance = true;
-
-	/** 清晰度门限：clear 概率低于此值判为模糊，触发超分 */
-	@Builder.Default
-	private final float enhanceBlurThreshold = 0.5f;
+	private final boolean barcode = true;
 
 	/** 阶段 4：版面分析（区域 + 阅读顺序） */
 	@Builder.Default
@@ -65,5 +66,13 @@ public class DocumentOptions {
 	/** 参与方向判定的文本块数量上限，避免超大文档推理过久 */
 	@Builder.Default
 	private final int maxTextBlocks = 20;
+
+	/** 阶段 6：清晰度不足时超分（放最后，避免后续阶段在 4 倍图上跑） */
+	@Builder.Default
+	private final boolean enhance = true;
+
+	/** 清晰度门限：clear 概率低于此值判为模糊，触发超分 */
+	@Builder.Default
+	private final float enhanceBlurThreshold = 0.5f;
 
 }

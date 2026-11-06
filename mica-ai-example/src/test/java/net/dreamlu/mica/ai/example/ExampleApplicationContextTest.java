@@ -15,6 +15,8 @@
  */
 package net.dreamlu.mica.ai.example;
 
+import net.dreamlu.mica.ai.barcode.core.BarcodeEngine;
+import net.dreamlu.mica.ai.barcode.autoconfigure.BarcodeAutoConfiguration;
 import net.dreamlu.mica.ai.captcha.CaptchaEngine;
 import net.dreamlu.mica.ai.captcha.autoconfigure.CaptchaAutoConfiguration;
 import net.dreamlu.mica.ai.classify.autoconfigure.ClassifyAutoConfiguration;
@@ -393,6 +395,35 @@ class ExampleApplicationContextTest {
 				assertThat(engine.modelInputHeight()).isEqualTo(224);
 				// 整图方向 0 / 90 / 180 / 270
 				assertThat(engine.classCount()).isEqualTo(4);
+			});
+	}
+
+	@Test
+	@DisplayName("Barcode 关闭时不应创建 BarcodeEngine")
+	void barcodeDisabledShouldNotCreateEngine() {
+		runner(BarcodeAutoConfiguration.class)
+			.withPropertyValues("mica.ai.barcode.enabled=false")
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).doesNotHaveBean(BarcodeEngine.class);
+			});
+	}
+
+	@Test
+	@DisplayName("Barcode 零配置即可装配出可用引擎（无模型路径等必填项）")
+	void barcodeShouldWireEngineWithoutAnyConfig() {
+		runner(BarcodeAutoConfiguration.class)
+			.withPropertyValues(
+				"mica.ai.barcode.max-results=3",
+				"mica.ai.barcode.tile-rows=3")
+			.run(ctx -> {
+				assertThat(ctx).hasNotFailed();
+				assertThat(ctx).hasSingleBean(BarcodeEngine.class);
+				BarcodeEngine engine = ctx.getBean(BarcodeEngine.class);
+				assertThat(engine.formats()).isNotEmpty();
+				assertThat(engine.getConfig().getMaxResults()).isEqualTo(3);
+				assertThat(engine.getConfig().getTileRows()).isEqualTo(3);
+				assertThat(engine.getConfig().isMultiScale()).isTrue();
 			});
 	}
 

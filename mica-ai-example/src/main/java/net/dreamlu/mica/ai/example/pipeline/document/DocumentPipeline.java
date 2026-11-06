@@ -16,6 +16,8 @@
 package net.dreamlu.mica.ai.example.pipeline.document;
 
 import lombok.extern.slf4j.Slf4j;
+import net.dreamlu.mica.ai.barcode.core.BarcodeEngine;
+import net.dreamlu.mica.ai.barcode.model.BarcodeResult;
 import net.dreamlu.mica.ai.classify.core.ClassifyEngine;
 import net.dreamlu.mica.ai.classify.model.ClassifyResult;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
@@ -39,11 +41,13 @@ import java.util.*;
 /**
  * 智能文档流水线：把「手机拍的文档」变成「可读、结构正确、方向正确」的图。
  *
- * <p>串联 5 个模型能力，每一步都是独立模型的一次推理：
+ * <p>串联 5 个模型能力 + 1 个纯算法阶段：
  * <ol>
  *   <li><b>拉正</b>——{@code mica-ai-docalign} 检四角 + 透视拉平，把斜拍的文档拧正</li>
  *   <li><b>整图方向</b>——{@code mica-ai-classify}（PULC {@code text_image_orientation}）
  *       判 0° / 90° / 180° / 270° 并旋转到位</li>
+ *   <li><b>条码解码</b>——{@code mica-ai-barcode}（ZXing，零模型）读票据 / 面单上的
+ *       二维码与一维码</li>
  *   <li><b>版面分析</b>——{@code mica-ai-layout} 出区域 + 阅读顺序（模型 125MB 不入库，
  *       未启用时本阶段自动降级为空）</li>
  *   <li><b>文本块转正</b>——{@code mica-ai-textline} 对文本块判 0° / 180°，倒置的原地转正</li>
@@ -52,7 +56,8 @@ import java.util.*;
  * </ol>
  *
  * <p><b>阶段顺序的理由</b>：几何矫正与语义理解（版面 / 方向）都放在原分辨率上跑，
- * 最快；画质增强放最后，对整图一次性超分，不会让后续检测在 4 倍图上变慢。
+ * 最快；条码紧跟拉正与整图转正，此时几何已正、仍是原分辨率——<b>一维码一旦被缩放几乎解不出</b>，
+ * 所以绝不能排在超分之后；画质增强放最后，对整图一次性超分，不会让后续检测在 4 倍图上变慢。
  *
  * <p><b>方向标签的约定</b>：PULC {@code text_image_orientation} 的标签是
  * <b>图片当前相对正立的顺时针角度</b>（实测：顺时针转 90° 的图预测为 {@code 90}），
@@ -103,18 +108,23 @@ public class DocumentPipeline {
 	/** 文本行方向引擎，可为 null */
 	private final TextLineEngine textLineEngine;
 
+	/** 条码解码引擎，可为 null（零模型，关闭时本阶段自动降级） */
+	private final BarcodeEngine barcodeEngine;
+
 	public DocumentPipeline(DocAlignEngine docAlignEngine,
 							ClassifyEngine orientationEngine,
 							ClassifyModelRegistry classifyRegistry,
 							EnhanceEngine enhanceEngine,
 							LayoutPipeline layoutPipeline,
-							TextLineEngine textLineEngine) {
+							TextLineEngine textLineEngine,
+							BarcodeEngine barcodeEngine) {
 		this.docAlignEngine = docAlignEngine;
 		this.orientationEngine = orientationEngine;
 		this.classifyRegistry = classifyRegistry;
 		this.enhanceEngine = enhanceEngine;
 		this.layoutPipeline = layoutPipeline;
 		this.textLineEngine = textLineEngine;
+		this.barcodeEngine = barcodeEngine;
 	}
 
 	/**
@@ -187,7 +197,24 @@ public class DocumentPipeline {
 						: "未启用"));
 			}
 
-			// ---- 阶段 3：版面分析 ----
+			// ---- 阶段 3：条码解码（拉正 + 转正之后、超分之前，保持原分辨率） ----
+			List<DocumentResult.BarcodeReport> barcodes = new ArrayList<>();
+			if (options.isBarcode() && barcodeEngine != null) {
+				// 条码引擎吃字节（内部走 JDK ImageIO），PNG 无损编码不会损失一维码的模块边缘
+				List<BarcodeResult> codes = barcodeEngine.decodeBytes(
+					DocAlignImageUtils.imencodePng(current));
+				for (BarcodeResult code : codes) {
+					barcodes.add(new DocumentResult.BarcodeReport(code.getText(),
+						code.getSymbology().name(), code.getBoundingBox(), code.getStrategy()));
+				}
+				stages.add(stage("barcode", !barcodes.isEmpty(),
+					barcodes.isEmpty() ? "未检出条码" : ("检出 " + barcodes.size() + " 个条码")));
+			} else {
+				stages.add(stage("barcode", false,
+					options.isBarcode() ? "条码引擎不可用，跳过" : "未启用"));
+			}
+
+			// ---- 阶段 4：版面分析 ----
 			List<DocumentResult.LayoutBlockReport> blocks = new ArrayList<>();
 			if (options.isLayout() && layoutPipeline != null) {
 				List<LayoutResult> results = layoutPipeline.detect(current);
@@ -205,7 +232,7 @@ public class DocumentPipeline {
 						: "未启用"));
 			}
 
-			// ---- 阶段 4：文本块倒置转正 ----
+			// ---- 阶段 5：文本块倒置转正 ----
 			List<DocumentResult.TextBlockReport> textBlocks = new ArrayList<>();
 			if (options.isTextLine() && textLineEngine != null && !blocks.isEmpty()) {
 				int limit = Math.min(options.getMaxTextBlocks(), blocks.size());
@@ -231,7 +258,7 @@ public class DocumentPipeline {
 						: "文本行方向引擎不可用，跳过") : "未启用"));
 			}
 
-			// ---- 阶段 5：清晰度与超分 ----
+			// ---- 阶段 6：清晰度与超分 ----
 			DocumentResult.ClarityReport clarityReport = null;
 			ClassifyEngine clarityEngine = clarityEngine();
 			if (options.isEnhance() && clarityEngine != null
@@ -266,7 +293,7 @@ public class DocumentPipeline {
 
 			byte[] png = DocAlignImageUtils.imencodePng(current);
 			return new DocumentResult(png, current.cols(), current.rows(), stages,
-				alignReport, orientationReport, clarityReport, blocks, textBlocks);
+				alignReport, orientationReport, clarityReport, blocks, textBlocks, barcodes);
 		} finally {
 			for (Mat mat : alive) {
 				if (mat != null) {

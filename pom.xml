@@ -32,7 +32,7 @@
     </licenses>
 
     <properties>
-        <revision>1.0.2</revision>
+        <revision>1.0.3-SNAPSHOT</revision>
         <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -44,6 +44,7 @@
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <onnxruntime.version>1.18.0</onnxruntime.version>
         <opencv.version>4.9.0-0</opencv.version>
+        <zxing.version>3.5.3</zxing.version>
         <slf4j.version>1.7.36</slf4j.version>
         <lombok.version>1.18.48</lombok.version>
         <spring-boot.version>2.7.18</spring-boot.version>
@@ -95,6 +96,12 @@
                 <groupId>org.openpnp</groupId>
                 <artifactId>opencv</artifactId>
                 <version>${opencv.version}</version>
+            </dependency>
+            <!-- ZXing core (Java 8 最后一条线；3.6.0 起要求 Java 11+) -->
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>core</artifactId>
+                <version>${zxing.version}</version>
             </dependency>
             <!-- Logging -->
             <dependency>
@@ -269,6 +276,16 @@
             <dependency>
                 <groupId>net.dreamlu</groupId>
                 <artifactId>mica-ai-captcha-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-barcode</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.dreamlu</groupId>
+                <artifactId>mica-ai-barcode-spring-boot-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>

@@ -46,13 +46,13 @@ import java.util.Map;
 /**
  * 智能文档流水线 REST 端点。
  *
- * <p>把「手机拍的文档」跑完 拉正 → 整图方向 → 版面分析 → 文本块转正 → 清晰度/超分
+ * <p>把「手机拍的文档」跑完 拉正 → 整图方向 → 条码解码 → 版面分析 → 文本块转正 → 清晰度/超分
  * 这条链，一次调用返回结构化报告。
  *
  * @author DreamLu
  */
 @Slf4j
-@Tag(name = "Scenario 智能文档流水线", description = "拉正 → 整图方向 → 版面分析 → 文本块转正 → 超分")
+@Tag(name = "Scenario 智能文档流水线", description = "拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分")
 @RestController
 @RequestMapping("/scenario/document")
 @RequiredArgsConstructor
@@ -61,8 +61,8 @@ public class DocumentScenarioController {
 	private final DocumentPipeline pipeline;
 
 	@Operation(summary = "智能文档处理",
-		description = "串联 docalign / classify / layout / textline / enhance 五个能力；"
-			+ "各阶段可用参数单独关闭。返回阶段报告、版面区域与阅读顺序；"
+		description = "串联 docalign / classify / barcode / layout / textline / enhance 六个能力；"
+			+ "各阶段可用参数单独关闭。返回阶段报告、检出的条码、版面区域与阅读顺序；"
 			+ "includeImage=true 时附带处理后整图的 base64 data URL")
 	@PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<Object> process(
@@ -74,6 +74,8 @@ public class DocumentScenarioController {
 		@RequestParam(value = "align", required = false) Boolean align,
 		@Parameter(description = "是否整图方向矫正，默认 true")
 		@RequestParam(value = "orientation", required = false) Boolean orientation,
+		@Parameter(description = "是否解码二维码 / 一维条码，默认 true")
+		@RequestParam(value = "barcode", required = false) Boolean barcode,
 		@Parameter(description = "模糊时是否超分，默认 true")
 		@RequestParam(value = "enhance", required = false) Boolean enhance,
 		@Parameter(description = "是否版面分析，默认 true（layout 模型未启用时自动降级）")
@@ -83,7 +85,7 @@ public class DocumentScenarioController {
 		@Parameter(description = "是否在报告里附带处理后整图的 base64，默认 true")
 		@RequestParam(value = "includeImage", required = false) Boolean includeImage) throws IOException {
 		try {
-			DocumentOptions options = options(align, orientation, enhance, layout, textLine);
+			DocumentOptions options = options(align, orientation, barcode, enhance, layout, textLine);
 			DocumentResult result = pipeline.process(file.getBytes(), options);
 			return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(report(result, includeImage));
 		} catch (MicaAiException e) {
@@ -102,19 +104,21 @@ public class DocumentScenarioController {
 		@RequestPart("file") MultipartFile file,
 		@RequestParam(value = "align", required = false) Boolean align,
 		@RequestParam(value = "orientation", required = false) Boolean orientation,
+		@RequestParam(value = "barcode", required = false) Boolean barcode,
 		@RequestParam(value = "enhance", required = false) Boolean enhance,
 		@RequestParam(value = "layout", required = false) Boolean layout,
 		@RequestParam(value = "textLine", required = false) Boolean textLine) throws IOException {
-		DocumentOptions options = options(align, orientation, enhance, layout, textLine);
+		DocumentOptions options = options(align, orientation, barcode, enhance, layout, textLine);
 		DocumentResult result = pipeline.process(file.getBytes(), options);
 		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(result.getOutputPng());
 	}
 
-	private static DocumentOptions options(Boolean align, Boolean orientation, Boolean enhance,
-										   Boolean layout, Boolean textLine) {
+	private static DocumentOptions options(Boolean align, Boolean orientation, Boolean barcode,
+										   Boolean enhance, Boolean layout, Boolean textLine) {
 		return DocumentOptions.builder()
 			.align(align == null || align)
 			.orientation(orientation == null || orientation)
+			.barcode(barcode == null || barcode)
 			.enhance(enhance == null || enhance)
 			.layout(layout == null || layout)
 			.textLine(textLine == null || textLine)
@@ -198,6 +202,17 @@ public class DocumentScenarioController {
 			textBlocks.add(item);
 		}
 		body.put("textBlocks", textBlocks);
+
+		List<Map<String, Object>> barcodes = new ArrayList<>();
+		for (DocumentResult.BarcodeReport code : result.getBarcodes()) {
+			Map<String, Object> item = new LinkedHashMap<>();
+			item.put("text", code.getText());
+			item.put("symbology", code.getSymbology());
+			item.put("boundingBox", code.getBoundingBox());
+			item.put("strategy", code.getStrategy());
+			barcodes.add(item);
+		}
+		body.put("barcodes", barcodes);
 
 		if (includeImage == null || includeImage) {
 			byte[] png = result.getOutputPng();

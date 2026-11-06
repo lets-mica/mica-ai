@@ -15,6 +15,7 @@
  */
 package net.dreamlu.mica.ai.example.config;
 
+import net.dreamlu.mica.ai.barcode.core.BarcodeEngine;
 import net.dreamlu.mica.ai.classify.core.ClassifyEngine;
 import net.dreamlu.mica.ai.docalign.core.DocAlignEngine;
 import net.dreamlu.mica.ai.enhance.core.EnhanceEngine;
@@ -57,14 +58,16 @@ public class ScenarioConfig {
 											 ClassifyModelRegistry classifyRegistry,
 											 ObjectProvider<EnhanceEngine> enhanceEngine,
 											 ObjectProvider<LayoutPipeline> layoutPipeline,
-											 ObjectProvider<TextLineEngine> textLineEngine) {
+											 ObjectProvider<TextLineEngine> textLineEngine,
+											 ObjectProvider<BarcodeEngine> barcodeEngine) {
 		return new DocumentPipeline(
 			docAlignEngine.getIfUnique(),
 			classifyEngine.getIfUnique(),
 			classifyRegistry,
 			enhanceEngine.getIfUnique(),
 			layoutPipeline.getIfUnique(),
-			textLineEngine.getIfUnique());
+			textLineEngine.getIfUnique(),
+			barcodeEngine.getIfUnique());
 	}
 
 	/**

@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Mica Maven release](https://img.shields.io/maven-central/v/net.dreamlu/mica-ai-common.svg?style=flat-square)](https://central.sonatype.com/artifact/net.dreamlu/mica-ai-common/versions)
 
-> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 文档版面分析 + 通用抠图 + 人像分割 + 通用目标检测 + 多目标跟踪 + 文档角点矫正 + 图像超分 + 文本行方向分类 + 通用图像分类 + 通用验证码识别 开箱即用
+> 一行依赖，人脸检测 + 128d Embedding + 活体 + 头像 / 证件卡片提取 + 文件类型识别 + 中国车牌识别 + 文档版面分析 + 通用抠图 + 人像分割 + 通用目标检测 + 多目标跟踪 + 文档角点矫正 + 图像超分 + 文本行方向分类 + 通用图像分类 + 通用验证码识别 + 二维码 / 一维条码解码 开箱即用
 >
 > 给 Java 生态造的"AI 积木"，从此告别在 Java 里调 Python 微服务
 
@@ -61,6 +61,7 @@
 | 🔤 文本行方向分类 | `mica-ai-textline` | PP-LCNet_x1_0_textline_ori（`x0_25` 轻量版可外置替换） | **0° / 180°** + softmax 置信度 + 转正角度 | Apache 2.0 | ✅ |
 | 🔎 通用图像分类 | `mica-ai-classify` | PaddleClas PULC（4 个入库：整图方向 / 清晰度 / 人物存在 / 表格 6 属性） | **Top-K** + 全量概率（单标签 / 多标签） | Apache 2.0 | ✅ |
 | 🔐 通用验证码识别 | `mica-ai-captcha` | ddddocr CRNN + CTC（**8210 类**字符集，模型外置配置） | 验证码文本 + 逐字符置信度 | MIT | ✅ |
+| 📷 二维码 / 一维条码 | `mica-ai-barcode` | zxing `core` 3.5.3（**纯 Java 零模型**，多尺度 + 分块多策略回退） | 码内容 + 码制 + 位置 + 单图多码 | Apache 2.0 | ✅ |
 
 ## 🏛️ 整体架构
 
@@ -71,8 +72,8 @@ mica-ai 的运行时是四层单向依赖：**接入层 → 能力层 → 底座
 %%{init: {'htmlLabels': false, 'flowchart': {'wrappingWidth': 600}}}%%
 graph TD
     APP["你的应用<br/>Spring Boot / 纯 Java"]
-    ST["接入层 · mica-ai-starters × 13<br/>一行 YAML 注入引擎 Bean（可选）"]
-    CORE["能力层 · mica-ai-core × 13 能力模块<br/>face · filetype · plate · layout · matting · humanseg<br/>detect · track · docalign · enhance · textline · classify · captcha"]
+    ST["接入层 · mica-ai-starters × 14<br/>一行 YAML 注入引擎 Bean（可选）"]
+    CORE["能力层 · mica-ai-core × 14 能力模块<br/>face · filetype · plate · layout · matting · humanseg<br/>detect · track · docalign · enhance · textline · classify · captcha · barcode"]
     COMMON["底座层 · mica-ai-common<br/>OnnxModelSession · OrtSessionFactory · MicaAiException"]
     MODELS["模型层 · model-tools/*.onnx（23 个）<br/>随仓库分发，不打包进 jar，路径必须显式配置"]
 
@@ -83,11 +84,14 @@ graph TD
     COMMON -->|"加载 .onnx"| MODELS
 ```
 
+> `mica-ai-track` / `mica-ai-barcode` 是**纯算法零模型**模块：不依赖 `mica-ai-common`、不引入 ONNX Runtime / OpenCV，只靠 JVM 计算（barcode 仅依赖 `com.google.zxing:core`）。
+```
+
 | 层 | 模块 | 职责 | 关键约束 |
 |----|------|------|----------|
-| 接入层 | `mica-ai-starters` × 13 | 把 `mica.ai.*` YAML 配置翻译成引擎 Bean | **可选**；不用 Spring Boot 可直接依赖能力层 |
-| 能力层 | `mica-ai-core` × 13 | 13 个互不依赖的能力模块，可按需引入 | 零 Spring、纯 Java 8+；`face` 一个模块含 6 项能力 |
-| 底座层 | `mica-ai-common` | ONNX 会话工厂、ORT 选项、统一异常 | 被全部能力模块共享 |
+| 接入层 | `mica-ai-starters` × 14 | 把 `mica.ai.*` YAML 配置翻译成引擎 Bean | **可选**；不用 Spring Boot 可直接依赖能力层 |
+| 能力层 | `mica-ai-core` × 14 | 14 个互不依赖的能力模块，可按需引入 | 零 Spring、纯 Java 8+；`face` 一个模块含 6 项能力；`barcode` / `track` 纯算法零模型 |
+| 底座层 | `mica-ai-common` | ONNX 会话工厂、ORT 选项、统一异常 | 被模型类能力模块共享（`track` / `barcode` 不依赖） |
 | 模型层 | `model-tools/<cap>/models/` | 23 个模型文件（12 个能力目录） | 随仓库分发，**不打包进 jar**，路径必须显式配置 |
 
 > 三条硬约束贯穿全栈：**零 Spring**（core 不引任何 `spring-*`）、**零 Python**（全部 ONNX Runtime 内推理，不 spawn 子进程）、**零模型入 jar**（模型走外置路径配置）。
@@ -177,6 +181,11 @@ graph TD
 <dependency>
     <groupId>net.dreamlu</groupId>
     <artifactId>mica-ai-captcha</artifactId>           <!-- 通用验证码识别（模型 + 字符集外置配置） -->
+    <version>${mica-ai.version}</version>
+</dependency>
+<dependency>
+    <groupId>net.dreamlu</groupId>
+    <artifactId>mica-ai-barcode</artifactId>           <!-- 二维码 / 一维条码解码（zxing 纯 Java，零模型） -->
     <version>${mica-ai.version}</version>
 </dependency>
 ```
@@ -276,8 +285,9 @@ public class FaceEnrollService {
 | [mica-ai-textline-spring-boot-starter](mica-ai-starters/mica-ai-textline-spring-boot-starter/README.md) | `mica.ai.textline` | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正；`x1_0` 6.46MB 入库，`x0_25` 轻量版走 `model-path` 外置切换） |
 | [mica-ai-classify-spring-boot-starter](mica-ai-starters/mica-ai-classify-spring-boot-starter/README.md) | `mica.ai.classify` | PaddleClas PULC 通用图像分类（整图方向 / 清晰度 / 人物存在 / 表格 6 属性；`labels-path` 必填，多模型分别声明 Bean） |
 | [mica-ai-captcha-spring-boot-starter](mica-ai-starters/mica-ai-captcha-spring-boot-starter/README.md) | `mica.ai.captcha` | ddddocr 通用验证码识别（CRNN + CTC，8210 类字符集；**模型与字符集外置配置**，`model-path` / `charset-path` 必填） |
+| [mica-ai-barcode-spring-boot-starter](mica-ai-starters/mica-ai-barcode-spring-boot-starter/README.md) | `mica.ai.barcode` | 二维码 / 一维条码解码（zxing 纯 Java 零模型，多尺度 + 分块多策略回退，一图多码；零配置即可用） |
 
-只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用。
+只需在 `application.yml` 配好模型路径，对应 Bean 即可 `@Autowired` 直接用（`track` / `barcode` 零模型、零配置）。
 
 ---
 
@@ -300,7 +310,8 @@ mica-ai/
 │   ├── mica-ai-enhance/            #   ✨ Real-ESRGAN 4 倍图像超分（tile 推理）
 │   ├── mica-ai-textline/           #   🔤 PP-LCNet 文本行方向分类（0° / 180°）
 │   ├── mica-ai-classify/           #   🔎 PaddleClas PULC 通用图像分类
-│   └── mica-ai-captcha/            #   🔐 ddddocr 通用验证码识别（CRNN + CTC）
+│   ├── mica-ai-captcha/            #   🔐 ddddocr 通用验证码识别（CRNN + CTC）
+│   └── mica-ai-barcode/            #   📷 二维码 / 一维条码解码（zxing，纯算法零模型）
 ├── mica-ai-starters/               # Spring Boot 2 Starter：每个能力一个（mica-ai-<cap>-spring-boot-starter），见上方 Starter 表
 ├── mica-ai-example/                # Spring Boot 集成示例
 └── model-tools/                    # 模型资产：12 个能力目录 / 23 个 .onnx，随仓库分发、不打包进 jar（体积为目录合计，单文件 <50MB）
@@ -351,13 +362,14 @@ mica-ai/
 | 🔤 **OCR 前置转正 / 扫描件倒置行纠正** | `mica-ai-textline` 的 `TextLineEngine` — 单行 0° / 180° 判定 + `uprightBytes` 一键转正（配合 `mica-ppocr` 做文本行定位） |
 | 🔎 **图像质量门控 / 整图方向 / 表格结构判定** | `mica-ai-classify` 的 `ClassifyEngine` — 通用 N 类 / 多标签分类底座，PULC 首批 4 模型（整图方向 / 清晰度 / 人物存在 / 表格 6 属性）已入库 |
 | 🔐 **验证码自动识别 / 自动化测试填码** | `mica-ai-captcha` 的 `CaptchaEngine` — 文本 + 逐字符置信度，低置信度可转人工 |
+| 📷 **票据 / 发票 / 面单 / 资产标签扫码** | `mica-ai-barcode` 的 `BarcodeEngine` — 二维码 + 一维码解码，多尺度 + 分块回退，一图多码；零模型零配置 |
 
 > 以上是**单能力**场景。多个能力编排成完整业务链路的组合示例见
 > [`mica-ai-example`](mica-ai-example/README.md)：
 >
 > | 组合场景 | 能力链路 |
 > |---------|---------|
-> | 📄 **智能文档流水线**（手机拍文档 → 可读结构化） | `docalign` 拉正 → `classify` 整图方向 → `layout` 版面/阅读顺序 → `textline` 文本块转正 → `enhance` 超分 |
+> | 📄 **智能文档流水线**（手机拍文档 → 可读结构化） | `docalign` 拉正 → `classify` 整图方向 → `barcode` 条码解码 → `layout` 版面/阅读顺序 → `textline` 文本块转正 → `enhance` 超分 |
 > | 🪪 **证件照一键生成**（随手拍 → 合规证件照） | `face` 检人脸 → `face` 质量评估 → `matting`/`humanseg` 抠像换底 → 按规格裁剪 → `enhance` 超分 |
 
 ---
@@ -374,7 +386,7 @@ mica-ai/
 
 感谢所有为 Mica 系列项目做出贡献的开发者，以及以下开源项目：
 
-- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR) · [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) · [PaddleClas](https://github.com/PaddlePaddle/PaddleClas) · [PaddleX](https://github.com/PaddlePaddle/PaddleX) · [U²-Net](https://github.com/xuebinqin/U-2-Net) · [DocAligner](https://github.com/DocsaidLab/DocAligner) · [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) · [ByteTrack](https://github.com/FoundationVision/ByteTrack) · [ddddocr](https://github.com/sml2h3/ddddocr)
+- [OpenCV Zoo](https://github.com/opencv/opencv_zoo) · [minivision Silent-Face-Anti-Spoofing](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing) · [ONNX Runtime](https://onnxruntime.ai/) · [openpnp/openpnp-vision](https://github.com/openpnp/openpnp-vision) · [Google Magika](https://github.com/google/magika) · [HyperLPR3](https://github.com/szad670401/HyperLPR) · [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) · [PaddleClas](https://github.com/PaddlePaddle/PaddleClas) · [PaddleX](https://github.com/PaddlePaddle/PaddleX) · [U²-Net](https://github.com/xuebinqin/U-2-Net) · [DocAligner](https://github.com/DocsaidLab/DocAligner) · [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) · [ByteTrack](https://github.com/FoundationVision/ByteTrack) · [ddddocr](https://github.com/sml2h3/ddddocr) · [ZXing](https://github.com/zxing/zxing)
 - 已抽离的 Mica 系列仓库：[mica-ppocr](https://gitee.com/dreamlu/mica-ppocr) · [mica-voice](https://gitee.com/dreamlu/mica-voice)
 
 <div align="center">

@@ -2,7 +2,7 @@
 
 > mica-ai 核心能力聚合模块，**零 Spring 依赖**，纯 Java 实现。
 
-本模块为聚合 POM（`packaging=pom`），包含 **13 个能力子模块** + 1 个公共基础模块：
+本模块为聚合 POM（`packaging=pom`），包含 **14 个能力子模块** + 1 个公共基础模块：
 
 | 模块 | 功能 | 模型 |
 |------|------|------|
@@ -19,9 +19,10 @@
 | [mica-ai-textline](mica-ai-textline/README.md) | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正） | PP-LCNet `x1_0` |
 | [mica-ai-classify](mica-ai-classify/README.md) | PaddleClas PULC 通用图像分类（Top-K / 多标签） | PULC × 4 |
 | [mica-ai-captcha](mica-ai-captcha/README.md) | ddddocr 通用验证码识别（CRNN + CTC，8210 类字符集） | ddddocr CRNN |
+| [mica-ai-barcode](mica-ai-barcode/README.md) | 二维码 / 一维条码解码（**纯算法零模型**，多尺度 + 分块多策略回退，一图多码） | 无 |
 | [mica-ai-common](mica-ai-common/README.md) | 跨能力公共基础设施（`MicaAiException` 统一异常、`OnnxModelSession`、`OrtSessionFactory`、`IOUtil`） | 无 |
 
-子模块依赖 [`mica-ai-common`](mica-ai-common/README.md)，共享 `MicaAiException` 统一异常、`OnnxModelSession` 单模型会话持有者、`OrtSessionFactory` ONNX 会话工厂。
+模型类子模块依赖 [`mica-ai-common`](mica-ai-common/README.md)，共享 `MicaAiException` 统一异常、`OnnxModelSession` 单模型会话持有者、`OrtSessionFactory` ONNX 会话工厂；`mica-ai-track` / `mica-ai-barcode` 是**纯算法零模型**模块，不依赖 `mica-ai-common`、不引入 ONNX Runtime。
 
 ---
 
@@ -44,6 +45,9 @@ try (DetectEngine e = DetectEngine.create(dc)) {
 try (ByteTracker t = ByteTracker.create(tc)) {
     t.update(detections);
 }
+// 零模型、无资源可释放：不需要 try-with-resources
+BarcodeEngine b = BarcodeEngine.defaults();
+b.decodePath(path);
 ```
 
 各能力的 Spring Boot 接入见 [`mica-ai-starters`](../mica-ai-starters/README.md)。
@@ -53,4 +57,4 @@ try (ByteTracker t = ByteTracker.create(tc)) {
 ## 两条硬约束
 
 1. **零 Spring 依赖** —— core 模块不引任何 `spring-*`，可在非 Spring 环境直接使用
-2. **模型路径必填** —— 模型随仓库分发但**不打包进 jar**，各能力的 `modelPath` 必填；未配置时启动即 fail-fast 并提示指向 `model-tools/<cap>/models/` 下的文件。用户显式配置的路径仍支持 `classpath:` 前缀
+2. **模型路径必填** —— 模型随仓库分发但**不打包进 jar**，各能力的 `modelPath` 必填；未配置时启动即 fail-fast 并提示指向 `model-tools/<cap>/models/` 下的文件。用户显式配置的路径仍支持 `classpath:` 前缀。`mica-ai-track` / `mica-ai-barcode` 无模型，不受此约束

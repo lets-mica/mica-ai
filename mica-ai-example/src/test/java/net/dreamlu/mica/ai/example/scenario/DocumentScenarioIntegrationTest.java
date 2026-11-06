@@ -15,6 +15,12 @@
  */
 package net.dreamlu.mica.ai.example.scenario;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import net.dreamlu.mica.ai.barcode.core.BarcodeEngine;
 import net.dreamlu.mica.ai.classify.config.ClassifyConfig;
 import net.dreamlu.mica.ai.classify.core.ClassifyEngine;
 import net.dreamlu.mica.ai.classify.model.ClassifyResult;
@@ -33,10 +39,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,6 +57,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * 智能文档流水线集成测试：加载真实 ONNX 模型跑完整链路。
  *
  * <p>模型缺失时整类跳过，不阻塞新克隆仓库的构建。
+ * 条码阶段本身零模型，但它挂在同一条流水线上，因此跟随本类一起跳过。
  */
 class DocumentScenarioIntegrationTest {
 
@@ -105,7 +116,8 @@ class DocumentScenarioIntegrationTest {
 		properties.setModels(models);
 
 		pipeline = new DocumentPipeline(docAlignEngine, orientationEngine,
-			new ClassifyModelRegistry(properties), enhanceEngine, null, textLineEngine);
+			new ClassifyModelRegistry(properties), enhanceEngine, null, textLineEngine,
+			BarcodeEngine.defaults());
 	}
 
 	@Test
@@ -113,7 +125,8 @@ class DocumentScenarioIntegrationTest {
 	void orientationStageShouldStraightenRotatedImage() {
 		assumeReady();
 		DocumentOptions options = DocumentOptions.builder()
-			.align(false).orientation(true).enhance(false).layout(false).textLine(false)
+			.align(false).orientation(true).barcode(false)
+			.enhance(false).layout(false).textLine(false)
 			.build();
 
 		// rot90.jpg = 正立文档顺时针转 90°
@@ -140,7 +153,8 @@ class DocumentScenarioIntegrationTest {
 	void orientationStageShouldKeepUprightDocument() {
 		assumeReady();
 		DocumentOptions options = DocumentOptions.builder()
-			.align(false).orientation(true).enhance(false).layout(false).textLine(false)
+			.align(false).orientation(true).barcode(false)
+			.enhance(false).layout(false).textLine(false)
 			.build();
 		DocumentResult result = pipeline.process(
 			loadFixture("text-orientation/rot0.jpg"), options);
@@ -153,7 +167,8 @@ class DocumentScenarioIntegrationTest {
 	void alignStageShouldRectifySkewedDocument() {
 		assumeReady();
 		DocumentOptions options = DocumentOptions.builder()
-			.align(true).orientation(false).enhance(false).layout(false).textLine(false)
+			.align(true).orientation(false).barcode(false)
+			.enhance(false).layout(false).textLine(false)
 			.build();
 		DocumentResult result = pipeline.process(loadFixture("doc_warp.png"), options);
 
@@ -171,7 +186,8 @@ class DocumentScenarioIntegrationTest {
 	void clarityStageShouldNotUpscaleSharpDocument() {
 		assumeReady();
 		DocumentOptions options = DocumentOptions.builder()
-			.align(false).orientation(false).enhance(true).layout(false).textLine(false)
+			.align(false).orientation(false).barcode(false)
+			.enhance(true).layout(false).textLine(false)
 			.build();
 		DocumentResult result = pipeline.process(
 			loadFixture("text-orientation/rot0.jpg"), options);
@@ -181,27 +197,73 @@ class DocumentScenarioIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("阶段报告：五个阶段都要有记录，layout 未启用时降级说明")
+	@DisplayName("条码阶段：拉正之后的二维码应被解出并回填报告")
+	void barcodeStageShouldDecodeQr() throws Exception {
+		assumeReady();
+		DocumentOptions options = DocumentOptions.builder()
+			.align(false).orientation(false).barcode(true)
+			.enhance(false).layout(false).textLine(false)
+			.build();
+
+		DocumentResult result = pipeline.process(qrPng("INV-2026-1105-0001"), options);
+
+		assertThat(result.getBarcodes()).hasSize(1);
+		assertThat(result.getBarcodes().get(0).getText()).isEqualTo("INV-2026-1105-0001");
+		assertThat(result.getBarcodes().get(0).getSymbology()).isEqualTo("QR_CODE");
+		DocumentResult.StageReport barcodeStage = result.getStages().stream()
+			.filter(stage -> "barcode".equals(stage.getName()))
+			.findFirst().orElse(null);
+		assertThat(barcodeStage).isNotNull();
+		assertThat(barcodeStage.isApplied()).isTrue();
+	}
+
+	@Test
+	@DisplayName("阶段报告：六个阶段都要有记录，layout 未启用时降级说明")
 	void stagesShouldAlwaysBeReported() {
 		assumeReady();
 		DocumentResult result = pipeline.process(
 			loadFixture("doc_warp.png"),
 			DocumentOptions.builder().build());
 
-		assertThat(result.getStages()).hasSize(5);
-		assertThat(result.getStages().get(0).getName()).isEqualTo("align");
-		assertThat(result.getStages().get(1).getName()).isEqualTo("orientation");
-		assertThat(result.getStages().get(2).getName()).isEqualTo("layout");
-		assertThat(result.getStages().get(3).getName()).isEqualTo("textLine");
-		assertThat(result.getStages().get(4).getName()).isEqualTo("clarity");
+		assertThat(result.getStages()).hasSize(6);
+		assertThat(result.getStages()).extracting(DocumentResult.StageReport::getName)
+			.containsExactly("align", "orientation", "barcode", "layout", "textLine", "clarity");
 		// layout 模型未装配（125MB 不入库），阶段应降级而不是抛异常
-		assertThat(result.getStages().get(2).isApplied()).isFalse();
-		assertThat(result.getStages().get(2).getDetail()).contains("layout");
+		assertThat(result.getStages().get(3).isApplied()).isFalse();
+		assertThat(result.getStages().get(3).getDetail()).contains("layout");
 		assertThat(result.getBlocks()).isEmpty();
 	}
 
 	private static void assumeReady() {
 		assumeTrue(pipeline != null, "相关模型缺失，跳过智能文档流水线集成测试");
+	}
+
+	/**
+	 * 生成一张干净的二维码 PNG，用于验证条码阶段确实挂在流水线上。
+	 */
+	private static byte[] qrPng(String text) throws Exception {
+		Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+		hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+		hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+		hints.put(EncodeHintType.MARGIN, 4);
+		BitMatrix matrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, hints);
+		int scale = 4;
+		int margin = 8;
+		int size = matrix.getWidth() * scale + 2 * margin;
+		BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				int mx = (x - margin) / scale;
+				int my = (y - margin) / scale;
+				boolean black = mx >= 0 && my >= 0
+					&& mx < matrix.getWidth() && my < matrix.getHeight()
+					&& matrix.get(mx, my);
+				image.setRGB(x, y, black ? 0x000000 : 0xFFFFFF);
+			}
+		}
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		assertThat(ImageIO.write(image, "png", out)).isTrue();
+		return out.toByteArray();
 	}
 
 	/**

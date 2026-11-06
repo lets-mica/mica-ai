@@ -7,12 +7,12 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪**（纯算法零模型）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **PaddleClas PULC 通用图像分类**（`text_image_orientation` / `clarity_assessment` / `person_exists` / `table_attribute` 入库，Top-K + 多标签可插拔）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪**（纯算法零模型）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **PaddleClas PULC 通用图像分类**（`text_image_orientation` / `clarity_assessment` / `person_exists` / `table_attribute` 入库，Top-K + 多标签可插拔）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置）+ **二维码 / 一维条码解码**（zxing `core`，纯算法零模型，多尺度 + 分块多策略回退），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
-音频（TTS / ASR / 声纹）和通用文档 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含（**验证码识别**是专用场景，与通用文档 OCR 不同，保留在本仓库）。
+音频（TTS / ASR / 声纹）和通用文档 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含（**验证码识别**是专用场景，与通用文档 OCR 不同，保留在本仓库；**条码解码**是零模型的纯 Java 算法，不涉及模型许可）。
 
 - 主语言：Java 8+
-- 构建：Maven（`pom.xml` 顶层 `${revision}=1.0.0`）
+- 构建：Maven（`pom.xml` 顶层 `${revision}=1.0.3-SNAPSHOT`）
 - 推理运行时：[ONNX Runtime 1.18.0](https://onnxruntime.ai/)（CPU/CUDA）
 - OpenCV：[openpnp/opencv 4.9.0](https://github.com/openpnp/openpnp-vision)（封装原生库，跨平台）
 - Spring Boot：2.7.x
@@ -39,7 +39,8 @@ mica-ai/
 │   ├── mica-ai-track/              # 🧭 ByteTrack（多目标跟踪，纯算法零模型，MIT）
 │   ├── mica-ai-docalign/           # 📸 DocAligner（文档角点检测 + 透视矫正，Apache-2.0）
 │   ├── mica-ai-enhance/            # ✨ Real-ESRGAN（4 倍图像超分 + tile 推理，BSD-3-Clause）
-│   └── mica-ai-captcha/            # 🔐 ddddocr（通用验证码识别，CRNN + CTC，MIT）
+│   ├── mica-ai-captcha/            # 🔐 ddddocr（通用验证码识别，CRNN + CTC，MIT）
+│   └── mica-ai-barcode/            # 📷 zxing core（二维码 / 一维条码解码，纯算法零模型，Apache-2.0）
 ├── mica-ai-starters/               # Spring Boot Starter（自动注入 Bean）
 │   ├── mica-ai-face-spring-boot-starter/
 │   ├── mica-ai-filetype-spring-boot-starter/
@@ -53,7 +54,8 @@ mica-ai/
 │   ├── mica-ai-track-spring-boot-starter/
 │   ├── mica-ai-docalign-spring-boot-starter/
 │   ├── mica-ai-enhance-spring-boot-starter/
-│   └── mica-ai-captcha-spring-boot-starter/
+│   ├── mica-ai-captcha-spring-boot-starter/
+│   └── mica-ai-barcode-spring-boot-starter/
 ├── mica-ai-example/                # Spring Boot 集成示例
 ├── docs/                           # 落地跟踪文档（模块稳定后并入 README）
 └── model-tools/                    # 模型资产（随仓库分发，单文件上限见 §6.2）
@@ -71,9 +73,11 @@ mica-ai/
     └── captcha/models/             #   ddddocr CRNN + charset（MIT，12.98MB；**不打包进 jar**，走外置配置）
 ```
 
+> `mica-ai-track` / `mica-ai-barcode` 是**纯算法零模型**模块：`model-tools/` 下没有对应目录，也不依赖 `mica-ai-common` / ONNX Runtime / OpenCV。
+
 > **重要**：
 > - `mica-ai-core/mica-ai-<cap>/README.md` 是各能力"模型规格 / 核心组件 / I/O 格式"的事实来源
->   （`face` / `filetype` / `plate` / `layout` / `matting` / `humanseg` / `textline` / `classify` / `detect` / `track` / `docalign` / `enhance` / `captcha` 各一份）
+>   （`face` / `filetype` / `plate` / `layout` / `matting` / `humanseg` / `textline` / `classify` / `detect` / `track` / `docalign` / `enhance` / `captcha` / `barcode` 各一份）
 >
 > Agent 在对应能力内做修改前**先读**对应 README。
 
@@ -118,6 +122,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
   - 源码风格保持 JDK 8 兼容：`new ArrayList<>()`、`@Override`、普通 for 循环，避免 stream 过度抽象。
 - **构建器模式**：所有引擎配置走 `FaceConfig.builder()...build()` 风格的 builder；Lombok `@Builder(toBuilder=true)` 仅用于 immutable 参数对象（`AvatarOptions` / `CardOptions`），不用于可变 Java Bean。
 - **资源管理**：引擎主类实现 `AutoCloseable`，**统一 try-with-resources**，禁止 finalize。
+  - **例外**：`mica-ai-barcode` 的 `BarcodeEngine` 不持有任何可释放资源（无 ONNX session / `Mat` / 文件句柄），**刻意不实现 `AutoCloseable`**，Starter Bean 也不设 `destroyMethod`——不要为了"写法统一"给它套一个空 `close()`
 - **日志**：仅用 SLF4J（`@Slf4j`），禁 `System.out.println`（测试 main 例外）。
 - **空值语义**：使用 `@Nullable` 显式标注可空参数；Java 8 无 `org.jspecify`，按需引入 `javax.annotation.Nullable` 或 `org.springframework.lang.Nullable`。
 - **异常**：业务异常继承 `MicaAiException`（在 `mica-ai-common`），禁止直接抛 `RuntimeException`。
@@ -170,6 +175,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
   | `mica-ai-face` 表情识别 | facial_expression_recognition_mobilefacenet（OpenCV Zoo，4.57MB，RAF-DB 7 类） | Apache 2.0 | ✅ |
   | `mica-ai-detect` 目标检测 | NanoDet-Plus 3.62MB / YOLOX-s 34.2MB（OpenCV Zoo `object_detection_*`，COCO 80 类） | Apache 2.0 | ✅ |
   | `mica-ai-track` 多目标跟踪 | 无模型（ByteTrack 纯算法实现，参考 MIT 许可的上游实现） | MIT | ✅ |
+  | `mica-ai-barcode` 条码解码 | 无模型（纯 Java，仅依赖 `com.google.zxing:core:3.5.3` 解码库；**3.6.0 起要求 Java 11+，锁 3.5.3 是 JDK 8 线的最后版本**） | Apache 2.0 | ✅ |
   | `mica-ai-humanseg` 人像分割 | PP-HumanSeg V2-Lite（OpenCV Zoo `human_segmentation_pphumanseg_2023mar`，5.88MB，192×192 输入） | Apache 2.0 | ✅ |
   | `mica-ai-docalign` 文档角点 | DocAligner `lcnet100_h_e_bifpn_256_fp32`（入库 4.55MB）/ `lcnet050` / `fastvit_t8` / `fastvit_sa24`（外置，83MB 不入库）（DocsaidLab/DocAligner release 1.1.1），四者 I/O 契约一致 | Apache 2.0 | ✅ |
   | `mica-ai-enhance` 图像超分 | Real-ESRGAN `realesr-general-x4v3`（入库 2.33MB，microapp.io 转换的官方权重）/ `realesr-general-wdn-x4v3` / `RealESRGAN_x4plus`（外置，64MB 不入库） | BSD-3-Clause | ✅ |
@@ -217,6 +223,8 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 | 新增分类/方向能力（文本行方向这类 N 类分类） | `mica-ai-textline/detection/TextLineDetector.java` | **先拿到官方 `inference.yml` 确认 `label_list` 顺序与预处理契约，不要凭 ONNX 输出维度猜类别语义**（写反 = 正的判成倒的）→ 校验「配置的输入宽高 == 模型形状」并快速失败 → 复核 `Imgproc.resize` 的 `Size` 是 **(宽, 高)** → 集成测试断言类别语义 + 真实数据置信度区间 |
 | **模型 + 配套资源一起外置**（如 `mica-ai-captcha` 的模型 + 字符集） | 该能力 README 的「模型规格」一节 | 模型与**强耦合的配套资源**（字符集 / 词表 / 类别映射）**必须成对配置**：`model-path` 与 `charset-path` 都是必填，缺任一项启动即 fail-fast → 类别数与资源条目数不一致时**在首次推理时直接抛异常**（不是打 warning 后输出乱码）→ 资源文件**刻意不去重**（去重会让索引整体错位）→ **不提供 classpath 兜底**（模型不打包进 jar，就不要留一个指向不存在资源的默认路径） |
 | **模型路径的 classpath 兜底** | 该能力 README 的「配置项」一节 | 模型随仓库分发但**不打包进 jar** ⇒ **一律不提供内置 classpath 兜底**：`model-path` 必填，为空时 `validate()` 直接抛 `MicaAiException` 并在消息里指向 `model-tools/<cap>/models/` 下的文件 → 用户**显式配置**的路径仍支持 `classpath:` 前缀（统一由 `OnnxModelSession` 解析） → ⚠️ 写死一个指向不存在资源的默认路径 = 死路径：报错会把用户引向「往 classpath 放模型」的错误方向，而正确做法是指向仓库里的文件 |
+| **新增零模型纯算法能力**（如 `mica-ai-track` / `mica-ai-barcode`） | 已有同类模块（`track` 的 `ByteTracker` / `barcode` 的 `BarcodeEngine`）的 pom 与包结构 | **不要为了「统一」引 `mica-ai-common`**：它会把 ONNX Runtime 拖进一个不需要推理的模块。只依赖算法本身所需的库（barcode 仅 `com.google.zxing:core`）→ 输入输出用自带的轻量值对象，**不耦合 OpenCV `Mat`**（提供 `byte[]` / 灰度像素 / 宽高 的最小入口，让调用方自己决定怎么取像素）→ 三方库版本按 **JDK 8 线**锁死并在 README 写明升级门槛（zxing 3.6.0 起要 Java 11+）→ 无模型即无 `model-tools/` 目录 |
+| **新增分组后处理 / 结构化属性输出**（如「颜色 + 车型 + 朝向」各自独立判定） | 官方后处理源码（`*_rec.py` / `inference.yml`）而不是 ONNX 输出维度 | 先判断是否**语义上根本不是分类器**：`ClassifyConfig` 只有 `multiLabel` + 单一阈值，表达不了分组 argmax + 分组阈值；这种情况**不要硬塞进 `mica-ai-classify`**，要么单独立项，要么先做探针拿到 `inference.yml` 再定配置面。同时确认官方 inference model 输出的是 **裸 logits 还是概率**（`mica-ai-classify` 的 `outputIsProbability` 默认 `true`，喂 logits 不报错但结果全错） |
 | **新增需要 OpenCV 原生库的集成测试** | 该能力集成测试的静态块 | **用 `nu.pattern.OpenCV.loadLocally()`，不要用 `loadShared()`**。`forkCount=0` 下全仓测试共用一个 JVM，但每个模块各有一个 ClassLoader；`loadShared()` 在 **Java 8** 会把解压出的原生库目录写进**全局** `ClassLoader.usr_paths`，于是后一个模块通过 `System.loadLibrary` 解析到**同一个** .so 文件 → JVM 抛 `UnsatisfiedLinkError: Native Library ... already loaded in another classloader`（Java 8 的 CI 必挂，Java 12+ 因 `loadShared()` 内部回退到 `loadLocally()` 而侥幸不挂）。`loadLocally()` 每次解压到独立临时目录，天然规避 |
 
 ---
@@ -224,9 +232,9 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
 ## 8. 验证清单（改完跑一遍）
 
 - [ ] `mvn -DskipTests install` 通过
-- [ ] `mvn test` 全绿（13 个 core 模块 + 13 个 starter + example；外置模型相关的用例按 `Assumptions` 跳过）
+- [ ] `mvn test` 全绿（14 个 core 模块 + 14 个 starter + example；外置模型相关的用例按 `Assumptions` 跳过）
 - [ ] 替换了模型：对应能力模块的**集成测试**通过（加载真 ONNX 跑一遍完整推理）
-- [ ] 新增能力：模块 README + Starter + `model-tools/<cap>/README.md` 三处齐全，且能力清单（根 README / 本文件 §1 §2 §6.1）同步
+- [ ] 新增能力：模块 README + Starter 齐全，且能力清单（根 README / 本文件 §1 §2 §6.1）同步；模型类能力还须有 `model-tools/<cap>/README.md`（`track` / `barcode` 零模型，无此项）
 - [ ] 改了 Starter：在 `application.yml` 加示例，且至少 1 个 `@Autowired` 使用点
 - [ ] 改了 README：标题层级、代码块语言、链接自检
 - [ ] 新增/替换模型：**§6.1 商用自检清单全部勾选**

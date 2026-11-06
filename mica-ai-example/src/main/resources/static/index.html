@@ -261,7 +261,7 @@ select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:
       <div class="grid" id="capsDetect"></div>
     </div>
     <div class="group">
-      <h3 class="group-title">🔍 识别与校验 <small>车牌 · 文件类型 · 验证码</small></h3>
+      <h3 class="group-title">🔍 识别与校验 <small>车牌 · 文件类型 · 验证码 · 二维码 / 条码</small></h3>
       <div class="grid" id="capsMisc"></div>
     </div>
   </section>
@@ -369,12 +369,16 @@ const MISC_CAPS = [
   {t: '文件类型识别', p: '/filetype/detect', d: 'Google Magika 214 类', o: 'json',
     f: [{k: 'file', l: '任意文件', y: 'file', any: true}]},
   {t: '验证码识别', p: '/captcha/recognize', d: 'ddddocr CRNN + CTC', o: 'json',
-    f: [{k: 'file', l: '验证码图片', y: 'file'}]}
+    f: [{k: 'file', l: '验证码图片', y: 'file'}]},
+  {t: '二维码 / 条码解码', p: '/barcode/decode', d: 'ZXing · 多尺度 + 分块，一图多码', o: 'json',
+    f: [{k: 'file', l: '票据 / 面单 / 标签图片', y: 'file'}]},
+  {t: '只解第一个码', p: '/barcode/decode-first', d: '命中即短路，单码更快', o: 'json',
+    f: [{k: 'file', l: '包含条码的图片', y: 'file'}]}
 ];
 
 /* 组合场景：多模型能力编排成完整业务链路，返回 JSON 报告 + 成片 base64 */
 const SCENARIO_CAPS = [
-  {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 版面 → 文本块转正 → 超分', o: 'scenario',
+  {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分', o: 'scenario',
     f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
   {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
     f: [{k: 'file', l: '人像照片', y: 'file'},

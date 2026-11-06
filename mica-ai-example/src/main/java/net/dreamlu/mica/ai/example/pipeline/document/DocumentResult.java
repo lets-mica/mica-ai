@@ -59,13 +59,17 @@ public class DocumentResult {
 	/** 文本块方向判定结果；未执行时为空列表 */
 	private final List<TextBlockReport> textBlocks;
 
+	/** 检出的条码 / 二维码；未执行或未检出时为空列表 */
+	private final List<BarcodeReport> barcodes;
+
 	public DocumentResult(byte[] outputPng, int width, int height,
 						  List<StageReport> stages,
 						  AlignReport align,
 						  OrientationReport orientation,
 						  ClarityReport clarity,
 						  List<LayoutBlockReport> blocks,
-						  List<TextBlockReport> textBlocks) {
+						  List<TextBlockReport> textBlocks,
+						  List<BarcodeReport> barcodes) {
 		this.outputPng = outputPng;
 		this.width = width;
 		this.height = height;
@@ -75,6 +79,7 @@ public class DocumentResult {
 		this.clarity = clarity;
 		this.blocks = blocks == null ? Collections.<LayoutBlockReport>emptyList() : blocks;
 		this.textBlocks = textBlocks == null ? Collections.<TextBlockReport>emptyList() : textBlocks;
+		this.barcodes = barcodes == null ? Collections.<BarcodeReport>emptyList() : barcodes;
 	}
 
 	/**
@@ -84,7 +89,7 @@ public class DocumentResult {
 	@AllArgsConstructor
 	public static class StageReport {
 
-		/** 阶段标识：align / orientation / clarity / layout / textLine */
+		/** 阶段标识：align / orientation / barcode / layout / textLine / clarity */
 		private final String name;
 
 		/** 该阶段是否真正产生了处理动作 */
@@ -215,6 +220,26 @@ public class DocumentResult {
 
 		/** 是否被判定为倒置并已转正 */
 		private final boolean flipped;
+	}
+
+	/**
+	 * 单个条码 / 二维码的检出结果。
+	 */
+	@Getter
+	@AllArgsConstructor
+	public static class BarcodeReport {
+
+		/** 解码文本 */
+		private final String text;
+
+		/** 制式，如 QR_CODE / CODE_128 */
+		private final String symbology;
+
+		/** 近似包围盒 [x1, y1, x2, y2]，可能为 null */
+		private final int[] boundingBox;
+
+		/** 命中的解码策略，如 DIRECT / UPSCALE_x2 / TILE_0_1 */
+		private final String strategy;
 	}
 
 }

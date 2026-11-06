@@ -30,5 +30,6 @@
         <module>mica-ai-textline</module>
         <module>mica-ai-classify</module>
         <module>mica-ai-captcha</module>
+        <module>mica-ai-barcode</module>
     </modules>
 </project>
