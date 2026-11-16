@@ -7,7 +7,7 @@
 
 ## 1. 项目一句话
 
-**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪**（纯算法零模型）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **PaddleClas PULC 通用图像分类**（`text_image_orientation` / `clarity_assessment` / `person_exists` / `table_attribute` 入库，Top-K + 多标签可插拔）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置）+ **二维码 / 一维条码解码**（zxing `core`，纯算法零模型，多尺度 + 分块多策略回退），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
+**mica-ai**（精简版）提供 **OpenCV Zoo 人脸识别**（YuNet 检测 + SFace 128d 向量 + MiniFASNetV2 活体）+ 头像/证件卡片提取 + **Google Magika 文件类型识别**（standard_v3_3 214 类）+ **HyperLPR3 中国车牌识别** + **PP-DocLayoutV3 文档版面分析**（含阅读顺序）+ **U²-Net 族通用抠图**（`u2netp` 入库，`u2net` / `u2net_human_seg` 可外置切换）+ **PP-HumanSeg V2-Lite 人像分割**（192×192 入库）+ **通用目标检测**（NanoDet-Plus 416 / YOLOX-s 640，COCO 80 类）+ **ByteTrack 多目标跟踪 + 逐帧行为事件**（纯算法零模型；轨迹点 / 真实时间戳 / 速度方向，越线 · ROI 进出 · 滞留 · 折返规则，`TrackEventEngine` 门面）+ **DocAligner 文档角点检测 + 透视矫正**（`lcnet100` 入库，fastvit 同族可外置）+ **Real-ESRGAN 图像超分**（`realesr-general-x4v3` 2.33MB 入库，4 倍 + tile 推理）+ **PP-LCNet 文本行方向分类**（0° / 180°，`x1_0` 入库，`x0_25` 可外置切换）+ **PaddleClas PULC 通用图像分类**（`text_image_orientation` / `clarity_assessment` / `person_exists` / `table_attribute` 入库，Top-K + 多标签可插拔）+ **ddddocr 通用验证码识别**（CRNN + CTC，模型与字符集外置配置）+ **二维码 / 一维条码解码**（zxing `core`，纯算法零模型，多尺度 + 分块多策略回退），封装成 **零 Python、零 PyTorch、纯 ONNX Runtime** 的 Java 8+ SDK，并提供对应的 Spring Boot Starter。
 
 音频（TTS / ASR / 声纹）和通用文档 OCR / 意图识别能力已抽离到独立的 mica-* 项目，本仓库不再包含（**验证码识别**是专用场景，与通用文档 OCR 不同，保留在本仓库；**条码解码**是零模型的纯 Java 算法，不涉及模型许可）。
 
@@ -36,7 +36,7 @@ mica-ai/
 │   ├── mica-ai-textline/           # 🔤 PP-LCNet（文本行 0°/180° 方向分类 + 转正，Apache-2.0）
 │   ├── mica-ai-classify/           # 🔎 PaddleClas PULC（通用图像分类 + Top-K / 多标签，Apache-2.0）
 │   ├── mica-ai-detect/             # 🎯 NanoDet-Plus / YOLOX-s（通用目标检测，COCO 80 类，Apache-2.0）
-│   ├── mica-ai-track/              # 🧭 ByteTrack（多目标跟踪，纯算法零模型，MIT）
+│   ├── mica-ai-track/              # 🧭 ByteTrack 多目标跟踪 + 逐帧行为事件（轨迹点/时间戳/越线/ROI/滞留/折返，纯算法零模型，MIT）
 │   ├── mica-ai-docalign/           # 📸 DocAligner（文档角点检测 + 透视矫正，Apache-2.0）
 │   ├── mica-ai-enhance/            # ✨ Real-ESRGAN（4 倍图像超分 + tile 推理，BSD-3-Clause）
 │   ├── mica-ai-captcha/            # 🔐 ddddocr（通用验证码识别，CRNN + CTC，MIT）
@@ -174,7 +174,7 @@ mvn -pl mica-ai-core/mica-ai-layout -am test    # 以 layout 为例，其它能�
   | `mica-ai-face` 图像质量 | EDFFIQA tiny（OpenCV Zoo `face_image_quality_assessment_ediffiqa`，4.12MB） | **CC-BY-4.0**（**项目 owner 显式批准例外**，分发需保留署名与许可声明） | ✅ |
   | `mica-ai-face` 表情识别 | facial_expression_recognition_mobilefacenet（OpenCV Zoo，4.57MB，RAF-DB 7 类） | Apache 2.0 | ✅ |
   | `mica-ai-detect` 目标检测 | NanoDet-Plus 3.62MB / YOLOX-s 34.2MB（OpenCV Zoo `object_detection_*`，COCO 80 类） | Apache 2.0 | ✅ |
-  | `mica-ai-track` 多目标跟踪 | 无模型（ByteTrack 纯算法实现，参考 MIT 许可的上游实现） | MIT | ✅ |
+  | `mica-ai-track` 多目标跟踪 + 行为事件 | 无模型（ByteTrack 纯算法实现，参考 MIT 许可的上游实现；越线 / ROI / 滞留 / 折返规则为本仓库自研纯几何逻辑，同样不引入权重） | MIT | ✅ |
   | `mica-ai-barcode` 条码解码 | 无模型（纯 Java，仅依赖 `com.google.zxing:core:3.5.3` 解码库；**3.6.0 起要求 Java 11+，锁 3.5.3 是 JDK 8 线的最后版本**） | Apache 2.0 | ✅ |
   | `mica-ai-humanseg` 人像分割 | PP-HumanSeg V2-Lite（OpenCV Zoo `human_segmentation_pphumanseg_2023mar`，5.88MB，192×192 输入） | Apache 2.0 | ✅ |
   | `mica-ai-docalign` 文档角点 | DocAligner `lcnet100_h_e_bifpn_256_fp32`（入库 4.55MB）/ `lcnet050` / `fastvit_t8` / `fastvit_sa24`（外置，83MB 不入库）（DocsaidLab/DocAligner release 1.1.1），四者 I/O 契约一致 | Apache 2.0 | ✅ |

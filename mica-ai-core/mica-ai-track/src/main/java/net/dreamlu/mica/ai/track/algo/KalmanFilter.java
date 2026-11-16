@@ -137,6 +137,23 @@ public class KalmanFilter {
 		}
 	}
 
+	/**
+	 * Kalman 状态里的中心点 x 速度，单位为「像素 / 帧」。
+	 *
+	 * <p>需要「像素 / 秒」时用 {@code Track.velocityXPerSecond()} —— 它按真实时间戳差分，
+	 * 掉帧场景下比按帧速度准确。
+	 */
+	public double velocityX() {
+		return x[4];
+	}
+
+	/**
+	 * Kalman 状态里的中心点 y 速度，单位为「像素 / 帧」。
+	 */
+	public double velocityY() {
+		return x[5];
+	}
+
 	public double predictedCx() {
 		return x[0];
 	}

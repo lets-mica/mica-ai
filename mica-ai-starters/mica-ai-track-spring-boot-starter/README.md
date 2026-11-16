@@ -2,7 +2,7 @@
 
 > [ByteTrack](https://github.com/FoundationVision/ByteTrack) 多目标跟踪 Spring Boot Starter，基于 [mica-ai-track](../../mica-ai-core/mica-ai-track/README.md) 核心模块。**MIT 可商用**。
 >
-> **纯算法、零模型**：一行 YAML 注入 `ByteTracker` Bean，把逐帧检测框交给它即得稳定 track id 与轨迹年龄。
+> **纯算法、零模型**：一行 YAML 注入 `ByteTracker` Bean，把逐帧检测框交给它即得稳定 track id、轨迹点与跨帧速度。行为事件（越线 / ROI / 滞留 / 折返）由业务侧用 `TrackEventEngine` 自行按流创建，见 §3.1。
 
 ---
 
@@ -34,6 +34,7 @@ mica:
       match-low-thresh: 0.5        # 第 2 轮（低分 det ↔ 未匹配轨迹）IoU 阈值
       track-buffered-thresh: 30    # 连续多少帧未命中就丢弃该轨迹
       confirm-age: 3               # 新轨迹连续命中多少帧才算成熟
+      history-size: 32             # 每条轨迹保留的采样点上限
 ```
 
 | 配置 | 默认值 | 说明 |
@@ -41,12 +42,13 @@ mica:
 | `enabled` | `true` | 是否启用自动装配；`false` 时不装配 `ByteTracker` Bean |
 | `high-threshold` | `0.6` | 高分框 / 低分框分界线 |
 | `low-threshold` | `0.1` | 低分框丢弃线；低于此值的框两轮匹配都进不去 |
-| `match-thresh` | `0.8` | 第 1 轮（高分 det ↔ 轨迹）IoU 阈值 |
+| `match-thresh` | `0.8` | 第 1 轮（高分 det ↔ 轨迹）IoU 阈值；视频流目标位移大时可适当调低 |
 | `match-low-thresh` | `0.5` | 第 2 轮（低分 det ↔ 第 1 轮未匹配轨迹）IoU 阈值 |
 | `track-buffered-thresh` | `30` | 连续多少帧未命中就丢弃该轨迹 |
 | `confirm-age` | `3` | 新轨迹连续命中多少帧才算成熟（成熟轨迹优先返回） |
+| `history-size` | `32` | 轨迹点历史上限，**最小 3**（方向折返判定需要 3 个点） |
 
-> `high-threshold` 必须大于 `low-threshold`；`match-thresh` / `match-low-thresh` 取值 `(0,1]`；`track-buffered-thresh` / `confirm-age` 必须为正整数。非法时启动即抛 `MicaAiException`。
+> `high-threshold` 必须大于 `low-threshold`；`match-thresh` / `match-low-thresh` 取值 `(0,1]`；`track-buffered-thresh` / `confirm-age` 必须为正整数；`history-size >= 3`。本模块刻意零依赖，非法时启动即抛 **`IllegalArgumentException`**（不是 `MicaAiException`）。
 
 ---
 
@@ -67,7 +69,8 @@ public class TrackController {
         List<BBox> boxes = result.getBoxes().stream()
             .map(b -> new BBox(b.getX1(), b.getY1(), b.getX2(), b.getY2(), b.getScore()))
             .collect(Collectors.toList());
-        return byteTracker.update(boxes);
+        // 视频流请用带时间戳的重载，轨迹点才有真实采集时间
+        return byteTracker.update(boxes, System.currentTimeMillis());
     }
 }
 ```
@@ -76,10 +79,33 @@ public class TrackController {
 
 | 方法 | 返回 | 说明 |
 |------|------|------|
-| `update(List<BBox>)` | `List<Track>` | 喂入本帧检测框，返回当前轨迹（成熟轨迹优先） |
+| `update(List<BBox>)` | `List<Track>` | 喂入本帧检测框（无时间戳兼容重载） |
+| `update(List<BBox>, long timestampMs)` | `List<Track>` | 带采集时间戳，轨迹点 / 速度 / 滞留判定可用 |
 | `trackCount()` | `int` | 当前轨迹数 |
+| `getFrameIndex()` | `int` | 当前帧序号（从 1 开始，`reset()` 归零） |
 | `reset()` | `void` | 清空全部轨迹与 id 计数（换视频流 / 场景切换时用） |
 | `getConfig()` | `ByteTrackConfig` | 当前配置 |
+
+### 3.1 逐帧事件管线为何不提供 Bean
+
+`TrackEventEngine` 与四条规则（`LineCrossingRule` / `RoiCounterRule` / `DwellRule` / `DirectionRule`）都是**有状态**的：跟踪器、上一帧侧别、ROI 进入时间、上报帧号全都是跨帧累积的。做成单例 Bean 会让多路视频流互相污染状态。
+
+请按流 key 自行创建与缓存：
+
+```java
+TrackEventEngine engine = TrackEventEngine.create(
+    ByteTrackConfig.builder().build(),
+    new LineCrossingRule("gate", 100, 400, 100, 0),
+    new DwellRule("zone", Roi.rectangle(0, 0, 200, 200), 3000L));
+
+FrameResult result = engine.process(boxes, frameTimestampMs);
+```
+
+> `DwellRule` 需要真实时间戳；用无时间戳的 `process(List)` 会直接抛异常，不会把帧数猜成时长。
+>
+> 判定线的端点顺序决定 `FORWARD` / `BACKWARD` 的含义：以上判定线**自下而上**，
+> 因此「从左往右穿越」报 `FORWARD`。详见
+> [核心模块 README §行为事件规则](../../mica-ai-core/mica-ai-track/README.md)。
 
 ---
 
@@ -99,7 +125,7 @@ public class TrackController {
 
 ## 5. 线程安全
 
-`ByteTracker` **状态非线程安全**（内部维护轨迹表与 id 计数）。多线程消费同一视频流时，请每个线程各持一个实例，或在调用方加锁。
+`ByteTracker` 与 `TrackEventEngine` **状态非线程安全**（内部维护轨迹表、规则状态与 id 计数）。多线程消费同一视频流时，请每个线程各持一个实例，或在调用方加锁。
 
 ---
 
@@ -119,4 +145,7 @@ public ByteTracker myTracker(TrackProperties props) {
 ## 7. 测试覆盖
 
 - [`ByteTrackerTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/core/ByteTrackerTest.java)：id 稳定性、遮挡续命、低分框丢弃、成熟度、淘汰、reset
+- [`ByteTrackerTimestampTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/core/ByteTrackerTimestampTest.java)：时间戳、轨迹点上限、速度 / 方向、旧 API 兼容
+- 事件规则与端到端管线：`LineCrossingRuleTest` / `RoiCounterRuleTest` / `DwellRuleTest` / `DirectionRuleTest` / `TrackEventEngineTest`
 - [`HungarianMatcherTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/algo/HungarianMatcherTest.java) · [`KalmanFilterTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/algo/KalmanFilterTest.java)
+- [`TrackPropertiesTest`](src/test/java/net/dreamlu/mica/ai/track/autoconfigure/TrackPropertiesTest.java)：默认值、kebab-case 绑定、`toConfig()` 装配一致性（含 `history-size`）、非法配置快速失败

@@ -13,7 +13,7 @@
 | [mica-ai-matting](mica-ai-matting/README.md) | U²-Net 族通用抠图（原尺寸 alpha 掩码 / 透明底 / 纯色底 / 二值） | U²-Net `u2netp` |
 | [mica-ai-humanseg](mica-ai-humanseg/README.md) | PP-HumanSeg V2-Lite 人像分割（原尺寸人像 alpha 掩码） | PP-HumanSeg V2-Lite |
 | [mica-ai-detect](mica-ai-detect/README.md) | 通用目标检测（COCO 80 类，NanoDet-Plus / YOLOX-s 两族） | NanoDet-Plus / YOLOX-s |
-| [mica-ai-track](mica-ai-track/README.md) | ByteTrack 多目标跟踪（**纯算法零模型**，稳定 track id） | 无 |
+| [mica-ai-track](mica-ai-track/README.md) | ByteTrack 多目标跟踪 + 逐帧行为事件（**纯算法零模型**，稳定 track id / 轨迹点 / 越线 · ROI · 滞留 · 折返） | 无 |
 | [mica-ai-docalign](mica-ai-docalign/README.md) | DocAligner 文档角点检测 + 透视矫正（4 角点 + 一键拉平） | DocAligner `lcnet100` |
 | [mica-ai-enhance](mica-ai-enhance/README.md) | Real-ESRGAN 图像超分（4 倍放大，大图 tile 推理） | Real-ESRGAN `x4v3` |
 | [mica-ai-textline](mica-ai-textline/README.md) | PP-LCNet 文本行方向分类（0° / 180° 判定 + 转正） | PP-LCNet `x1_0` |
@@ -45,6 +45,13 @@ try (DetectEngine e = DetectEngine.create(dc)) {
 try (ByteTracker t = ByteTracker.create(tc)) {
     t.update(detections);
 }
+// 逐帧行为事件：检测框 + 采集时间戳 → 越线 / ROI 进出 / 滞留 / 折返
+TrackEventEngine events = TrackEventEngine.create(tc,
+    new LineCrossingRule("gate", 100, 400, 100, 0),
+    new RoiCounterRule("zone", Roi.rectangle(0, 0, 200, 200)));
+FrameResult frame = events.process(detections, timestampMs);
+frame.getEvents();          // List<TrackEvent>
+```
 // 零模型、无资源可释放：不需要 try-with-resources
 BarcodeEngine b = BarcodeEngine.defaults();
 b.decodePath(path);

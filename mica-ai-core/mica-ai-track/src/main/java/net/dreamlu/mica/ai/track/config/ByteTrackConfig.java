@@ -70,6 +70,13 @@ public class ByteTrackConfig {
 	private int confirmAge = 3;
 
 	/**
+	 * 每条轨迹保留的轨迹点数量上限。行为规则至少需要 3 个点才能判定方向折返，
+	 * 故最小值为 3；越大的视频流（高帧率 + 长滞留）可适当调大。
+	 */
+	@Builder.Default
+	private int historySize = 32;
+
+	/**
 	 * 校验配置合法性，非法时抛出 {@link IllegalArgumentException}。
 	 *
 	 * <p>本模块刻意**零依赖**（不引 {@code mica-ai-common}，避免拖进 ONNX Runtime），
@@ -90,6 +97,9 @@ public class ByteTrackConfig {
 		}
 		if (confirmAge <= 0) {
 			throw new IllegalArgumentException("confirmAge 必须为正整数");
+		}
+		if (historySize < 3) {
+			throw new IllegalArgumentException("historySize 必须 >= 3");
 		}
 	}
 }

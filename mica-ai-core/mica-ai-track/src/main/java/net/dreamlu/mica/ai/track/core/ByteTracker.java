@@ -33,8 +33,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * ByteTrack 多目标跟踪器（MIT 协议原论文复刻，零模型零 ONNX 依赖）。
  *
- * <p>每次调用 {@link #update(List)} 输入检测器吐的一帧 {@code List<BBox>}，
- * 输出当前帧的活跃轨迹（带稳定 ID）。内部状态逐帧推进。
+ * <p>每次调用 {@link #update(List, long)} 输入检测器吐的一帧 {@code List<BBox>}
+ * 与该帧的采集时间戳，输出当前帧的活跃轨迹（带稳定 ID 与轨迹点历史）。内部状态逐帧推进。
+ *
+ * <p>{@link #update(List)} 是为兼容旧调用保留的无时间戳重载，此时轨迹点的
+ * {@code timestampMs} 为 {@link Track#NO_TIMESTAMP}，按毫秒计时的行为规则
+ * （如滞留判定）不可用。
  *
  * <p>核心步骤（与 ifzhang/ByteTrack 原版对齐）：
  * <ol>
@@ -46,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>两轮都没命中的 det → 新建轨迹（age=1）</li>
  *   <li>没被任何 det 匹配的轨迹 {@code onUnmatched()}；连续
  *       {@code trackBufferedThresh} 帧未匹配的轨迹 → 删除</li>
+ *   <li>为每条活跃轨迹追加一个采样点：命中帧用实测框，未命中帧用 Kalman 预测框</li>
  * </ol>
  *
  * <p>线程安全：<b>不是</b>线程安全——内部用普通 {@link HashMap}，更新时逐帧重建。
@@ -64,6 +69,7 @@ public class ByteTracker {
 	 * 当前活跃轨迹 Map（id → Track）。普通 HashMap，每帧 rebuild，非线程安全。
 	 */
 	private Map<Integer, Track> tracks = new HashMap<>();
+	private int frameIndex;
 
 	public ByteTracker(ByteTrackConfig config) {
 		if (config == null) {
@@ -71,16 +77,32 @@ public class ByteTracker {
 		}
 		config.validate();
 		this.config = config;
-		log.info("ByteTracker 初始化完成: high={}, low={}, match={}, matchLow={}, confirmAge={}, buffered={}",
+		log.info("ByteTracker 初始化完成: high={}, low={}, match={}, matchLow={}, confirmAge={}, buffered={}, history={}",
 			config.getHighThreshold(), config.getLowThreshold(), config.getMatchThresh(),
-			config.getMatchLowThresh(), config.getConfirmAge(), config.getTrackBufferedThresh());
+			config.getMatchLowThresh(), config.getConfirmAge(), config.getTrackBufferedThresh(),
+			config.getHistorySize());
 	}
 
 	public static ByteTracker create(ByteTrackConfig config) {
 		return new ByteTracker(config);
 	}
 
+	/**
+	 * 无时间戳重载：轨迹点 {@code timestampMs = -1}，按毫秒计时的规则不可用。
+	 */
 	public List<Track> update(List<BBox> detections) {
+		return update(detections, Track.NO_TIMESTAMP);
+	}
+
+	/**
+	 * 喂入一帧检测框与该帧采集时间戳（毫秒，单调不减）。
+	 */
+	public List<Track> update(List<BBox> detections, long timestampMs) {
+		if (timestampMs < Track.NO_TIMESTAMP) {
+			throw new IllegalArgumentException("timestampMs 必须是 -1 或非负数");
+		}
+		frameIndex++;
+
 		// 0. 保存旧轨迹快照（后面第 6 步 onUnmatched 只作用于旧轨迹，新轨迹 age=1 lostFrames=0 不需要）
 		Map<Integer, Track> oldTracks = new HashMap<>(tracks);
 
@@ -104,6 +126,7 @@ public class ByteTracker {
 		}
 
 		Set<Integer> matchedThisFrame = new HashSet<>();
+		Set<Integer> newTrackIds = new HashSet<>();
 
 		// 3. 第一轮：高分 det ↔ 所有轨迹（mature + newborn 都可以被匹配并 age+=1）
 		List<BBox> unmatchedHigh = matchAndMarkMatched(highDets, allTrks,
@@ -121,14 +144,14 @@ public class ByteTracker {
 
 		// 5. 两轮都没命中的 det → 新建轨迹（age=1，lostFrames=0）
 		for (BBox d : unmatchedHigh) {
-			int id = nextId.getAndIncrement();
-			Track t = new Track(id, d, 1, 0);
-			allTrks.add(t);
+			Track created = newTrack(d, timestampMs);
+			allTrks.add(created);
+			newTrackIds.add(created.getId());
 		}
 		for (BBox d : unmatchedLow) {
-			int id = nextId.getAndIncrement();
-			Track t = new Track(id, d, 1, 0);
-			allTrks.add(t);
+			Track created = newTrack(d, timestampMs);
+			allTrks.add(created);
+			newTrackIds.add(created.getId());
 		}
 
 		// 6. 本轮没被匹配的旧轨迹（新建的 age=1 lostFrames=0 不用 onUnmatched）：
@@ -162,7 +185,23 @@ public class ByteTracker {
 			}
 			return Integer.compare(a.getId(), b.getId());
 		});
+
+		// 9. 追加采样点：命中帧记录实测框，未命中帧记录 Kalman 预测框。
+		//    新建轨迹在构造时已经写入了首个点，这里跳过，保证每帧恰好一个点。
+		for (Track t : active) {
+			if (newTrackIds.contains(t.getId())) {
+				continue;
+			}
+			boolean observed = t.getLostFrames() == 0;
+			BBox box = observed ? t.getLastMatchedBBox() : t.getKf().predictedBBox();
+			t.appendPoint(frameIndex, timestampMs, box, observed);
+		}
 		return active;
+	}
+
+	private Track newTrack(BBox det, long timestampMs) {
+		int id = nextId.getAndIncrement();
+		return new Track(id, det, 1, 0, config.getHistorySize(), frameIndex, timestampMs);
 	}
 
 	/**
@@ -215,9 +254,14 @@ public class ByteTracker {
 		return tracks.size();
 	}
 
+	public int getFrameIndex() {
+		return frameIndex;
+	}
+
 	public void reset() {
 		tracks = new HashMap<>();
 		nextId.set(1);
+		frameIndex = 0;
 		log.info("ByteTracker reset");
 	}
 }

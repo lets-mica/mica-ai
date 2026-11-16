@@ -32,7 +32,8 @@ a{color:var(--brand)}
 .card .desc{color:var(--muted);font-size:12px;margin:0 0 12px}
 .field{display:block;margin-bottom:10px}
 .field span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
-input[type=text],input[type=file],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
+input[type=text],input[type=file],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--text)}
+textarea{font:12px/1.5 ui-monospace,Consolas,monospace;resize:vertical;min-height:150px}
 input[type=file]{padding:6px}
 select{cursor:pointer}
 input[type=range]{width:100%;height:22px;margin:0;accent-color:var(--brand);cursor:pointer}
@@ -377,7 +378,25 @@ const MISC_CAPS = [
 ];
 
 /* 组合场景：多模型能力编排成完整业务链路，返回 JSON 报告 + 成片 base64 */
+
+/* 逐帧事件分析的默认样例：一个人从左向右穿过 x=100 的虚拟门线，并停留在 ROI 内 */
+const VIDEO_EVENT_SAMPLE = {
+  frames: [
+    {timestampMs: 0, boxes: [{x1: 40, y1: 50, x2: 80, y2: 180}]},
+    {timestampMs: 100, boxes: [{x1: 55, y1: 50, x2: 95, y2: 180}]},
+    {timestampMs: 200, boxes: [{x1: 70, y1: 50, x2: 110, y2: 180}]},
+    {timestampMs: 300, boxes: [{x1: 85, y1: 50, x2: 125, y2: 180}]},
+    {timestampMs: 400, boxes: [{x1: 100, y1: 50, x2: 140, y2: 180}]},
+    {timestampMs: 500, boxes: [{x1: 115, y1: 50, x2: 155, y2: 180}]}
+  ],
+  line: {name: 'gate', x1: 100, y1: 400, x2: 100, y2: 0},
+  roi: {name: 'zone', x1: 0, y1: 0, x2: 200, y2: 200, bottomCenterAnchor: true},
+  dwellThresholdMs: 1000
+};
+
 const SCENARIO_CAPS = [
+  {t: '逐帧事件分析', p: '/scenario/video-events/analyze', d: 'ByteTrack 轨迹 + 越线 / ROI 进出 / 滞留 / 折返', o: 'json',
+    f: [{k: 'body', l: '帧序列 JSON（每帧带 timestampMs）', y: 'textarea', v: JSON.stringify(VIDEO_EVENT_SAMPLE, null, 2)}]},
   {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分', o: 'scenario',
     f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
   {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
@@ -425,6 +444,10 @@ function renderCards(list, target) {
           '<input type="range" name="' + f.k + '" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="' + f.v + '"' +
           (f.requires ? ' data-requires="' + f.requires + '"' : '') + '></label>';
       }
+      if (f.y === 'textarea') {
+        return '<label class="field"><span>' + f.l + '</span><textarea name="' + f.k + '" rows="10">' +
+          String(f.v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</textarea></label>';
+      }
       return '<label class="field"><span>' + f.l + '</span><input type="text" name="' + f.k + '" value="' + (f.v || '') + '"></label>';
     }).join('');
     return '<div class="card cap" data-path="' + cap.p + '" data-out="' + cap.o + '">' +
@@ -438,6 +461,9 @@ function renderCards(list, target) {
 async function runCap(card) {
   if (card.dataset.out === 'scenario') {
     return runScenario(card);
+  }
+  if (card.dataset.out === 'json') {
+    return runJson(card);
   }
   const fd = new FormData();
   let missing = null;
@@ -476,6 +502,35 @@ async function runCap(card) {
       const data = await res.json();
       out.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
     }
+  } catch (e) {
+    out.innerHTML = '<pre>调用失败：' + e.message + '</pre>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* JSON 请求体场景：直接把文本域内容当请求体 POST */
+async function runJson(card) {
+  const out = $('.out', card);
+  const area = card.querySelector('textarea');
+  const btn = $('.run', card);
+  let payload;
+  try {
+    payload = JSON.parse(area.value);
+  } catch (e) {
+    out.innerHTML = '<pre>请求体不是合法 JSON：' + e.message + '</pre>';
+    return;
+  }
+  btn.disabled = true;
+  out.innerHTML = '<pre>调用中…</pre>';
+  try {
+    const res = await fetch(card.dataset.path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    out.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
   } catch (e) {
     out.innerHTML = '<pre>调用失败：' + e.message + '</pre>';
   } finally {

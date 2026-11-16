@@ -6,7 +6,7 @@
 
 1. **可运行的 Spring Boot Demo**：`mvn spring-boot:run`（`develop` profile）启动后，可通过 REST 端点触发 face / filetype /
    plate / layout / matting / humanseg / detect / track / docalign / enhance / textline / classify / captcha / barcode 能力。
-2. **组合场景示例**：把多个能力编排成完整业务链路（智能文档流水线、证件照一键生成），见 [§3.1 组合场景](#31-组合场景)。
+2. **组合场景示例**：把多个能力编排成完整业务链路（智能文档流水线、证件照一键生成、逐帧事件分析），见 [§3.1 组合场景](#31-组合场景)。
 3. **Starter 自动装配测试**：覆盖 `enabled` 开关、fail-fast、Bean 注入（基于轻量级
    `ApplicationContextRunner`，非 `@SpringBootTest`）。
 
@@ -223,6 +223,7 @@ mvn -pl mica-ai-example -am test
 | `/detect/annotate` | POST multipart | 上传图片，在原图上画出检测框与类别名并返回 PNG |
 | `/track/update` | POST JSON | 提交一帧检测框数组，返回当前活跃轨迹（id / 框 / score / age / mature） |
 | `/track/detect-and-track` | POST multipart | 上传一帧图片，自动检测 + 跟踪，返回带 track id 的框 |
+| `/scenario/video-events/analyze` | POST JSON | **逐帧事件分析**：连续帧检测框数组（每帧带 `timestampMs`）→ 稳定轨迹 + 越线 / ROI 进出 / 滞留 / 折返事件；不解码视频 |
 | `/docalign/corners` | POST multipart | 上传文档图，返回左上 / 右上 / 右下 / 左下四个角点与置信度 |
 | `/docalign/align` | POST multipart | 上传文档图，检测四角 + 透视拉平，返回 PNG |
 | `/enhance/upscale` | POST multipart | 上传图片，4 倍超分后返回 PNG（大图自动 tile 推理） |
@@ -257,6 +258,58 @@ Swagger UI：`http://localhost:8181/swagger-ui.html`
 
 > 单能力演示是「一个模型调一次」，组合场景才是**多个模型编排成一条业务链路**——
 > 这才是 mica-ai 在真实产品里的用法。示例页的「组合场景」标签页可直接调用。
+
+### 🎬 逐帧事件分析（`/scenario/video-events/*`）
+
+把「连续帧的检测框」变成「可解释的业务事件」，纯算法、**零模型**：
+
+| 阶段 | 能力 | 作用 |
+|------|------|------|
+| 1. 跟踪 | `mica-ai-track`（ByteTrack） | 逐帧喂检测框，得到稳定 track id + 轨迹点 + 速度 |
+| 2. 越线 | `LineCrossingRule` | 判断轨迹是否穿过指定线段，并给出去向（正向 / 反向） |
+| 3. ROI 进出 | `RoiCounterRule` | 进 / 出区域计数、在场名单、峰值在场数 |
+| 4. 滞留 | `DwellRule` | 按**真实毫秒**判定在区域内停留超时（掉帧不误判） |
+| 5. 折返 | `DirectionRule` | 运动方向转角超阈值时报警（绕圈 / 折返） |
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"frames":[{"timestampMs":0,"boxes":[{"x1":40,"y1":50,"x2":80,"y2":180}]},{"timestampMs":100,"boxes":[{"x1":55,"y1":50,"x2":95,"y2":180}]}],"line":{"x1":100,"y1":400,"x2":100,"y2":0},"roi":{"x1":0,"y1":0,"x2":200,"y2":200}}' \
+  http://localhost:8181/scenario/video-events/analyze
+```
+
+```json
+{
+  "frameCount": 6,
+  "frames": [
+    {"frameIndex": 1, "timestampMs": 0, "eventCount": 1,
+     "tracks": [{"id": 1, "classId": 0, "cx": 60.0, "cy": 115.0, "direction": "静止", "speedPxPerSec": 0.0, "age": 1, "lostFrames": 0}]},
+    {"frameIndex": 4, "timestampMs": 300, "eventCount": 1,
+     "tracks": [{"id": 1, "classId": 0, "cx": 105.0, "cy": 115.0, "direction": "右", "speedPxPerSec": 150.0, "age": 4, "lostFrames": 0}]}
+  ],
+  "events": [
+    {"type": "ROI_ENTERED", "trackId": 1, "classId": 0, "frameIndex": 1, "timestampMs": 0,
+     "ruleName": "zone", "direction": "", "detail": "firstSeenInside=true, enters=1", "box": [40.0, 50.0, 80.0, 180.0]},
+    {"type": "LINE_CROSSED", "trackId": 1, "classId": 0, "frameIndex": 4, "timestampMs": 300,
+     "ruleName": "gate", "direction": "FORWARD", "detail": "line=gate, direction=FORWARD", "box": [85.0, 50.0, 125.0, 180.0]}
+  ],
+  "summary": {"LINE_CROSSED": 1, "ROI_ENTERED": 1, "ROI_LEFT": 0, "DWELL_EXCEEDED": 0,
+              "DIRECTION_CHANGED": 0, "enters": 1, "leaves": 0, "maxInside": 1}
+}
+```
+
+> 上面的 `frames` 只摘录了第 1 帧与第 4 帧，实际返回 6 帧（`frameIndex` 从 **1** 开始）。
+
+**四个设计取舍**：
+
+1. **本示例不解码视频**：帧由调用方（或 `mica-video` 的 JavaCV / FFmpeg 网关）提供，
+   这里只吃「检测框 + 每帧时间戳」。真实链路是 `mica-video` → `mica-ai-detect` → 这里，
+   依赖方向只能是 video → ai（mica-ai 是 JDK 8 / Boot 2.7 库，不引视频栈）。
+2. **时间戳用毫秒而不是帧号**：滞留判定必须按真实时长算，掉帧 / 变帧率时帧数 ≠ 时间。
+3. **判定线的方向决定 `FORWARD` / `BACKWARD` 的含义**：以 A→B 为基准，叉积由负变正记
+   `FORWARD`、由正变负记 `BACKWARD`。**线画成「从下往上」（`y1 > y2`）时，从左往右穿越才是
+   `FORWARD`**；线画成「从上往下」时同一动作会被判成 `BACKWARD`。这是最容易踩的坑，
+   所以示例默认用自下而上的线。
+4. **每次请求新建引擎**：跟踪器与规则都是有状态的，一路流一个实例，请求之间不串状态。
 
 ### 📄 智能文档流水线（`/scenario/document/*`）
 
@@ -504,7 +557,8 @@ mica-ai-example/
 │       ├── ClassifyController.java                  # /classify/classify
 │       ├── CaptchaController.java                   # /captcha/recognize
 │       ├── DocumentScenarioController.java          # /scenario/document/* 智能文档流水线
-│       └── IdPhotoScenarioController.java           # /scenario/idphoto/* 证件照一键生成
+│       ├── IdPhotoScenarioController.java           # /scenario/idphoto/* 证件照一键生成
+│       └── VideoEventScenarioController.java        # /scenario/video-events/* 逐帧事件分析
 ├── src/main/resources/
 │   ├── application.yml                              # 各能力示例配置
 │   ├── static/index.html                            # 示例页：人脸认证闭环 + 图像超分 + 组合场景 + 各能力上传演示
@@ -517,7 +571,9 @@ mica-ai-example/
     │   └── EnhanceUpscaleIntegrationTest.java        # 真模型：倍率 / 预缩放 / 档位 / 引擎池
     └── scenario/
         ├── DocumentScenarioIntegrationTest.java     # 智能文档流水线（含方向回转验证）
-        └── IdPhotoScenarioIntegrationTest.java      # 证件照几何 + 端到端出片
+        ├── IdPhotoScenarioIntegrationTest.java      # 证件照几何 + 端到端出片
+        └── controller/
+            └── VideoEventScenarioControllerTest.java # 逐帧事件分析：越线 / 滞留 / ROI / 时间戳倒退
 ```
 
 ---

@@ -63,6 +63,11 @@ public class TrackProperties {
 	 */
 	private int confirmAge = 3;
 
+	/**
+	 * 每条轨迹保留的采样点上限（最小 3）。
+	 */
+	private int historySize = 32;
+
 	public ByteTrackConfig toConfig() {
 		return ByteTrackConfig.builder()
 			.highThreshold(highThreshold)
@@ -71,6 +76,7 @@ public class TrackProperties {
 			.matchLowThresh(matchLowThresh)
 			.trackBufferedThresh(trackBufferedThresh)
 			.confirmAge(confirmAge)
+			.historySize(historySize)
 			.build();
 	}
 }

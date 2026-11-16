@@ -1,24 +1,26 @@
 # mica-ai-track
 
-> ByteTrack 多目标跟踪（**纯算法、零模型**），刻意保持零依赖：不引 [mica-ai-common](../mica-ai-common/README.md)，避免把 ONNX Runtime 拖进来。**MIT 可商用**。
+> ByteTrack 多目标跟踪 + 逐帧行为事件（**纯算法、零模型**），刻意保持零依赖：不引 [mica-ai-common](../mica-ai-common/README.md)，避免把 ONNX Runtime / OpenCV / Spring 拖进来。**MIT 可商用**。
 
-把逐帧检测框交给 `ByteTracker#update`，即得**稳定 track id + 轨迹年龄**，是检测之上最小可用的跟踪底座。
+把逐帧检测框交给 `ByteTracker#update`，得**稳定 track id + 轨迹年龄**；把「检测框 + 采集时间戳」交给 `TrackEventEngine#process`，还能直接得到**越线 / ROI 进出 / 滞留 / 折返**事件。
 
 ---
 
 ## 快速开始
 
-```java
-ByteTracker tracker = ByteTracker.create(
-    ByteTrackConfig.builder().build());
+### 只跟踪
 
-// 每帧：检测器结果 → 跟踪器
-List<Track> tracks = tracker.update(detections);
-for (Track t : tracks) {
-    if (t.isMature(tracker.getConfig().getConfirmAge())) {
-        int id = t.getId();          // 稳定 id，跨帧不变
-        BBox box = t.getCurrentBBox();
-        int age = t.getAge();        // 累计命中帧数
+```java
+ByteTracker tracker = ByteTracker.create(ByteTrackConfig.builder().build());
+
+for (List<BBox> frame : detectionsPerFrame) {
+    List<Track> tracks = tracker.update(frame);
+    for (Track t : tracks) {
+        if (t.isMature(tracker.getConfig().getConfirmAge())) {
+            int id = t.getId();
+            BBox box = t.getCurrentBBox();
+            int age = t.getAge();
+        }
     }
 }
 ```
@@ -26,19 +28,41 @@ for (Track t : tracks) {
 配合检测器使用：
 
 ```java
-try (DetectEngine detector = DetectEngine.create(detectConfig);
-     ByteTracker tracker = ByteTracker.create(ByteTrackConfig.builder().build())) {
-
+try (DetectEngine detector = DetectEngine.create(detectConfig)) {
+    ByteTracker tracker = ByteTracker.create(ByteTrackConfig.builder().build());
     for (Mat frame : frames) {
         DetectResult result = detector.detect(frame);
         List<BBox> boxes = result.getBoxes().stream()
-            .map(b -> new BBox(b.getX1(), b.getY1(), b.getX2(), b.getY2(), b.getScore()))
+            .map(b -> new BBox(b.getX1(), b.getY1(), b.getX2(), b.getY2(), b.getScore(), b.getClassId()))
             .collect(Collectors.toList());
-
         List<Track> tracks = tracker.update(boxes);
     }
 }
 ```
+
+### 逐帧事件管线（推荐用于视频流）
+
+```java
+Roi zone = Roi.rectangle(0, 0, 200, 200);
+LineCrossingRule line = new LineCrossingRule("gate", 100, 0, 100, 400);
+RoiCounterRule counter = new RoiCounterRule("zone", zone, AnchorPolicy.BOTTOM_CENTER, true);
+DwellRule dwell = new DwellRule("zone", zone, 3000L);
+DirectionRule uTurn = new DirectionRule("u-turn");
+
+TrackEventEngine engine = TrackEventEngine.create(
+    ByteTrackConfig.builder().build(), line, counter, dwell, uTurn);
+
+// 每一帧：调用方负责解码与检测，这里只吃检测框 + 该帧采集时间戳
+FrameResult result = engine.process(detections, frameTimestampMs);
+for (TrackEvent event : result.getEvents()) {
+    System.out.println(event.getType() + " track=" + event.getTrackId()
+        + " @" + event.getTimestampMs() + "ms " + event.getDetail());
+}
+```
+
+`TrackEventEngine` **不碰图像、不碰视频解码**：RTSP / FFmpeg 取帧属于 [mica-video](https://github.com/lets-mica) 的职责，检测器把 `Mat` 转成 `List<BBox>` 后喂进来即可。这样本模块保持零模型、零 ONNX、零 OpenCV、零 Spring。
+
+> ⚠️ **有状态、非线程安全**：`ByteTracker` 与每条规则都保存跨帧状态，**一路视频流必须独占一个 `TrackEventEngine`**（按流 key 缓存，不要做成单例 Bean）。换流 / 场景切换时调 `engine.reset()`。
 
 ---
 
@@ -56,17 +80,64 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 
 **为什么要有低分框这一轮**：遮挡时目标检测分数会骤降，高分框直接丢会导致轨迹断裂；用低分框续命，轨迹 id 才能跨遮挡保持稳定。
 
-### 轨迹成熟度
+### 轨迹成熟度与淘汰
 
-- `age`：累计**匹配成功**的帧数
-- `lostFrames`：自上次被匹配以来经过的帧数
-- `isMature(confirmAge)`：`age >= confirmAge` 才算成熟轨迹
+- `age`：累计**匹配成功**的帧数；`lostFrames`：自上次匹配以来的帧数
+- `isMature(confirmAge)`：`age >= confirmAge` 才算成熟轨迹，**成熟轨迹优先返回**
+- 连续 `trackBufferedThresh` 帧未命中即丢弃；`tracker.reset()` 整体清空
 
-**成熟轨迹优先返回**——刚出现 1 帧的新目标往往定位不准，先别用。
+### 轨迹点与真实时间
 
-### 轨迹淘汰
+每帧恰好追加一个 `TrackPoint`：命中帧记录**实测框**，未命中帧记录 **Kalman 预测框**（`observed=false`）。行为规则默认只用实测点，避免遮挡期预测框误报。
 
-连续 `trackBufferedThresh` 帧未命中即丢弃该轨迹。`tracker.reset()` 可整体清空（换视频流 / 场景切换时用）。
+`update(List<BBox>, long timestampMs)` 把采集时间戳写进轨迹点；`Track` 因此能提供：
+
+| 方法 | 说明 |
+|---|---|
+| `getPoints()` / `observedPoints(max)` | 轨迹点历史快照（时间正序） |
+| `getLastBBox()` | 本帧采样点对应的框，事件输出与规则判定同源 |
+| `firstSeenMs` / `lastSeenMs` / `dwellMs()` | 轨迹存活时长（毫秒） |
+| `velocityXPerSecond()` / `velocityYPerSecond()` / `speedPerSecond()` | 按真实时间差算的**像素 / 秒**，掉帧不失真 |
+| `directionDegrees()` / `directionLabel()` | 0° 向右、90° 向下的八方向标签（右 / 右下 / 下 / …） |
+| `kf.velocityX()` / `kf.velocityY()` | Kalman 状态里的**像素 / 帧**速度，供按帧推理用 |
+
+> `update(List<BBox>)` 为兼容旧调用保留，此时 `timestampMs = Track.NO_TIMESTAMP(-1)`：速度与方向不可用，**按毫秒计时的规则会直接抛异常**，不会把帧数猜成时长。
+
+---
+
+## 行为事件规则
+
+| 规则 | 触发 | 关键参数 |
+|---|---|---|
+| `LineCrossingRule` | 轨迹中心点从判定线一侧移到另一侧 | 线端点、`Direction`（BOTH / FORWARD / BACKWARD）、`requireMature`、`observedOnly` |
+| `RoiCounterRule` | 锚点进入 / 离开矩形或多边形 ROI | `Roi`、`AnchorPolicy`、`requireMature`；提供 `getEnterCount()` / `getLeaveCount()` / `getCurrentInside()` |
+| `DwellRule` | ROI 内驻留超过 `thresholdMs` | `Roi`、阈值毫秒、`AnchorPolicy`；离开后可重新计时再报 |
+| `DirectionRule` | 连续两段位移夹角超过阈值（折返 / 逆行） | `turnAngleDegrees`（默认 120°）、`minDisplacement`（默认 5px）、`cooldownFrames`（默认 10） |
+
+规则实现 `TrackEventRule#onFrame(FrameContext, List<TrackEvent>)`，可自行扩展。事件类型：
+
+| `TrackEventType` | 含义 |
+|---|---|
+| `LINE_CROSSED` | 越线，`direction` 为 `FORWARD` / `BACKWARD` |
+| `ROI_ENTERED` / `ROI_LEFT` | 进出 ROI；轨迹被删除时若仍在场，会补发 `ROI_LEFT`（`trackLost=true`） |
+| `DWELL_EXCEEDED` | 滞留超时，`detail` 含 `stayMs=` |
+| `DIRECTION_CHANGED` | 折返，`detail` 含 `turnAngle=` / `from=` / `to=` |
+
+**锚点选择**：行人 / 车辆做区域判定建议用 `AnchorPolicy.BOTTOM_CENTER`（脚点 / 轮胎接地点），比几何中心稳定。
+
+**Roi 构造**：`Roi.rectangle(x1,y1,x2,y2)` 或 `Roi.polygon(x0,y0,x1,y1,...)`（至少 3 个顶点，射线法判定）。
+
+> ⚠️ **判定线的方向决定 `FORWARD` / `BACKWARD` 的含义**（实测确认）：
+> 以 A(x1,y1) → B(x2,y2) 为基准，叉积 `(B-A) × (P-A)` **由负变正记 `FORWARD`、由正变负记 `BACKWARD`**。
+> 对一条**竖直线**，这意味着：
+>
+> | 判定线画法 | 从左往右穿越 | 从右往左穿越 |
+> |---|---|---|
+> | 自下而上（`y1 > y2`） | `FORWARD` | `BACKWARD` |
+> | 自上而下（`y1 < y2`） | `BACKWARD` | `FORWARD` |
+>
+> 想让「从左往右进场」报 `FORWARD`，就把线画成**自下而上**；或直接用 `Direction.FORWARD` /
+> `Direction.BACKWARD` 只统计关心的方向。
 
 ---
 
@@ -75,13 +146,14 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 | 字段 | 默认 | 说明 |
 |------|------|------|
 | `highThreshold` | `0.6` | 高分框 / 低分框分界线 |
-| `lowThreshold` | `0.1` | 低分框丢弃线；低于此值的框两轮都进不去 |
-| `matchThresh` | `0.8` | 第 1 轮（高分 det ↔ 轨迹）IoU 阈值 |
-| `matchLowThresh` | `0.5` | 第 2 轮（低分 det ↔ 未匹配轨迹）IoU 阈值 |
-| `trackBufferedThresh` | `30` | 连续多少帧未命中就丢弃该轨迹 |
+| `lowThreshold` | `0.1` | 低分框丢弃线 |
+| `matchThresh` | `0.8` | 第 1 轮 IoU 阈值；视频流目标位移大时可适当调低（如 0.3） |
+| `matchLowThresh` | `0.5` | 第 2 轮 IoU 阈值 |
+| `trackBufferedThresh` | `30` | 连续多少帧未命中就丢弃轨迹 |
 | `confirmAge` | `3` | 新轨迹连续命中多少帧才算成熟 |
+| `historySize` | `32` | 每条轨迹保留的采样点上限，**最小 3**（方向折返判定需要 3 个点） |
 
-约束：`highThreshold > lowThreshold`、`matchThresh` / `matchLowThresh` ∈ `(0,1]`、`trackBufferedThresh` / `confirmAge` 为正整数。非法时 `validate()` 抛 `MicaAiException`。
+约束：`highThreshold > lowThreshold`、两个 match 阈值 ∈ `(0,1]`、`trackBufferedThresh` / `confirmAge` 为正整数、`historySize >= 3`。非法时 `validate()` 抛 **`IllegalArgumentException`**（本模块刻意零依赖，不共用 `MicaAiException`）。
 
 ---
 
@@ -91,25 +163,25 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 
 | 方法 | 返回 | 说明 |
 |------|------|------|
-| `update(List<BBox>)` | `List<Track>` | 喂入本帧检测框，返回当前轨迹（成熟轨迹优先） |
-| `trackCount()` | `int` | 当前轨迹数 |
-| `reset()` | `void` | 清空全部轨迹与 id 计数 |
-| `getConfig()` | `ByteTrackConfig` | 当前配置 |
+| `update(List<BBox>)` | `List<Track>` | 无时间戳兼容重载 |
+| `update(List<BBox>, long timestampMs)` | `List<Track>` | 带采集时间戳（毫秒），推荐用于视频流 |
+| `trackCount()` / `reset()` / `getFrameIndex()` / `getConfig()` | — | 状态与配置 |
 
-### `BBox`（不可变）
+### `TrackEventEngine`
 
-`x1 / y1 / x2 / y2`（左上 / 右下角）、`score`、`classId`；辅助方法 `cx() / cy() / width() / height() / iou(other) / isEmpty()`。
+| 方法 | 返回 | 说明 |
+|------|------|------|
+| `create(ByteTrackConfig, TrackEventRule...)` | `TrackEventEngine` | 用默认配置的跟踪器构造 |
+| `create(ByteTracker, TrackEventRule...)` | `TrackEventEngine` | 复用已有跟踪器 |
+| `process(List<BBox>, long timestampMs)` | `FrameResult` | 处理一帧；时间戳必须单调不减 |
+| `process(List<BBox>)` | `FrameResult` | 无时间戳重载（滞留规则不可用） |
+| `reset()` / `getTracker()` / `getRules()` | — | 状态与内部对象 |
 
-### `Track`
+`FrameResult` 含 `frameIndex` / `timestampMs` / `tracks` / `events`，均为不可变快照。`TrackEventEngine` 无资源可释放，**不实现 `AutoCloseable`**。
 
-| 方法 | 说明 |
-|------|------|
-| `getId()` | 稳定 id，跨帧不变 |
-| `getCurrentBBox()` | 最近一次匹配到的框（未匹配时为预测框） |
-| `getAge()` | 累计命中帧数 |
-| `getLostFrames()` | 自上次命中以来的帧数 |
-| `getScore()` / `getClassId()` | 最近一次的分数 / 类别 |
-| `isMature(confirmAge)` | 是否已成熟 |
+### 值对象
+
+`BBox`（不可变检测框）、`TrackPoint`（采样点）、`TrackEvent`（事件）、`Roi`（多边形）、`FrameContext` / `FrameResult`（帧快照）。
 
 ---
 
@@ -119,6 +191,7 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 |----|------|
 | `KalmanFilter` | 匀速模型（状态 8 维：位置 + 速度），预测 + 更新 |
 | `HungarianMatcher` | 匈牙利算法求最优匹配（无第三方依赖，纯 Java 实现） |
+| `Directions` | 屏幕坐标系八方向换算 |
 
 跟踪器**状态非线程安全**（内部维护轨迹表与 id 计数）。多线程场景请每个线程各持一个实例，或在调用方加锁。
 
@@ -126,10 +199,18 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 
 ## 测试覆盖
 
-- `KalmanFilterTest`（8 项）：匀速轨迹的预测误差、协方差收敛
+- `KalmanFilterTest`（8 项）：匀速轨迹的预测误差、协方差收敛、速度 getter
 - `HungarianMatcherTest`（9 项）：最优匹配正确性、空矩阵、代价矩阵边界
 - `ByteTrackerTest`（12 项）：id 稳定性、遮挡续命、低分框丢弃、成熟度、淘汰、reset
 - `BBoxTest`（8 项）：IoU 计算、宽高换算、空框判定
+- `ByteTrackerTimestampTest`（6 项）：时间戳、轨迹点上限、速度 / 方向、旧 API 兼容、reset
+- `LineCrossingRuleTest` / `RoiCounterRuleTest` / `DwellRuleTest` / `DirectionRuleTest` / `TrackEventEngineTest`（28 项）：四条规则与端到端管线
+
+合计 **71 项**，全部为合成检测框序列驱动，**零 ONNX / 零 OpenCV / 零图像 / 零视频库**。
+
+```bash
+mvn -pl mica-ai-core/mica-ai-track -am test
+```
 
 ---
 
@@ -137,8 +218,10 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 
 见 [`mica-ai-track-spring-boot-starter`](../../mica-ai-starters/mica-ai-track-spring-boot-starter/README.md)：一行 YAML 注入 `ByteTracker` Bean。
 
+**Starter 刻意不提供 `TrackEventEngine` Bean**——它和规则都是「一路流一个实例」的有状态对象，做成单例会让多路视频互相污染状态。请在业务侧按流 key 自行创建与缓存。
+
 ---
 
 ## 许可
 
-本模块代码为 mica-ai 主仓 Apache-2.0 的一部分；算法实现参考了 [ByteTrack](https://github.com/FoundationVision/ByteTrack)（MIT）的公开方法论，**不引入任何模型权重**。
+本模块代码为 mica-ai 主仓 Apache-2.0 的一部分；算法实现参考了 [ByteTrack](https://github.com/FoundationVision/ByteTrack)（MIT）的公开方法论，**不引入任何模型权重**。行为事件规则为本仓库自行实现的纯几何逻辑。

@@ -6,6 +6,11 @@
 
 ### ✨ 新增能力
 
+- 🎬 `mica-ai-track` 扩展为**逐帧推理管线 + 轨迹行为事件**（仍是零模型、零新增模块、零新增 Starter）：
+  - `ByteTracker.update(List<BBox>, long timestampMs)` 新重载，`Track` 增加有限长度轨迹点历史、首末见时间、按真实时间差计算的**像素/秒速度**与八方向标签；无时间戳的旧 `update(List<BBox>)` 保持兼容
+  - 新增 `TrackEventEngine`（检测框 + 采集时间戳 → `FrameResult` = 轨迹 + 事件）与四条纯几何规则：`LineCrossingRule`（越线 + 方向）、`RoiCounterRule`（矩形/多边形 ROI 进出计数，轨迹消失补发离开）、`DwellRule`（按**真实毫秒**判定滞留，不把帧数当时长）、`DirectionRule`（折返/U-turn）
+  - 全部不引 `mica-ai-common` / ONNX / OpenCV / Spring；**有状态、一路流一个实例**，故 Starter 刻意不提供 `TrackEventEngine` Bean
+  - example 新增 `/scenario/video-events/analyze`：输入连续帧检测框数组，返回逐帧轨迹与事件流；**不解码视频**，RTSP/取帧归 `mica-video`
 - 📷 `mica-ai-barcode` —— 二维码 / 一维条码解码：**纯算法、零模型**，只依赖 `com.google.zxing:core:3.5.3`（3.6.0 起要求 Java 11+，故锁在 JDK 8 线的最后一个版本），不引 ONNX Runtime / OpenCV / `javase`（规避 AWT headless 依赖）；核心是 `HybridBinarizer + TRY_HARDER` 起步的**多策略回退链**——失败后依次做 ×2 / ×3 最近邻放大、2×2 带重叠分块扫描、`GlobalHistogramBinarizer` 回退，支持一图多码与 20+ 种码制；输入走自带像素载体（`byte[]` / 灰度 / RGB），与 OpenCV `Mat` 解耦；配套 `mica-ai-barcode-spring-boot-starter`（`mica.ai.barcode` 前缀，**零配置**即可注入 `BarcodeEngine`）
 - 智能文档流水线新增条码阶段：`docalign` 拉正 → `classify` 整图方向 → **`barcode` 条码解码** → `layout` 版面 → `textline` 文本块转正 → `enhance` 超分。条码放在**原分辨率、超分之前**跑——一维码经缩放会直接失效；example 同步新增 `/barcode/decode` 与 `/scenario/document/process` 的条码结果字段
 

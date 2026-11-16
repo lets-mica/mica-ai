@@ -53,6 +53,7 @@ class TrackPropertiesTest {
 		assertThat(p.getMatchLowThresh()).isEqualTo(c.getMatchLowThresh()).isEqualTo(0.5f);
 		assertThat(p.getTrackBufferedThresh()).isEqualTo(c.getTrackBufferedThresh()).isEqualTo(30);
 		assertThat(p.getConfirmAge()).isEqualTo(c.getConfirmAge()).isEqualTo(3);
+		assertThat(p.getHistorySize()).isEqualTo(c.getHistorySize()).isEqualTo(32);
 	}
 
 	@Test
@@ -65,6 +66,7 @@ class TrackPropertiesTest {
 		src.put("mica.ai.track.match-low-thresh", "0.6");
 		src.put("mica.ai.track.track-buffered-thresh", "20");
 		src.put("mica.ai.track.confirm-age", "5");
+		src.put("mica.ai.track.history-size", "64");
 
 		TrackProperties p = bind(src);
 
@@ -75,6 +77,7 @@ class TrackPropertiesTest {
 		assertThat(p.getMatchLowThresh()).isEqualTo(0.6f);
 		assertThat(p.getTrackBufferedThresh()).isEqualTo(20);
 		assertThat(p.getConfirmAge()).isEqualTo(5);
+		assertThat(p.getHistorySize()).isEqualTo(64);
 	}
 
 	/**
@@ -90,6 +93,7 @@ class TrackPropertiesTest {
 		src.put("mica.ai.track.match-low-thresh", "0.6");
 		src.put("mica.ai.track.track-buffered-thresh", "20");
 		src.put("mica.ai.track.confirm-age", "5");
+		src.put("mica.ai.track.history-size", "16");
 
 		ByteTrackConfig c = bind(src).toConfig();
 
@@ -99,6 +103,7 @@ class TrackPropertiesTest {
 		assertThat(c.getMatchLowThresh()).isEqualTo(0.6f);
 		assertThat(c.getTrackBufferedThresh()).isEqualTo(20);
 		assertThat(c.getConfirmAge()).isEqualTo(5);
+		assertThat(c.getHistorySize()).isEqualTo(16);
 		c.validate();
 	}
 
@@ -124,5 +129,10 @@ class TrackPropertiesTest {
 		assertThatThrownBy(illegalConfirmAge::validate)
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("confirmAge");
+
+		ByteTrackConfig illegalHistorySize = ByteTrackConfig.builder().historySize(2).build();
+		assertThatThrownBy(illegalHistorySize::validate)
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("historySize");
 	}
 }
