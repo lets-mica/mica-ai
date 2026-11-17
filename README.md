@@ -85,7 +85,6 @@ graph TD
 ```
 
 > `mica-ai-track` / `mica-ai-barcode` 是**纯算法零模型**模块：不依赖 `mica-ai-common`、不引入 ONNX Runtime / OpenCV，只靠 JVM 计算（barcode 仅依赖 `com.google.zxing:core`）。
-```
 
 | 层 | 模块 | 职责 | 关键约束 |
 |----|------|------|----------|
