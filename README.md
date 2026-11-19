@@ -97,6 +97,8 @@ graph TD
 >
 > `mica-ai-example` 提供完整集成示例；相邻项目：[**mica-ppocr**](https://gitee.com/dreamlu/mica-ppocr)（PaddleOCR / PP-OCRv4 的 Java 推理）、[**mica-voice**](https://gitee.com/dreamlu/mica-voice)（ASR / TTS / 热词雷达 / 中文 ITN）。
 
+模型网盘下载： 链接：https://pan.quark.cn/s/56cdf019c2c1 提取码：yjAh
+
 ---
 
 ## 🚀 快速开始
