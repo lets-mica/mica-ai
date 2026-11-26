@@ -18,6 +18,8 @@ package net.dreamlu.mica.ai.detect.autoconfigure;
 import net.dreamlu.mica.ai.common.exception.MicaAiException;
 import net.dreamlu.mica.ai.detect.config.DetectConfig;
 import net.dreamlu.mica.ai.detect.config.DetectModelFamily;
+import net.dreamlu.mica.ai.detect.config.SlicedDetectConfig;
+import net.dreamlu.mica.ai.detect.model.SliceMergeStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,5 +79,37 @@ class DetectPropertiesTest {
 		DetectConfig config = DetectAutoConfiguration.toConfig(properties);
 
 		assertThat(config.getOnnx()).isSameAs(properties.getOnnx());
+	}
+
+	@Test
+	void slicedDefaultsMatchPlan() {
+		DetectProperties properties = new DetectProperties();
+		DetectProperties.Sliced sliced = properties.getSliced();
+
+		assertThat(sliced.isEnabled()).isTrue();
+		assertThat(sliced.getOverlapRatio()).isEqualTo(0.25f);
+		assertThat(sliced.getMaxSlices()).isEqualTo(64);
+		assertThat(sliced.getMergeStrategy()).isEqualTo(SliceMergeStrategy.IOU_MERGE);
+	}
+
+	@Test
+	void mapsSlicedPropertiesToCoreConfig() {
+		DetectProperties properties = new DetectProperties();
+		properties.setModelPath("D:/models/nanodet.onnx");
+		properties.getSliced().setOverlapRatio(0.4f);
+		properties.getSliced().setMaxSlices(32);
+		properties.getSliced().setMergeStrategy(SliceMergeStrategy.KEEP_ALL);
+
+		SlicedDetectConfig config = DetectAutoConfiguration.toSlicedConfig(properties);
+
+		assertThat(config.getOverlapRatio()).isEqualTo(0.4f);
+		assertThat(config.getMaxSlices()).isEqualTo(32);
+		assertThat(config.getMergeStrategy()).isEqualTo(SliceMergeStrategy.KEEP_ALL);
+		// 切片配置委托整图检测配置，两者的模型与阈值口径必须一致
+		assertThat(config.getDetectConfig().getModelPath()).isEqualTo("D:/models/nanodet.onnx");
+		assertThat(config.getDetectConfig().getFamily()).isEqualTo(DetectModelFamily.NANODET_PLUS);
+		// 切片边长恒等于模型输入边长
+		assertThat(config.resolveSliceSize()).isEqualTo(416);
+		config.validate();
 	}
 }

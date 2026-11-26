@@ -38,6 +38,12 @@ mica:
         device: CPU                                       # CPU / GPU（枚举）
         intra-op-num-threads: 0                           # 0 = ORT 默认
         inter-op-num-threads: 0
+      # 切片推理（与整图检测共用同一份模型，零新增模型资产）
+      sliced:
+        enabled: true                                     # false 时不装配 SlicedDetectEngine
+        overlap-ratio: 0.25                               # 切片重叠比例，(0, 1)
+        max-slices: 64                                    # 切片数上限，超限即失败
+        merge-strategy: IOU_MERGE                         # IOU_MERGE / KEEP_ALL
 ```
 
 | 配置 | 默认值 | 说明 |
@@ -53,6 +59,13 @@ mica:
 | `onnx.device` | `CPU` | `CPU` / `GPU`（枚举，GPU 需 classpath 换 `onnxruntime_gpu`） |
 | `onnx.intra-op-num-threads` | `0` | ORT 内部线程 |
 | `onnx.inter-op-num-threads` | `0` | ORT 交互线程 |
+| `sliced.enabled` | `true` | 是否装配 `SlicedDetectEngine` Bean |
+| `sliced.overlap-ratio` | `0.25` | 切片重叠比例，`(0, 1)`；重叠是必需的，否则边界物体会被切成两半 |
+| `sliced.max-slices` | `64` | 切片数上限，超限抛 `MicaAiException` 并提示调整 |
+| `sliced.merge-strategy` | `IOU_MERGE` | 跨片合并策略：`IOU_MERGE`（跨片去重）/ `KEEP_ALL`（保留各片原始框） |
+
+> 切片边长**不是配置项**：它恒等于 `input-size`（模型输入边长）。切片边长若更小，
+> letterbox 会把切片放大，小目标优势归零；若更大则浪费算力且超出模型输入。
 
 ### ⚠️ 切换模型族必须成对改两项
 
@@ -101,6 +114,35 @@ public class DetectController {
 `DetectResult` 提供 `getWidth()` / `getHeight()` / `getBoxes()` / `size()`；
 `DetectBox` 提供 `getX1() / getY1() / getX2() / getY2() / getScore() / getClassId()` 与 `width() / height() / area() / iou(other) / label(labels)`。
 
+### 切片推理（`SlicedDetectEngine`）
+
+`SlicedDetectEngine` Bean 由 Starter 自动装配，复用已有的 `DetectEngine` Bean（不重复加载模型）：
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class SlicedDetectController {
+
+    private final SlicedDetectEngine slicedDetectEngine;
+
+    /** 上传大图 → 切片推理 → 返回原图坐标系的检测框 */
+    @PostMapping("/detect/sliced")
+    public DetectResult sliced(@RequestParam("file") MultipartFile file) throws IOException {
+        return slicedDetectEngine.detectBytes(file.getBytes());
+    }
+}
+```
+
+| 方法 | 返回 | 说明 |
+|------|------|------|
+| `detect(Mat)` | `DetectResult` | 切片检测 BGR 图；空图返回 `null` |
+| `detectBytes(byte[])` | `DetectResult` | 切片检测图片字节 |
+| `sliceCount(width, height)` | `int` | 纯计算：给定尺寸会被切成几片（不推理） |
+| `getConfig()` | `SlicedDetectConfig` | 当前切片配置 |
+| `getSource()` | `DetectSource` | 底层检测能力 |
+
+> `SlicedDetectEngine` 不持有模型、不实现 `AutoCloseable`；底层 session 的生命周期仍由 `DetectEngine` Bean 管理。
+
 ---
 
 ## 4. 与多目标跟踪组合
@@ -135,5 +177,6 @@ public DetectEngine myEngine(DetectProperties props) {
 
 ## 6. 测试覆盖
 
-- `DetectPropertiesTest`：默认值、字段全量映射、`onnx` 实例共享
+- `DetectPropertiesTest`：默认值、字段全量映射、`onnx` 实例共享、切片配置映射
 - [`DetectIntegrationTest`](../../mica-ai-core/mica-ai-detect/src/test/java/net/dreamlu/mica/ai/detect/DetectIntegrationTest.java)：真模型推理、输出节点数与输入边长自检、空图兜底、模型缺失时跳过
+- [`SlicedDetectEngineTest`](../../mica-ai-core/mica-ai-detect/src/test/java/net/dreamlu/mica/ai/detect/SlicedDetectEngineTest.java) / [`SlicedDetectIntegrationTest`](../../mica-ai-core/mica-ai-detect/src/test/java/net/dreamlu/mica/ai/detect/SlicedDetectIntegrationTest.java)：切片网格、坐标回映射、跨片合并、切片数上限（假检测源零 ONNX + 真模型各一层）

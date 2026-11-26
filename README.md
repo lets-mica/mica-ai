@@ -54,7 +54,7 @@
 | 📐 文档版面分析 | `mica-ai-layout` | PP-DocLayoutV3 | **25 类版面区域** + V3 阅读顺序 | Apache 2.0 | ✅ |
 | ✂️ 通用抠图 | `mica-ai-matting` | U²-Net 族（`u2netp` 入库 / `u2net` / `u2net_human_seg` 可外置替换） | 原尺寸 alpha 掩码（透明底 / 纯色底 / 二值） | Apache 2.0 | ✅ |
 | 👤 人像分割 | `mica-ai-humanseg` | PP-HumanSeg V2-Lite（`192×192` 入库，竖版同族可外置替换） | 原尺寸人像 alpha 掩码（透明底 / 纯色底 / 二值） | Apache 2.0 | ✅ |
-| 🎯 通用目标检测 | `mica-ai-detect` | NanoDet-Plus（默认 / 416×416）/ YOLOX-s（640×640） | COCO **80 类** + 置信度 | Apache 2.0 | ✅ |
+| 🎯 通用目标检测 | `mica-ai-detect` | NanoDet-Plus（默认 / 416×416）/ YOLOX-s（640×640） | COCO **80 类** + 置信度（支持**切片推理**提升小目标召回） | Apache 2.0 | ✅ |
 | 🧭 多目标跟踪 / 行为事件 | `mica-ai-track` | ByteTrack（Kalman + 匈牙利匹配）+ 逐帧事件规则（**纯算法零模型**） | 稳定 track id + 轨迹点 / 速度 + 越线 / ROI 进出 / 滞留 / 折返事件 | MIT | ✅ |
 | 📸 文档角点矫正 | `mica-ai-docalign` | DocAligner `lcnet100_h_e_bifpn_256_fp32`（4.55MB 入库，fastvit 同族可外置替换） | 4 个角点（左上 / 右上 / 右下 / 左下）+ 拉平 PNG | Apache 2.0 | ✅ |
 | ✨ 图像超分 | `mica-ai-enhance` | Real-ESRGAN `realesr-general-x4v3`（2.33MB 入库，动态尺寸 + tile 推理） | **4 倍**放大后的 PNG / Mat | BSD-3-Clause | ✅ |
@@ -279,7 +279,7 @@ public class FaceEnrollService {
 | [mica-ai-layout-spring-boot-starter](mica-ai-starters/mica-ai-layout-spring-boot-starter/README.md) | `mica.ai.layout` | PP-DocLayoutV3 文档版面分析（25 类 + V3 阅读顺序；模型 125MB 不随仓库分发，需本地放模型） |
 | [mica-ai-matting-spring-boot-starter](mica-ai-starters/mica-ai-matting-spring-boot-starter/README.md) | `mica.ai.matting` | U²-Net 族通用抠图（透明底 / 纯色底 / 二值掩码；`u2netp` 4.36MB 入库，`u2net` / `u2net_human_seg` 走 `model-path` 外置切换） |
 | [mica-ai-humanseg-spring-boot-starter](mica-ai-starters/mica-ai-humanseg-spring-boot-starter/README.md) | `mica.ai.humanseg` | PP-HumanSeg V2-Lite 人像分割（透明底 / 纯色底 / 二值掩码；`192×192` 5.88MB 入库，竖版同族走 `model-path` 外置切换） |
-| [mica-ai-detect-spring-boot-starter](mica-ai-starters/mica-ai-detect-spring-boot-starter/README.md) | `mica.ai.detect` | NanoDet-Plus / YOLOX-s 通用目标检测（COCO 80 类；两种模型族切换只改 `family` + `input-size`） |
+| [mica-ai-detect-spring-boot-starter](mica-ai-starters/mica-ai-detect-spring-boot-starter/README.md) | `mica.ai.detect` | NanoDet-Plus / YOLOX-s 通用目标检测（COCO 80 类；两种模型族切换只改 `family` + `input-size`；支持切片推理提升小目标召回） |
 | [mica-ai-track-spring-boot-starter](mica-ai-starters/mica-ai-track-spring-boot-starter/README.md) | `mica.ai.track` | ByteTrack 多目标跟踪（纯算法零模型，输入任意检测框序列，输出稳定 track id） |
 | [mica-ai-docalign-spring-boot-starter](mica-ai-starters/mica-ai-docalign-spring-boot-starter/README.md) | `mica.ai.docalign` | DocAligner 文档角点检测 + 透视矫正（4 角点 + 一键拉平；4.55MB 入库，fastvit 同族走 `model-path` 外置切换） |
 | [mica-ai-enhance-spring-boot-starter](mica-ai-starters/mica-ai-enhance-spring-boot-starter/README.md) | `mica.ai.enhance` | Real-ESRGAN 4 倍图像超分（2.33MB 入库；大图自动 tile 切分，`tile-size` / `tile-overlap` 可调） |

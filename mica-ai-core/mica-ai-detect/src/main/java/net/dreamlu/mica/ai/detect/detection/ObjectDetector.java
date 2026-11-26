@@ -388,7 +388,7 @@ public class ObjectDetector implements AutoCloseable {
 	// ---------------------------------------------------------------- 契约
 
 	private int padValue() {
-		return config.getFamily() == DetectModelFamily.YOLOX_S ? 114 : 0;
+		return config.getFamily().getPadValue();
 	}
 
 	private int interpolation() {

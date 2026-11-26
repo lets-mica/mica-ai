@@ -44,12 +44,12 @@ public enum DetectModelFamily {
 	/**
 	 * NanoDet-Plus（opencv_zoo {@code object_detection_nanodet_2022nov.onnx}，3.6MB）
 	 */
-	NANODET_PLUS("object_detection_nanodet_2022nov.onnx", 416),
+	NANODET_PLUS("object_detection_nanodet_2022nov.onnx", 416, 0),
 
 	/**
 	 * YOLOX-s（opencv_zoo {@code object_detection_yolox_2022nov.onnx}，34MB）
 	 */
-	YOLOX_S("object_detection_yolox_2022nov.onnx", 640);
+	YOLOX_S("object_detection_yolox_2022nov.onnx", 640, 114);
 
 	/**
 	 * 仓库内模型文件名（{@code model-tools/detect/models/} 下），用于报错提示
@@ -60,4 +60,9 @@ public enum DetectModelFamily {
 	 * 模型原生输入边长；配置的 {@code inputSize} 与之不一致时构造期快速失败
 	 */
 	private final int inputSize;
+
+	/**
+	 * letterbox 填充灰度值（切片推理补齐图像边缘时复用同一契约）
+	 */
+	private final int padValue;
 }

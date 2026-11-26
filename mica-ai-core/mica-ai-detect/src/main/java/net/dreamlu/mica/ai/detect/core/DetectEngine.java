@@ -54,7 +54,7 @@ import java.util.Objects;
  * 字段，可作为 Spring 单例 Bean 共享。
  */
 @Slf4j
-public class DetectEngine implements AutoCloseable {
+public class DetectEngine implements DetectSource, AutoCloseable {
 
 	private final ObjectDetector detector;
 	/**

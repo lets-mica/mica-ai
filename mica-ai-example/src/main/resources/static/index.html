@@ -360,6 +360,14 @@ const DETECT_CAPS = [
     f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '目标检测调试图', p: '/detect/annotate', d: '画出检测框与类别名', o: 'image',
     f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '切片检测', p: '/detect/sliced', d: '大图切片推理 · 小目标召回增强', o: 'json',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '整图 vs 切片对比', p: '/detect/sliced-compare', d: '两侧框数 / 耗时 + 只在切片出现的框', o: 'json',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '切片检测调试图', p: '/detect/sliced-annotate', d: '画出切片推理的检测框', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
+  {t: '切片网格可视化', p: '/detect/sliced-grid', d: '叠加切片网格与片序号', o: 'image',
+    f: [{k: 'file', l: '图片', y: 'file'}]},
   {t: '检测 + 跟踪', p: '/track/detect-and-track', d: 'ByteTrack 输出稳定 track id', o: 'json',
     f: [{k: 'file', l: '视频帧图片', y: 'file'}]}
 ];
@@ -433,7 +441,8 @@ function renderCards(list, target) {
     const fields = cap.f.map(f => {
       if (f.y === 'file') {
         const accept = f.any ? '' : ' accept="image/*"';
-        return '<label class="field"><span>' + f.l + '</span><input type="file"' + accept + ' name="' + f.k + '"></label>';
+        const multi = f.multi ? ' multiple' : '';
+        return '<label class="field"><span>' + f.l + '</span><input type="file"' + accept + multi + ' name="' + f.k + '"></label>';
       }
       if (f.y === 'select') {
         const opts = f.opts.map(o => '<option value="' + o.v + '"' + (o.v === f.v ? ' selected' : '') + '>' + o.l + '</option>').join('');
@@ -469,7 +478,14 @@ async function runCap(card) {
   let missing = null;
   card.querySelectorAll('input, select').forEach(el => {
     if (el.type === 'file') {
-      if (el.files[0]) {
+      if (el.multiple) {
+        for (let i = 0; i < el.files.length; i++) {
+          fd.append(el.name, el.files[i]);
+        }
+        if (!el.files.length && !missing) {
+          missing = el.closest('.field').querySelector('span').textContent;
+        }
+      } else if (el.files[0]) {
         fd.append(el.name, el.files[0]);
       } else if (!missing) {
         missing = el.closest('.field').querySelector('span').textContent;
@@ -542,9 +558,16 @@ async function runJson(card) {
 async function runScenario(card) {
   const fd = new FormData();
   let missing = null;
-  card.querySelectorAll('input, select').forEach(el => {
+  card.querySelectorAll('input, select, textarea').forEach(el => {
     if (el.type === 'file') {
-      if (el.files[0]) {
+      if (el.multiple) {
+        for (let i = 0; i < el.files.length; i++) {
+          fd.append(el.name, el.files[i]);
+        }
+        if (!el.files.length && !missing) {
+          missing = el.closest('.field').querySelector('span').textContent;
+        }
+      } else if (el.files[0]) {
         fd.append(el.name, el.files[0]);
       } else if (!missing) {
         missing = el.closest('.field').querySelector('span').textContent;

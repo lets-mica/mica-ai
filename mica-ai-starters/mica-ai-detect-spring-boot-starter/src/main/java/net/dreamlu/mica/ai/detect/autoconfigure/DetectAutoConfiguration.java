@@ -17,7 +17,10 @@ package net.dreamlu.mica.ai.detect.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
 import net.dreamlu.mica.ai.detect.core.DetectEngine;
+import net.dreamlu.mica.ai.detect.core.SlicedDetectEngine;
 import net.dreamlu.mica.ai.detect.config.DetectConfig;
+import net.dreamlu.mica.ai.detect.config.SlicedDetectConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -68,6 +71,47 @@ public class DetectAutoConfiguration {
 			.maxDetections(properties.getMaxDetections())
 			.labels(properties.getLabels())
 			.onnx(properties.getOnnx())
+			.build();
+	}
+
+	/**
+	 * 创建切片推理引擎 Bean。
+	 *
+	 * <p>复用已有的 {@link DetectEngine} Bean（不重复加载模型）。本 Bean 不持有可释放资源，
+	 * 底层 session 的生命周期仍由 {@code detectEngine} Bean 管理。
+	 *
+	 * @param detectEngine 检测引擎
+	 * @param properties   检测配置属性
+	 * @return SlicedDetectEngine 实例
+	 */
+	@Bean
+	@ConditionalOnBean(DetectEngine.class)
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "mica.ai.detect.sliced", name = "enabled",
+		havingValue = "true", matchIfMissing = true)
+	public SlicedDetectEngine slicedDetectEngine(DetectEngine detectEngine, DetectProperties properties) {
+		SlicedDetectConfig config = toSlicedConfig(properties);
+		log.info("mica-ai-detect 切片推理已启用: overlapRatio={}, maxSlices={}, mergeStrategy={}",
+			config.getOverlapRatio(), config.getMaxSlices(), config.getMergeStrategy());
+		return SlicedDetectEngine.create(detectEngine, config);
+	}
+
+	/**
+	 * 把 Spring 配置属性翻译成核心模块的 {@link SlicedDetectConfig}。
+	 *
+	 * <p>与 {@link #toConfig(DetectProperties)} 同款做法：独立成包级静态方法，
+	 * 便于测试直接调用<b>这段真实装配逻辑</b>。
+	 *
+	 * @param properties 检测配置属性
+	 * @return 核心模块切片配置对象
+	 */
+	static SlicedDetectConfig toSlicedConfig(DetectProperties properties) {
+		DetectProperties.Sliced sliced = properties.getSliced();
+		return SlicedDetectConfig.builder()
+			.detectConfig(toConfig(properties))
+			.overlapRatio(sliced.getOverlapRatio())
+			.maxSlices(sliced.getMaxSlices())
+			.mergeStrategy(sliced.getMergeStrategy())
 			.build();
 	}
 }

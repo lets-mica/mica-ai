@@ -253,6 +253,16 @@ mica:
         # enable-cpu-mem-arena: false
         # enable-memory-pattern: false
         # symbolic-dimension-values: { }
+      # 切片推理：与整图检测共用同一份模型，零新增模型资产
+      #  切片边长恒等于 input-size（模型输入边长），不做成配置项
+      #  overlap-ratio：切片重叠比例，边界物体会被切两半，重叠是必需的
+      #  max-slices：切片数上限，超过即失败并提示调整（算力约为整图 × 切片数）
+      #  merge-strategy：IOU_MERGE（跨片去重）/ KEEP_ALL（保留各片原始框）
+      sliced:
+        enabled: true
+        overlap-ratio: 0.25
+        max-slices: 64
+        merge-strategy: IOU_MERGE
     # ============================================================
     #  🧭 Track —— ByteTrack 多目标跟踪（MIT，纯算法零模型）
     #  high-threshold：高分框分界线；low-threshold：低分框丢弃线（两轮匹配都进不去）

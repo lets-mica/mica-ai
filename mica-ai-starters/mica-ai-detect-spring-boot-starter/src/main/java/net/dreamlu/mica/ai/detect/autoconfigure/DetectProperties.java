@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.dreamlu.mica.ai.common.onnx.OrtSessionOptions;
 import net.dreamlu.mica.ai.detect.config.DetectModelFamily;
+import net.dreamlu.mica.ai.detect.model.SliceMergeStrategy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -83,5 +84,45 @@ public class DetectProperties {
 	 */
 	@NestedConfigurationProperty
 	private OrtSessionOptions onnx = new OrtSessionOptions();
+
+	/**
+	 * 切片推理配置（对应 {@code mica.ai.detect.sliced} 前缀）。
+	 *
+	 * <p>切片推理不引入新模型，复用同一份 {@link #modelPath} 与 {@link #family}。
+	 */
+	@NestedConfigurationProperty
+	private Sliced sliced = new Sliced();
+
+	/**
+	 * 切片推理配置项。
+	 */
+	@Getter
+	@Setter
+	public static class Sliced {
+
+		/**
+		 * 是否启用切片推理（false 时不装配 SlicedDetectEngine Bean）。
+		 */
+		private boolean enabled = true;
+
+		/**
+		 * 切片重叠比例，取值 (0, 1)，默认 0.25。
+		 *
+		 * <p>重叠是必需的：没有重叠时，边界上的物体会被切成两半，
+		 * 两半的 IoU 常常低于 NMS 阈值，跨片合并时不会被抑制，输出「半个物体」。
+		 */
+		private float overlapRatio = 0.25f;
+
+		/**
+		 * 单帧切片数上限，默认 64；超过时直接失败并提示调整。
+		 */
+		private int maxSlices = 64;
+
+		/**
+		 * 跨片合并策略：IOU_MERGE（默认）/ KEEP_ALL。
+		 */
+		private SliceMergeStrategy mergeStrategy = SliceMergeStrategy.IOU_MERGE;
+
+	}
 
 }
