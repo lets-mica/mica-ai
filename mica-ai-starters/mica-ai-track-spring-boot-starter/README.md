@@ -107,6 +107,30 @@ FrameResult result = engine.process(boxes, frameTimestampMs);
 > 因此「从左往右穿越」报 `FORWARD`。详见
 > [核心模块 README §行为事件规则](../../mica-ai-core/mica-ai-track/README.md)。
 
+### 3.2 相机运动补偿同样不提供 Bean
+
+球机云台转动、车载 / 无人机摄像机移动时，静止目标的框在图像里整体位移，轨迹框与检测框的 IoU 塌陷 → 轨迹断裂、ID 换新 → 事件全部失真。`mica-ai-track` 提供 `AffineMotionModel`（2×3 仿射，参考帧 ↔ 当前帧）做这件事，但**运动模型同样是有状态、逐帧累积的**，所以也不做成 Bean：
+
+```java
+// 每路流一套：运动模型 + 跟踪器 + 规则
+AffineMotionModel motion = AffineMotionModel.identity();
+TrackEventEngine engine = TrackEventEngine.create(
+    ByteTrackConfig.builder().build(),
+    motion,
+    new RoiCounterRule("zone", Roi.rectangle(0, 0, 200, 200), AnchorPolicy.CENTER, false));
+
+for (int frame = 0; frame < frames.size(); frame++) {
+    if (frame > 0) {
+        // 本帧相对上一帧的相机运动（图像 GMC 或 PTZ 角度推出的增量）
+        motion.append(AffineMotionModel.translation(-12f, 0f));
+    }
+    engine.process(boxesOf(frame), timestampOf(frame));
+}
+```
+
+> 参考帧 = 运动模型在跟踪器创建那一刻的状态；**参考帧那一帧不追加增量**，从第 2 帧起每帧追加一次「相对上一帧」的增量。详见
+> [核心模块 README §相机运动补偿](../../mica-ai-core/mica-ai-track/README.md)。
+
 ---
 
 ## 4. 两级阈值为什么这么设计
@@ -149,3 +173,4 @@ public ByteTracker myTracker(TrackProperties props) {
 - 事件规则与端到端管线：`LineCrossingRuleTest` / `RoiCounterRuleTest` / `DwellRuleTest` / `DirectionRuleTest` / `TrackEventEngineTest`
 - [`HungarianMatcherTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/algo/HungarianMatcherTest.java) · [`KalmanFilterTest`](../../mica-ai-core/mica-ai-track/src/test/java/net/dreamlu/mica/ai/track/algo/KalmanFilterTest.java)
 - [`TrackPropertiesTest`](src/test/java/net/dreamlu/mica/ai/track/autoconfigure/TrackPropertiesTest.java)：默认值、kebab-case 绑定、`toConfig()` 装配一致性（含 `history-size`）、非法配置快速失败
+- 相机运动补偿（核心模块内）：`AffineMotionModelTest` / `MotionCompensationTest` —— 仿射几何 + 无补偿 ID 断裂 / 有补偿 ID 稳定

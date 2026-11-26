@@ -105,6 +105,69 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 
 ---
 
+## 相机运动补偿（CMC）
+
+球机云台转动、车载 / 无人机挂载摄像机移动、手持抖动时，**静止目标**的框在图像里整体位移 —— 轨迹框与检测框的 IoU 直接塌陷 → 轨迹断裂、ID 换新 → 越线 / ROI 进出 / 滞留 / 折返事件全部失真。
+
+### 原理：参考帧
+
+跟踪器内部（Kalman 状态、匹配代价矩阵）**一律在「参考帧」坐标系里计算**：参考帧 = 跟踪器创建那一刻的图像坐标系。每帧的检测框先经 `toReference()` 变换回参考帧，再与 Kalman 预测框算 IoU —— 于是**相机运动对匹配完全没有影响**。
+
+> 为什么不是 BoT-SORT 那种「把轨迹框往前推一帧」：Kalman 速度本身就是图像坐标下的速度，已经吸收了一部分相机运动，再往前推会把相机运动**重复计入**，匀速平移时反而更差。
+
+### 用法
+
+```java
+// 参考帧 = 运动模型在跟踪器创建那一刻的状态（通常是恒等变换）
+AffineMotionModel motion = AffineMotionModel.identity();
+ByteTracker tracker = ByteTracker.create(config, motion);
+TrackEventEngine engine = TrackEventEngine.create(config, motion, counter, dwell);
+
+for (int frame = 0; frame < frames.size(); frame++) {
+    if (frame > 0) {
+        // 本帧相对上一帧的相机运动（图像 GMC 估出来的增量，或 PTZ 角度推出的近似仿射）
+        motion.append(AffineMotionModel.translation(-12f, 0f));
+    }
+    engine.process(detections.get(frame), timestampMs.get(frame));
+}
+```
+
+> ⚠️ **调用契约**：`append` 的增量是「本帧相对**上一帧**」的相机运动，**参考帧那一帧不追加增量**，从第 2 帧起每帧追加一次。
+
+### 坐标系语义
+
+| 位置 | 坐标系 | 用途 |
+|------|--------|------|
+| 轨迹点 `cx/cy`、`x1..y2` | **当前帧 / 图像坐标** | ROI 进出、越线这类「按画面位置判定」的规则 |
+| 轨迹点 `refCx/refCy` | **参考帧 / 相机固定坐标** | 速度与方向 → 目标在**世界里的真实运动**，而非表观运动 |
+| Kalman 状态、匹配代价 | **参考帧** | 相机运动对匹配零影响 |
+
+未启用补偿时 `refCx/refCy` 为 `null`（`TrackPoint#hasReference()` 返回 false），速度回退到图像坐标，**行为与历史版本逐位一致**。
+
+### `AffineMotionModel`
+
+2×3 仿射（`x' = a*x + b*y + c`，`y' = d*x + e*y + f`），纯几何、零依赖：
+
+| 方法 | 说明 |
+|------|------|
+| `identity()` / `translation(dx, dy)` | 恒等 / 纯平移 |
+| `rotation(radians)` | 绕**原点**旋转（图像左上角） |
+| `rotationAround(radians, cx, cy)` | 绕指定中心旋转 —— **相机滚转用这个**（绕主点，框中心不动） |
+| `of(a,b,c,d,e,f)` / `copy()` / `reset()` | 构造 / 复制 / 复位 |
+| `compose(first, second)` | 复合（先应用 `second` 再应用 `first`） |
+| `append(incremental)` | 累积本帧增量（`this = this ∘ incremental`），**有状态**、非线程安全 |
+| `toCurrent(box)` / `toReference(box)` | 参考帧 ↔ 当前帧；退化矩阵（不可逆）逆变换退化为恒等 |
+
+**框的变换方式**：取四角点变换后求轴对齐外接矩形 —— 旋转会让外接矩形变大，这是几何事实不是缺陷；也意味着旋转场景下逆变换只能还原到「原框被外接矩形包住」的程度。
+
+### 边界与选型
+
+- **运动估计由调用方喂入**：本模块**不做图像 GMC 估计**（保持零 OpenCV 依赖）。图像 GMC（ORB / ECC 特征匹配）与 PTZ 角度换算的近似仿射，各家摄像机 SDK 给出的量纲与精度都不同，模块内置一套反而容易误用 —— 拿到位姿就喂进来，拿不到就先用「平移近似」。
+- **参考帧会随相机持续转动而漂移**：长期巡航建议定期 `reset()` 并重建跟踪器，或由调用方在参考帧与当前帧之间做重锚定。
+- **纯旋转场景收益有限**：外接矩形变大会让 IoU 匹配天然变松，此时更多依赖 `matchThresh` 调参。
+
+---
+
 ## 行为事件规则
 
 | 规则 | 触发 | 关键参数 |
@@ -166,12 +229,14 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 | `update(List<BBox>)` | `List<Track>` | 无时间戳兼容重载 |
 | `update(List<BBox>, long timestampMs)` | `List<Track>` | 带采集时间戳（毫秒），推荐用于视频流 |
 | `trackCount()` / `reset()` / `getFrameIndex()` / `getConfig()` | — | 状态与配置 |
+| `create(ByteTrackConfig)` / `create(ByteTrackConfig, MotionModel)` | `ByteTracker` | 构造；`MotionModel` 传 `null` 等同无补偿 |
 
 ### `TrackEventEngine`
 
 | 方法 | 返回 | 说明 |
 |------|------|------|
 | `create(ByteTrackConfig, TrackEventRule...)` | `TrackEventEngine` | 用默认配置的跟踪器构造 |
+| `create(ByteTrackConfig, MotionModel, TrackEventRule...)` | `TrackEventEngine` | 带相机运动补偿 |
 | `create(ByteTracker, TrackEventRule...)` | `TrackEventEngine` | 复用已有跟踪器 |
 | `process(List<BBox>, long timestampMs)` | `FrameResult` | 处理一帧；时间戳必须单调不减 |
 | `process(List<BBox>)` | `FrameResult` | 无时间戳重载（滞留规则不可用） |
@@ -192,6 +257,7 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 | `KalmanFilter` | 匀速模型（状态 8 维：位置 + 速度），预测 + 更新 |
 | `HungarianMatcher` | 匈牙利算法求最优匹配（无第三方依赖，纯 Java 实现） |
 | `Directions` | 屏幕坐标系八方向换算 |
+| `AffineMotionModel` | 2×3 仿射相机运动模型（参考帧 ↔ 当前帧），可累积 |
 
 跟踪器**状态非线程安全**（内部维护轨迹表与 id 计数）。多线程场景请每个线程各持一个实例，或在调用方加锁。
 
@@ -205,8 +271,10 @@ ByteTrack 的关键在于**低分框不直接丢**，而是参与第二轮匹配
 - `BBoxTest`（8 项）：IoU 计算、宽高换算、空框判定
 - `ByteTrackerTimestampTest`（6 项）：时间戳、轨迹点上限、速度 / 方向、旧 API 兼容、reset
 - `LineCrossingRuleTest` / `RoiCounterRuleTest` / `DwellRuleTest` / `DirectionRuleTest` / `TrackEventEngineTest`（28 项）：四条规则与端到端管线
+- `AffineMotionModelTest`（12 项）：恒等 / 平移 / 绕中心旋转 / 逆变换 / 累积 / 复合 / 复位 / 复制 / 退化矩阵 / 空框
+- `MotionCompensationTest`（6 项）：无补偿 ID 断裂、有补偿 ID 稳定、世界系速度归零、轨迹点双坐标系、无补偿时参考帧坐标为 null、ROI 计数稳定
 
-合计 **71 项**，全部为合成检测框序列驱动，**零 ONNX / 零 OpenCV / 零图像 / 零视频库**。
+合计 **89 项**，全部为合成检测框序列驱动，**零 ONNX / 零 OpenCV / 零图像 / 零视频库**。
 
 ```bash
 mvn -pl mica-ai-core/mica-ai-track -am test

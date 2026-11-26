@@ -21,6 +21,7 @@ import net.dreamlu.mica.ai.track.core.ByteTracker;
 import net.dreamlu.mica.ai.track.model.BBox;
 import net.dreamlu.mica.ai.track.model.Track;
 import net.dreamlu.mica.ai.track.model.TrackEvent;
+import net.dreamlu.mica.ai.track.motion.MotionModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,25 @@ public class TrackEventEngine {
 
 	public static TrackEventEngine create(ByteTrackConfig config, TrackEventRule... rules) {
 		return new TrackEventEngine(new ByteTracker(config), Arrays.asList(rules));
+	}
+
+	/**
+	 * 创建带相机运动补偿的事件引擎。
+	 *
+	 * <p>相机运动（球机云台转动、车载摄像机）时，轨迹框与检测框会错位，
+	 * IoU 掉到匹配阈值以下 → 轨迹断裂、事件失真。传入 {@link MotionModel} 后，
+	 * 每帧的检测框会先变换回<b>参考帧</b>再参与匹配，相机运动对匹配零影响。
+	 *
+	 * <p>{@link MotionModel} 实例由调用方持有并逐帧更新（累积本帧的相机运动）。
+	 *
+	 * @param config      跟踪配置
+	 * @param motionModel 相机运动模型；传 {@code null} 等同于无补偿
+	 * @param rules       行为规则
+	 * @return 事件引擎
+	 */
+	public static TrackEventEngine create(ByteTrackConfig config, MotionModel motionModel,
+										  TrackEventRule... rules) {
+		return new TrackEventEngine(new ByteTracker(config, motionModel), Arrays.asList(rules));
 	}
 
 	public static TrackEventEngine create(ByteTracker tracker, TrackEventRule... rules) {

@@ -110,17 +110,17 @@ public class VideoEventScenarioController {
 		private boolean bottomCenterAnchor = true;
 	}
 
-	private static ResponseEntity<Object> json(Map<String, Object> body) {
+	static ResponseEntity<Object> json(Map<String, Object> body) {
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body);
 	}
 
-	private static ResponseEntity<Object> error(String msg, HttpStatus status) {
+	static ResponseEntity<Object> error(String msg, HttpStatus status) {
 		Map<String, Object> m = new LinkedHashMap<>();
 		m.put("error", msg);
 		return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(m);
 	}
 
-	private static ByteTrackConfig trackConfig() {
+	static ByteTrackConfig trackConfig() {
 		return ByteTrackConfig.builder()
 			.highThreshold(0.5f)
 			.lowThreshold(0.01f)
@@ -132,7 +132,7 @@ public class VideoEventScenarioController {
 			.build();
 	}
 
-	private static List<BBox> toBoxes(List<BoxRequest> boxes) {
+	static List<BBox> toBoxes(List<BoxRequest> boxes) {
 		List<BBox> result = new ArrayList<>();
 		if (boxes == null) {
 			return result;
@@ -147,7 +147,7 @@ public class VideoEventScenarioController {
 		return result;
 	}
 
-	private static Map<String, Object> eventView(TrackEvent event) {
+	static Map<String, Object> eventView(TrackEvent event) {
 		Map<String, Object> m = new LinkedHashMap<>();
 		m.put("type", event.getType().name());
 		m.put("trackId", event.getTrackId());

@@ -55,6 +55,15 @@ public class Track {
 	/** 轨迹结束时刻（被删除时设） */
 	private boolean finished;
 	private BBox lastMatchedBBox;
+	/**
+	 * 最近一次匹配成功的<b>参考帧</b>检测框；未启用相机运动补偿时与 {@link #lastMatchedBBox} 相同
+	 */
+	private BBox referenceMatchedBBox;
+	/**
+	 * 当前帧坐标系下的预测框；启用相机运动补偿时已由 {@code MotionModel} 变换到当前帧，
+	 * 未启用时等于 Kalman 预测框。由跟踪器每帧刷新。
+	 */
+	private BBox framePredictedBox;
 	private long firstSeenMs;
 	private long lastSeenMs;
 	private int firstFrameIndex;
@@ -65,7 +74,25 @@ public class Track {
 	}
 
 	public Track(int id, BBox bbox, int age, int lostFrames, int historySize, int frameIndex, long timestampMs) {
-		if (bbox == null) {
+		this(id, bbox, null, age, lostFrames, historySize, frameIndex, timestampMs);
+	}
+
+	/**
+	 * 构造轨迹（区分当前帧与参考帧）。
+	 *
+	 * @param id            轨迹 id
+	 * @param currentBBox   当前帧（图像坐标系）下的检测框
+	 * @param referenceBBox 参考帧（相机固定坐标系）下的检测框；<b>传 {@code null} 表示未启用
+	 *                      相机运动补偿</b>（此时 Kalman 状态直接活在图像坐标系，轨迹点不带参考帧坐标）
+	 * @param age           累计匹配帧数
+	 * @param lostFrames    连续未匹配帧数
+	 * @param historySize   轨迹点历史上限
+	 * @param frameIndex    帧序号
+	 * @param timestampMs   采集时间戳（毫秒）
+	 */
+	public Track(int id, BBox currentBBox, BBox referenceBBox, int age, int lostFrames,
+				 int historySize, int frameIndex, long timestampMs) {
+		if (currentBBox == null) {
 			throw new IllegalArgumentException("bbox must not be null");
 		}
 		if (historySize <= 0) {
@@ -74,33 +101,71 @@ public class Track {
 		if (timestampMs < NO_TIMESTAMP) {
 			throw new IllegalArgumentException("timestampMs 必须是 -1 或非负数");
 		}
+		BBox reference = referenceBBox == null ? currentBBox : referenceBBox;
 		this.id = id;
-		this.kf = new KalmanFilter(bbox);
+		this.kf = new KalmanFilter(reference);
 		this.historySize = historySize;
 		this.points = new ArrayDeque<>(historySize);
-		this.score = bbox.getScore();
-		this.classId = bbox.getClassId();
+		this.score = currentBBox.getScore();
+		this.classId = currentBBox.getClassId();
 		this.age = age;
 		this.lostFrames = lostFrames;
-		this.lastMatchedBBox = bbox;
+		this.lastMatchedBBox = currentBBox;
+		this.referenceMatchedBBox = reference;
 		this.firstSeenMs = timestampMs;
 		this.lastSeenMs = timestampMs;
 		this.firstFrameIndex = frameIndex;
 		this.lastFrameIndex = frameIndex;
-		appendPoint(frameIndex, timestampMs, bbox, true);
+		// 未启用相机运动补偿时没有「参考帧」这回事 → 参考帧坐标留 null，行为与历史版本逐位一致
+		Float refCx = referenceBBox == null ? null : Float.valueOf(referenceBBox.cx());
+		Float refCy = referenceBBox == null ? null : Float.valueOf(referenceBBox.cy());
+		appendPoint(frameIndex, timestampMs, currentBBox, true, refCx, refCy);
 	}
 
 	public BBox getCurrentBBox() {
-		return kf.predictedBBox();
+		return getFramePredictedBox();
+	}
+
+	/**
+	 * 当前帧坐标系下的预测框：启用相机运动补偿时是「已变换到当前帧」的框，
+	 * 未启用时是 Kalman 预测框。
+	 *
+	 * @return 当前帧坐标系下的预测框
+	 */
+	public BBox getFramePredictedBox() {
+		return framePredictedBox != null ? framePredictedBox : kf.predictedBBox();
+	}
+
+	/**
+	 * 设置当前帧坐标系下的预测框（由跟踪器每帧刷新）。
+	 *
+	 * @param framePredictedBox 当前帧坐标系下的预测框
+	 */
+	public void setFramePredictedBox(BBox framePredictedBox) {
+		this.framePredictedBox = framePredictedBox;
 	}
 
 	public void onMatched(BBox bbox) {
-		this.kf.update(bbox);
-		this.score = bbox.getScore();
-		this.classId = bbox.getClassId();
+		onMatched(bbox, bbox);
+	}
+
+	/**
+	 * 匹配成功：更新 Kalman 状态并刷新实测框。
+	 *
+	 * <p>启用相机运动补偿时，{@code referenceBBox} 是检测框变换到<b>参考帧</b>后的结果
+	 * （Kalman 状态活在参考帧里），{@code currentBBox} 是检测框原样（当前帧 / 图像坐标系）。
+	 *
+	 * @param referenceBBox 参考帧坐标系下的检测框（Kalman 观测）
+	 * @param currentBBox   当前帧坐标系下的检测框
+	 */
+	public void onMatched(BBox referenceBBox, BBox currentBBox) {
+		this.kf.update(referenceBBox);
+		this.score = currentBBox.getScore();
+		this.classId = currentBBox.getClassId();
 		this.lostFrames = 0;
 		this.age++;
-		this.lastMatchedBBox = bbox;
+		this.lastMatchedBBox = currentBBox;
+		this.referenceMatchedBBox = referenceBBox;
 	}
 
 	public void onUnmatched() {
@@ -119,11 +184,26 @@ public class Track {
 	 * 追加一个轨迹点；超出 {@code historySize} 时丢弃最旧的点。
 	 */
 	public void appendPoint(int frameIndex, long timestampMs, BBox box, boolean observed) {
+		appendPoint(frameIndex, timestampMs, box, observed, null, null);
+	}
+
+	/**
+	 * 追加一个轨迹点，并记录它在<b>参考帧</b>下的中心点。
+	 *
+	 * @param frameIndex 帧序号
+	 * @param timestampMs 采集时间戳（毫秒）
+	 * @param box         当前帧（图像坐标系）下的框
+	 * @param observed    是否为实测点
+	 * @param refCx       参考帧中心 x，未启用相机运动补偿时传 null
+	 * @param refCy       参考帧中心 y，未启用相机运动补偿时传 null
+	 */
+	public void appendPoint(int frameIndex, long timestampMs, BBox box, boolean observed,
+							Float refCx, Float refCy) {
 		while (points.size() >= historySize) {
 			points.pollFirst();
 		}
 		points.addLast(new TrackPoint(frameIndex, timestampMs, box.cx(), box.cy(),
-			box.getX1(), box.getY1(), box.getX2(), box.getY2(), observed));
+			box.getX1(), box.getY1(), box.getX2(), box.getY2(), observed, refCx, refCy));
 		this.lastFrameIndex = frameIndex;
 		this.lastSeenMs = timestampMs;
 	}
@@ -180,7 +260,17 @@ public class Track {
 			return 0d;
 		}
 		double dt = (pair[1].getTimestampMs() - pair[0].getTimestampMs()) / 1000d;
-		return dt > 0d ? (pair[1].getCx() - pair[0].getCx()) / dt : 0d;
+		if (dt <= 0d) {
+			return 0d;
+		}
+		// 启用相机运动补偿时用参考帧坐标 —— 那是目标在世界里的真实运动；
+		// 否则用图像坐标（与历史行为一致）
+		Float refX0 = pair[0].getRefCx();
+		Float refX1 = pair[1].getRefCx();
+		if (refX0 != null && refX1 != null) {
+			return (refX1 - refX0) / dt;
+		}
+		return (pair[1].getCx() - pair[0].getCx()) / dt;
 	}
 
 	public double velocityYPerSecond() {
@@ -189,7 +279,15 @@ public class Track {
 			return 0d;
 		}
 		double dt = (pair[1].getTimestampMs() - pair[0].getTimestampMs()) / 1000d;
-		return dt > 0d ? (pair[1].getCy() - pair[0].getCy()) / dt : 0d;
+		if (dt <= 0d) {
+			return 0d;
+		}
+		Float refY0 = pair[0].getRefCy();
+		Float refY1 = pair[1].getRefCy();
+		if (refY0 != null && refY1 != null) {
+			return (refY1 - refY0) / dt;
+		}
+		return (pair[1].getCy() - pair[0].getCy()) / dt;
 	}
 
 	public double speedPerSecond() {

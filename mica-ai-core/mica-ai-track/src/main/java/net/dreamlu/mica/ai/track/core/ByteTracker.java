@@ -21,6 +21,7 @@ import net.dreamlu.mica.ai.track.algo.HungarianMatcher;
 import net.dreamlu.mica.ai.track.config.ByteTrackConfig;
 import net.dreamlu.mica.ai.track.model.BBox;
 import net.dreamlu.mica.ai.track.model.Track;
+import net.dreamlu.mica.ai.track.motion.MotionModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +54,26 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>为每条活跃轨迹追加一个采样点：命中帧用实测框，未命中帧用 Kalman 预测框</li>
  * </ol>
  *
+ * <p><b>相机运动补偿</b>：构造时传入 {@link MotionModel} 后，每帧的检测框会先变换回
+ * <b>参考帧</b>（相机固定坐标系）再参与匹配与 Kalman 更新 —— 相机一动（球机云台转动、
+ * 车载摄像机），轨迹框与检测框不再错位，IoU 不再塌陷，轨迹断裂、ID 换新、
+ * 越线 / ROI / 滞留 / 折返事件失真等问题一并消除。轨迹点与对外暴露的框仍是当前帧
+ * （图像坐标系）坐标，速度与方向则用参考帧坐标计算 —— 得到的是目标在世界里的真实运动。
+ * 未传入时行为与历史版本逐位一致。
+ *
+ * <p><b>参考帧 = 运动模型在跟踪器创建那一刻的状态</b>（通常是恒等变换）。因此调用顺序是：
+ * <pre>{@code
+ * AffineMotionModel motion = AffineMotionModel.identity();
+ * ByteTracker tracker = ByteTracker.create(config, motion);
+ * for (int frame = 0; frame < frames; frame++) {
+ *     if (frame > 0) {
+ *         motion.append(incrementalOf(frame));   // 本帧相对上一帧的相机运动
+ *     }
+ *     tracker.update(detections, timestampMs);
+ * }
+ * }</pre>
+ * 即：<b>参考帧那一帧不追加增量</b>，从第 2 帧起每帧追加一次「相对上一帧」的增量。
+ *
  * <p>线程安全：<b>不是</b>线程安全——内部用普通 {@link HashMap}，更新时逐帧重建。
  * 调用方做外部同步（跟踪器通常单视频流单线程跑）。
  *
@@ -63,6 +84,11 @@ public class ByteTracker {
 
 	@Getter
 	private final ByteTrackConfig config;
+	/**
+	 * 相机运动模型；为 {@code null} 表示不做补偿（默认行为）。
+	 */
+	@Getter
+	private final MotionModel motionModel;
 	private final AtomicInteger nextId = new AtomicInteger(1);
 
 	/**
@@ -72,19 +98,35 @@ public class ByteTracker {
 	private int frameIndex;
 
 	public ByteTracker(ByteTrackConfig config) {
+		this(config, null);
+	}
+
+	public ByteTracker(ByteTrackConfig config, MotionModel motionModel) {
 		if (config == null) {
 			throw new IllegalArgumentException("ByteTrackConfig must not be null");
 		}
 		config.validate();
 		this.config = config;
-		log.info("ByteTracker 初始化完成: high={}, low={}, match={}, matchLow={}, confirmAge={}, buffered={}, history={}",
+		this.motionModel = motionModel;
+		log.info("ByteTracker 初始化完成: high={}, low={}, match={}, matchLow={}, confirmAge={}, buffered={}, history={}, motion={}",
 			config.getHighThreshold(), config.getLowThreshold(), config.getMatchThresh(),
 			config.getMatchLowThresh(), config.getConfirmAge(), config.getTrackBufferedThresh(),
-			config.getHistorySize());
+			config.getHistorySize(), motionModel == null ? "无" : motionModel.getClass().getSimpleName());
 	}
 
 	public static ByteTracker create(ByteTrackConfig config) {
 		return new ByteTracker(config);
+	}
+
+	/**
+	 * 创建带相机运动补偿的跟踪器。
+	 *
+	 * @param config      跟踪配置
+	 * @param motionModel 相机运动模型；传 {@code null} 等同于无补偿
+	 * @return 跟踪器
+	 */
+	public static ByteTracker create(ByteTrackConfig config, MotionModel motionModel) {
+		return new ByteTracker(config, motionModel);
 	}
 
 	/**
@@ -110,6 +152,14 @@ public class ByteTracker {
 		List<Track> allTrks = new ArrayList<>(oldTracks.values());
 		for (Track t : allTrks) {
 			t.getKf().predict();
+		}
+
+		// 1.5 相机运动补偿：Kalman 状态活在参考帧，预测框变换到当前帧供轨迹点与对外展示使用。
+		//     匹配用的是参考帧坐标（见 matchAndMarkMatched），相机运动对匹配零影响。
+		//     未提供 MotionModel 时，参考帧 == 图像帧，预测框即 Kalman 原始预测（与历史行为逐位一致）。
+		for (Track t : allTrks) {
+			BBox predicted = t.getKf().predictedBBox();
+			t.setFramePredictedBox(motionModel == null ? predicted : motionModel.toCurrent(predicted));
 		}
 
 		// 2. dets 按 score 分高分 / 低分（lowThreshold 以下的连第二轮都进不去）
@@ -193,15 +243,34 @@ public class ByteTracker {
 				continue;
 			}
 			boolean observed = t.getLostFrames() == 0;
-			BBox box = observed ? t.getLastMatchedBBox() : t.getKf().predictedBBox();
-			t.appendPoint(frameIndex, timestampMs, box, observed);
+			// 命中帧用实测框（检测框本就是当前帧坐标），未命中帧用「当前帧坐标系」的预测框，
+			// 两者坐标系一致，ROI / 越线判定不会失真
+			BBox box = observed ? t.getLastMatchedBBox() : t.getFramePredictedBox();
+			Float refCx = null;
+			Float refCy = null;
+			if (motionModel != null) {
+				BBox reference = observed ? t.getReferenceMatchedBBox() : t.getKf().predictedBBox();
+				refCx = reference.cx();
+				refCy = reference.cy();
+			}
+			t.appendPoint(frameIndex, timestampMs, box, observed, refCx, refCy);
 		}
 		return active;
 	}
 
 	private Track newTrack(BBox det, long timestampMs) {
 		int id = nextId.getAndIncrement();
-		return new Track(id, det, 1, 0, config.getHistorySize(), frameIndex, timestampMs);
+		// 未启用补偿时参考帧坐标留 null（轨迹点与历史版本逐位一致）；启用时把检测框变换到参考帧
+		BBox reference = motionModel == null ? null : toReference(det);
+		return new Track(id, det, reference, 1, 0, config.getHistorySize(),
+			frameIndex, timestampMs);
+	}
+
+	/**
+	 * 把当前帧（图像坐标系）的检测框变换到参考帧；未启用相机运动补偿时原样返回。
+	 */
+	private BBox toReference(BBox det) {
+		return motionModel == null ? det : motionModel.toReference(det);
 	}
 
 	/**
@@ -224,7 +293,8 @@ public class ByteTracker {
 		int n = trks.size();
 		double[][] cost = new double[m][n];
 		for (int i = 0; i < m; i++) {
-			BBox d = dets.get(i);
+			// 检测框先变换到参考帧，与 Kalman 状态（参考帧）在同一坐标系下算 IoU
+			BBox d = toReference(dets.get(i));
 			for (int j = 0; j < n; j++) {
 				BBox pred = trks.get(j).getKf().predictedBBox();
 				float iou = d.iou(pred);
@@ -239,7 +309,8 @@ public class ByteTracker {
 		for (int[] pair : r.matched) {
 			BBox d = dets.get(pair[0]);
 			Track t = trks.get(pair[1]);
-			t.onMatched(d);
+			// Kalman 用参考帧坐标更新，轨迹对外暴露的实测框仍是当前帧坐标
+			t.onMatched(toReference(d), d);
 			matchedThisFrame.add(t.getId());
 		}
 
