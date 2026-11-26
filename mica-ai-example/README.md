@@ -221,9 +221,17 @@ mvn -pl mica-ai-example -am test
 | `/humanseg/mask` | POST multipart | 上传图片，返回人像二值掩码 PNG |
 | `/detect/detect` | POST multipart | 上传图片，返回 COCO 80 类检测框（label / classId / score / 坐标） |
 | `/detect/annotate` | POST multipart | 上传图片，在原图上画出检测框与类别名并返回 PNG |
+| `/detect/sliced` | POST multipart | **切片推理**：大图切片分别推理后合并，返回原图坐标系的检测框 + 切片数 + 耗时 |
+| `/detect/sliced-compare` | POST multipart | **整图 vs 切片对比**：两侧框数 / 耗时、只在切片出现的框（整图漏掉、切片抓到）、算力代价倍数 |
+| `/detect/sliced-annotate` | POST multipart | 在原图上画出切片推理的检测框并返回 PNG |
+| `/detect/sliced-grid` | POST multipart | 在原图上叠加切片网格与片序号并返回 PNG（看切片边长 / 重叠 / 末列回退） |
 | `/track/update` | POST JSON | 提交一帧检测框数组，返回当前活跃轨迹（id / 框 / score / age / mature） |
 | `/track/detect-and-track` | POST multipart | 上传一帧图片，自动检测 + 跟踪，返回带 track id 的框 |
 | `/scenario/video-events/analyze` | POST JSON | **逐帧事件分析**：连续帧检测框数组（每帧带 `timestampMs`）→ 稳定轨迹 + 越线 / ROI 进出 / 滞留 / 折返事件；不解码视频 |
+| `/scenario/video-events/analyze-with-motion` | POST JSON | **带相机运动补偿的逐帧事件分析**：在上一条基础上追加每帧相机运动增量（仿射系数），并列输出「有补偿 vs 无补偿」 |
+| `/scenario/video-events/motion-demo` | POST JSON | **相机运动补偿零输入演示**：相机横摇 + 世界静止目标，无补偿 ID 断裂 / ROI 重复计数，有补偿 ID 稳定 / 速度归零 |
+| `/scenario/inspection/analyze` | POST multipart | **小球机巡检**：多帧监控画面 → 切片检测 → 运动补偿跟踪 → 越线 / ROI / 滞留 / 折返，返回逐帧轨迹（图像坐标 + 参考帧坐标）+ 事件流 + 汇总 |
+| `/scenario/inspection/annotate` | POST multipart | 同上参数，直接返回最后一帧的标注 PNG（轨迹框 + id + 轨迹点连线） |
 | `/docalign/corners` | POST multipart | 上传文档图，返回左上 / 右上 / 右下 / 左下四个角点与置信度 |
 | `/docalign/align` | POST multipart | 上传文档图，检测四角 + 透视拉平，返回 PNG |
 | `/enhance/upscale` | POST multipart | 上传图片，4 倍超分后返回 PNG（大图自动 tile 推理） |
@@ -310,6 +318,62 @@ curl -X POST -H "Content-Type: application/json" \
    `FORWARD`**；线画成「从上往下」时同一动作会被判成 `BACKWARD`。这是最容易踩的坑，
    所以示例默认用自下而上的线。
 4. **每次请求新建引擎**：跟踪器与规则都是有状态的，一路流一个实例，请求之间不串状态。
+
+### 🎥 相机运动补偿（`/scenario/video-events/motion-demo`）
+
+球机云台转动、车载摄像机移动时，**静止目标**的框在图像里整体位移 → 轨迹框与检测框 IoU 塌陷
+→ 轨迹断裂、ID 换新 → 越线 / ROI / 滞留 / 折返事件全部失真。
+
+`motion-demo` 是**零输入**的合成演示：相机每帧横摇、目标在世界坐标静止，内置 16 帧序列：
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{}' \
+  http://localhost:8181/scenario/video-events/motion-demo
+```
+
+```json
+{
+  "frameCount": 16,
+  "cameraMotion": {"dxPerFrame": -20.0, "dyPerFrame": 0.0, "description": "相机横摇，图像内容整体左移 20.0 px/帧；目标在世界坐标静止"},
+  "withoutMotion": {"trackIdCount": 16, "roiEnters": 10, "apparentSpeedPxPerSec": -200.0, "reportedSpeedPxPerSec": null},
+  "withMotion":    {"trackIdCount": 1,  "roiEnters": 1,  "apparentSpeedPxPerSec": -200.0, "referenceSpeedPxPerSec": 0.0, "reportedSpeedPxPerSec": 0.0}
+}
+```
+
+三个数字就是全部结论：
+
+| 数字 | 无补偿 | 有补偿 | 含义 |
+|---|---|---|---|
+| `trackIdCount` | 16 | 1 | 相机一动就每帧换新 ID；补偿后轨迹不断裂 |
+| `roiEnters` | 10 | 1 | ID 换新导致同一目标被反复计成「进入」 |
+| `reportedSpeedPxPerSec` | `null` | `0.0` | 无补偿时轨迹碎成单点、根本没有速度可言；有补偿时报告的是**世界里的真实速度**（0） |
+
+而 `apparentSpeedPxPerSec` 始终是 −200 —— 图像坐标下目标明明在「移动」，补偿后跟踪器却报告速度为 0，
+因为动的其实是相机。
+
+> `analyze-with-motion` 则是同一机制的可控版：请求体在普通分析请求上追加 `increments`
+> （每帧相对上一帧的仿射增量），并列返回有补偿 / 无补偿两套结果。
+> **第 1 帧即参考帧，不追加增量**，`increments` 长度 = 帧数 − 1。
+
+### 🔭 小球机巡检（`/scenario/inspection/*`）
+
+把上面两项能力串成一条真实链路 —— **切片负责「看得见」、补偿负责「跟得住」、事件负责「判得准」**：
+
+| 阶段 | 能力 | 作用 |
+|------|------|------|
+| 1. 看得见 | `mica-ai-detect` 切片推理 | 远处小目标按原像素推理，整图检不出的也能检出 |
+| 2. 跟得住 | `mica-ai-track` 运动补偿 | 相机横摇时轨迹 ID 不断裂 |
+| 3. 判得准 | `mica-ai-track` 行为规则 | 越线 / ROI 进出 / 滞留 / 折返 |
+
+```bash
+curl -X POST \
+  -F "files=@frame1.jpg" -F "files=@frame2.jpg" \
+  -F 'options={"sliced":true,"motionCompensation":true,"roi":[0,0,400,300],"dwellThresholdMs":1000,"motionIncrements":[[1,0,-12,0,1,0]]}' \
+  http://localhost:8181/scenario/inspection/analyze
+```
+
+返回逐帧轨迹（**图像坐标** `cx/cy` + **参考帧坐标** `refCx/refCy`）、事件流与汇总；
+`/scenario/inspection/annotate` 同参数直接返回最后一帧的标注 PNG（轨迹框 + id + 轨迹点连线）。
 
 ### 📄 智能文档流水线（`/scenario/document/*`）
 
@@ -533,6 +597,10 @@ mica-ai-example/
 │   │   ├── IdPhotoBackground.java                   # 白 / 蓝 / 红底
 │   │   ├── IdPhotoMaskSource.java                   # MATTING / HUMANSEG
 │   │   └── IdPhotoResult.java
+│   ├── pipeline/inspection/                         # 🔭 小球机巡检
+│   │   ├── InspectionPipeline.java                  # 切片检测 → 运动补偿跟踪 → 行为事件
+│   │   ├── InspectionOptions.java                   # 阶段开关 / 相机运动增量 / 规则参数
+│   │   └── InspectionResult.java                    # 逐帧轨迹（图像坐标 + 参考帧坐标）+ 事件流 + 汇总
 │   ├── repository/VectorRepository.java             # 向量库抽象 + SimpleMemoryRepository 内存实现
 │   ├── auth/
 │   │   ├── AuthAction.java                          # 动作挑战定义（转头 / 点头 + 所需幅度）
@@ -550,6 +618,7 @@ mica-ai-example/
 │       ├── MattingController.java                   # /matting/cutout + /cutout-on-color + /mask
 │       ├── HumanSegController.java                  # /humanseg/cutout + /cutout-on-color + /mask
 │       ├── DetectController.java                    # /detect/detect + /detect/annotate
+│       ├── SlicedDetectController.java              # /detect/sliced* 切片推理 + 整图对比 + 网格可视化
 │       ├── TrackController.java                     # /track/update + /track/detect-and-track
 │       ├── DocAlignController.java                  # /docalign/corners + /docalign/align
 │       ├── EnhanceController.java                   # /enhance/upscale + /enhance/upscale-detail
@@ -558,7 +627,9 @@ mica-ai-example/
 │       ├── CaptchaController.java                   # /captcha/recognize
 │       ├── DocumentScenarioController.java          # /scenario/document/* 智能文档流水线
 │       ├── IdPhotoScenarioController.java           # /scenario/idphoto/* 证件照一键生成
-│       └── VideoEventScenarioController.java        # /scenario/video-events/* 逐帧事件分析
+│       ├── VideoEventScenarioController.java        # /scenario/video-events/analyze 逐帧事件分析
+│       ├── VideoMotionScenarioController.java       # /scenario/video-events/* 相机运动补偿
+│       └── InspectionScenarioController.java        # /scenario/inspection/* 小球机巡检
 ├── src/main/resources/
 │   ├── application.yml                              # 各能力示例配置
 │   ├── static/index.html                            # 示例页：人脸认证闭环 + 图像超分 + 组合场景 + 各能力上传演示
@@ -569,11 +640,14 @@ mica-ai-example/
     ├── enhance/
     │   ├── EnhanceUpscaleOptionsTest.java           # 参数校验单测（不依赖模型）
     │   └── EnhanceUpscaleIntegrationTest.java        # 真模型：倍率 / 预缩放 / 档位 / 引擎池
+    ├── pipeline/inspection/
+    │   └── InspectionPipelineTest.java              # 巡检管线：补偿保 ID / 双坐标系 / 切片数 / 标注图
     └── scenario/
         ├── DocumentScenarioIntegrationTest.java     # 智能文档流水线（含方向回转验证）
         ├── IdPhotoScenarioIntegrationTest.java      # 证件照几何 + 端到端出片
         └── controller/
-            └── VideoEventScenarioControllerTest.java # 逐帧事件分析：越线 / 滞留 / ROI / 时间戳倒退
+            ├── VideoEventScenarioControllerTest.java # 逐帧事件分析：越线 / 滞留 / ROI / 时间戳倒退
+            └── VideoMotionScenarioControllerTest.java # 相机运动补偿：无补偿 ID 断裂 / 有补偿 ID 稳定 / 速度口径
 ```
 
 ---

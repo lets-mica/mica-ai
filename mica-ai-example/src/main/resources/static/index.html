@@ -402,11 +402,26 @@ const VIDEO_EVENT_SAMPLE = {
   dwellThresholdMs: 1000
 };
 
+/* 小球机巡检的默认样例：开启切片检测 + 相机运动补偿，每帧相机左摇 12px */
+const INSPECTION_SAMPLE = {
+  sliced: true,
+  motionCompensation: true,
+  roi: [0, 0, 400, 300],
+  line: [100, 0, 100, 400],
+  bottomCenterAnchor: true,
+  dwellThresholdMs: 1000,
+  frameIntervalMs: 100,
+  motionIncrements: [[1, 0, -12, 0, 1, 0]]
+};
+
 const SCENARIO_CAPS = [
   {t: '逐帧事件分析', p: '/scenario/video-events/analyze', d: 'ByteTrack 轨迹 + 越线 / ROI 进出 / 滞留 / 折返', o: 'json',
     f: [{k: 'body', l: '帧序列 JSON（每帧带 timestampMs）', y: 'textarea', v: JSON.stringify(VIDEO_EVENT_SAMPLE, null, 2)}]},
   {t: '相机运动补偿', p: '/scenario/video-events/motion-demo', d: '球机横摇 + 静止目标：无补偿 ID 断裂，有补偿 ID 稳定', o: 'json',
     f: [{k: 'body', l: '请求体（无需参数，留空即可）', y: 'textarea', v: '{}'}]},
+  {t: '小球机巡检', p: '/scenario/inspection/analyze', d: '切片检测 → 运动补偿跟踪 → 越线 / ROI / 滞留 / 折返', o: 'scenario',
+    f: [{k: 'files', l: '各帧监控画面（可多选，按时间顺序）', y: 'file', multi: true},
+        {k: 'options', l: '规则与开关 JSON', y: 'textarea', v: JSON.stringify(INSECTION_SAMPLE, null, 2)}]},
   {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分', o: 'scenario',
     f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
   {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
