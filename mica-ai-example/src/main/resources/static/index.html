@@ -421,7 +421,7 @@ const SCENARIO_CAPS = [
     f: [{k: 'body', l: '请求体（无需参数，留空即可）', y: 'textarea', v: '{}'}]},
   {t: '小球机巡检', p: '/scenario/inspection/analyze', d: '切片检测 → 运动补偿跟踪 → 越线 / ROI / 滞留 / 折返', o: 'scenario',
     f: [{k: 'files', l: '各帧监控画面（可多选，按时间顺序）', y: 'file', multi: true},
-        {k: 'options', l: '规则与开关 JSON', y: 'textarea', v: JSON.stringify(INSECTION_SAMPLE, null, 2)}]},
+        {k: 'options', l: '规则与开关 JSON', y: 'textarea', v: JSON.stringify(INSPECTION_SAMPLE, null, 2)}]},
   {t: '智能文档流水线', p: '/scenario/document/process', d: '拉正 → 整图方向 → 条码 → 版面 → 文本块转正 → 超分', o: 'scenario',
     f: [{k: 'file', l: '拍摄的文档图片', y: 'file'}]},
   {t: '证件照一键生成', p: '/scenario/idphoto/generate', d: '检人脸 → 质量评估 → 抠像换底 → 按规格裁剪 → 超分', o: 'scenario',
