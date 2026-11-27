@@ -488,9 +488,16 @@ async function runCap(card) {
   if (card.dataset.out === 'scenario') {
     return runScenario(card);
   }
-  if (card.dataset.out === 'json') {
+  // 请求格式由卡片字段决定：有文本域 → JSON 请求体；只有文件 / 普通输入 → multipart
+  // （o 描述的是「响应怎么渲染」，不是「请求怎么发」）
+  if (card.dataset.out === 'json' && card.querySelector('textarea')) {
     return runJson(card);
   }
+  return runMultipart(card);
+}
+
+/* multipart 上传：文件 + 普通表单字段 */
+async function runMultipart(card) {
   const fd = new FormData();
   let missing = null;
   card.querySelectorAll('input, select').forEach(el => {
@@ -547,12 +554,14 @@ async function runJson(card) {
   const out = $('.out', card);
   const area = card.querySelector('textarea');
   const btn = $('.run', card);
-  let payload;
-  try {
-    payload = JSON.parse(area.value);
-  } catch (e) {
-    out.innerHTML = '<pre>请求体不是合法 JSON：' + e.message + '</pre>';
-    return;
+  let payload = {};
+  if (area) {
+    try {
+      payload = JSON.parse(area.value);
+    } catch (e) {
+      out.innerHTML = '<pre>请求体不是合法 JSON：' + e.message + '</pre>';
+      return;
+    }
   }
   btn.disabled = true;
   out.innerHTML = '<pre>调用中…</pre>';

@@ -17,6 +17,10 @@
 - 📷 `mica-ai-barcode` —— 二维码 / 一维条码解码：**纯算法、零模型**，只依赖 `com.google.zxing:core:3.5.3`（3.6.0 起要求 Java 11+，故锁在 JDK 8 线的最后一个版本），不引 ONNX Runtime / OpenCV / `javase`（规避 AWT headless 依赖）；核心是 `HybridBinarizer + TRY_HARDER` 起步的**多策略回退链**——失败后依次做 ×2 / ×3 最近邻放大、2×2 带重叠分块扫描、`GlobalHistogramBinarizer` 回退，支持一图多码与 20+ 种码制；输入走自带像素载体（`byte[]` / 灰度 / RGB），与 OpenCV `Mat` 解耦；配套 `mica-ai-barcode-spring-boot-starter`（`mica.ai.barcode` 前缀，**零配置**即可注入 `BarcodeEngine`）
 - 智能文档流水线新增条码阶段：`docalign` 拉正 → `classify` 整图方向 → **`barcode` 条码解码** → `layout` 版面 → `textline` 文本块转正 → `enhance` 超分。条码放在**原分辨率、超分之前**跑——一维码经缩放会直接失效；example 同步新增 `/barcode/decode` 与 `/scenario/document/process` 的条码结果字段
 
+### 🔧 修复
+
+- 🖥️ 修正示例页能力卡片的请求格式错配：`o: 'json'` 的卡片被统一路由到「JSON 请求体」处理器，带文件的卡片没有文本域 → `area.value` 抛空指针，**整页脚本在解析阶段就 ReferenceError、所有示例一起加载不出来**；现改为按卡片字段判定请求格式（带文本域 → JSON 请求体，带文件 → multipart），JSON 处理器对缺失文本域也做容错。这同时修好了「人脸能力 / 其他能力」里 **22 张上传卡片**（人脸检测、活体、特征、1:1、1:N、人证核验、质量、表情、版面、文档角点、文本行方向、图像分类、目标检测、切片检测、整图 vs 切片、检测+跟踪、车牌、文件类型、验证码、条码等）此前一律以 JSON 打到 multipart 端点、必然 415 的老问题；并补上示例页的行为守卫（用 node 驱动页面脚本逐张校验能力卡片的请求格式，环境缺 node 时跳过）
+
 ### 🧪 选型结论（已固化进单测）
 
 - 条码解码选型结论已固化进单测 `BarcodeSamples` / `BarcodeEngineTest`（16 档合成退化样本 × N=12）：固定 `HybridBinarizer` 在模糊图上反而弱于 `GlobalHistogram`，故必须做策略回退；**多尺度重试**（<2ms）把 1px 小码与 σ=2 模糊从 0% 拉到 100%；**多码场景 2×2 分块扫描 100%，优于 OpenCV `detectAndDecodeMulti` 的 75% 且快约 10 倍** ⇒ 不引入 WeChatQRCode（属 `opencv_contrib`，且是 Caffe 模型，收益/成本极差）

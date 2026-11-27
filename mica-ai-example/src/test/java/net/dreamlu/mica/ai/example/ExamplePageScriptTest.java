@@ -31,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * 示例页脚本的静态守卫。
@@ -89,6 +90,55 @@ class ExamplePageScriptTest {
 	@Test
 	void scriptBlockIsFound() throws IOException {
 		assertThat(scriptBlock()).as("示例页应包含内联脚本").isNotEmpty();
+	}
+
+	/**
+	 * 用 node 真正驱动页面脚本，逐张调用能力卡片，校验请求格式与调用过程。
+	 *
+	 * <p>示例页没有编译期检查，能力卡片一旦与请求格式不匹配（比如带文件的卡片被当成
+	 * 「JSON 请求体」发出去），只在浏览器里炸。这里把它变成构建期会红的断言。
+	 * 环境没有 node 时整项跳过，不阻塞构建。
+	 */
+	@Test
+	void everyCapabilityCardSendsTheRequestFormatItsFieldsImply() throws Exception {
+		Path script = pageCheckScript();
+		assertThat(script).as("卡片校验脚本应存在").isNotNull();
+
+		ProcessBuilder builder = new ProcessBuilder("node", script.toString(), page().toString());
+		builder.redirectErrorStream(true);
+		Process process = builder.start();
+		String output;
+		try (java.io.InputStream in = process.getInputStream()) {
+			output = new String(readAll(in), StandardCharsets.UTF_8);
+		}
+		int exit = process.waitFor();
+		assumeTrue(exit != 127, "环境里没有 node，跳过示例页卡片校验");
+
+		assertThat(output).as("示例页能力卡片校验输出").isNotEmpty();
+		assertThat(exit)
+			.as("示例页能力卡片校验未通过:\n%s", output)
+			.isZero();
+	}
+
+	/**
+	 * 卡片校验脚本（测试资源）。
+	 */
+	private static Path pageCheckScript() {
+		Path path = Paths.get("src", "test", "resources", "page-check", "card-check.js");
+		if (Files.exists(path)) {
+			return path;
+		}
+		return repoFile("mica-ai-example/src/test/resources/page-check/card-check.js");
+	}
+
+	private static byte[] readAll(java.io.InputStream in) throws IOException {
+		java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+		byte[] chunk = new byte[4096];
+		int read;
+		while ((read = in.read(chunk)) > 0) {
+			buffer.write(chunk, 0, read);
+		}
+		return buffer.toByteArray();
 	}
 
 	/**
